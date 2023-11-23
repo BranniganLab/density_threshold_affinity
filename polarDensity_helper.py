@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.colors as mcol
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import pandas as pdq
+import pandas as pd
 import os
 from matplotlib.colorbar import Colorbar
 
@@ -38,7 +38,7 @@ def spec_binding(ddG_in,leaf,ind_lip,bind_sight):
     return ddG_out
    
 def load_prob0():
-    return pd.read_csv("../Data/polar/Probability_0_Synapse.csv",header=0, index_col=0)
+    return pd.read_csv(f"{root}/Probability_0_Synapse.csv",header=0, index_col=0)
 
 # parses out names and replicas from file names
 # a bit overboard
@@ -61,7 +61,7 @@ def get_col_names(files):
 def file_check(files):
     flj = 0
     for fli, fl in enumerate(files):
-        if os.path.isfile("../Data/polar/%s"%fl) == True:
+        if os.path.isfile(f"{root}/%s"%fl) == True:
             continue
         
         elif flj >= len(files) - 2:
@@ -132,7 +132,7 @@ def Coord_Get(fl_in):
     
     dr, dth, theta, radius = Coord_Get(50)
     '''
-    dat = np.loadtxt("../Data/polar/%s"%fl_in,skiprows=1)
+    dat = np.loadtxt(fl_in, skiprows=1)
     frames = 1
     #rad = dat[:,1]+(dat[:,1]-dat[:,0])/2.0    
     rad, frames = calc_rad(dat)
@@ -161,9 +161,9 @@ def get_header_info(sat_files):
     line = None
     if (sat_files.find("Neutral")!=-1 or sat_files.find("Anionic")!=-1):
         sat_files = sat_files.replace(".1.",".header.")
-        line = open("../Data/polar/%s"%sat_files,'r').readline()
+        line = open(sat_files,'r').readline()
     else:
-        line = open("../Data/polar/%s"%sat_files,'r').readline()
+        line = open(sat_files,'r').readline()
     num_mol = float(line.split(",")[0].split(":")[1].split(" ")[1])
     beads = float(line.split(",")[1].split(":")[1].split(" ")[1])
     avg_A = float(line.split(',')[2].split(":")[1].split(" ")[1])
@@ -329,6 +329,9 @@ def omega3_binding_selection(protein,radian,theta):
         out.append(rad*the)
     return np.array(out)
 
+
+def polar_plot(data_in, theta, radius, chains_groups,memb=None):
+    return _Polar_Plot_(data_in, theta, radius, chains_groups,memb)
 def _Polar_Plot_(data_in, theta, radius, chains_groups,memb):
 	# plots densities
 	# data_in = array/list of density data
