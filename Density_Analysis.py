@@ -32,7 +32,7 @@ def Density(memb, ddg=False, lipids=False, enrich=False):
     rat = None
     chains_groups = None 
     col = []
-    chains_up, chains_lo = pc.prot_coord()
+    #chains_up, chains_lo = pc.prot_coord()
     
     # call sanity check
     if memb=="DPPC":
