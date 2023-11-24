@@ -61,7 +61,7 @@ def get_col_names(files):
 def file_check(files):
     flj = 0
     for fli, fl in enumerate(files):
-        if os.path.isfile(f"{root}/%s"%fl) == True:
+        if fl.isfile == True:
             continue
         
         elif flj >= len(files) - 2:
@@ -159,7 +159,7 @@ def get_header_info(sat_files):
         density.
     '''
     line = None
-    if (sat_files.find("Neutral")!=-1 or sat_files.find("Anionic")!=-1):
+    if (sat_files.name.find("Neutral")!=-1 or sat_files.name.find("Anionic")!=-1):
         sat_files = sat_files.replace(".1.",".header.")
         line = open(sat_files,'r').readline()
     else:
