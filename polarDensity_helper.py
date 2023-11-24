@@ -137,7 +137,7 @@ def Coord_Get(fl_in, Ntheta):
     #rad = dat[:,1]+(dat[:,1]-dat[:,0])/2.0    
     rad, frames = calc_rad(dat)
     dr = rad[1]-rad[0]
-    the = np.linspace(0,2*np.pi,Ntheta +1)
+    the = np.linspace(0,2*np.pi,Ntheta)
     dth = the[1]-the[0]
     theta,radius=np.meshgrid(the,rad)
 
@@ -180,7 +180,7 @@ def get_polar_data(sat_files):
     num_mol,avg_A,beads,exrho,avg_chain = get_header_info(sat_files)
     dat = np.loadtxt(sat_files,skiprows=1)
   
-    dat_set = dat[:,3:] 
+    dat_set = dat[:,3:-1] 
     return dat_set,num_mol,avg_A,beads,exrho,avg_chain
     
 def _analysis_call_(sat_file, rad, dr, dth, frames, enrich=False, ):#cbs=None,w3bs=None, 
