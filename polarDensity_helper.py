@@ -178,15 +178,12 @@ def get_polar_data(sat_files):
     header information is used for density and for enrichment    
     """
     num_mol,avg_A,beads,exrho,avg_chain = get_header_info(sat_files)
-    try:
-        dat = np.loadtxt("../Data/polar/%s"%sat_files,skiprows=1)#/avg_chain
-    except:
-        return 0
+    dat = np.loadtxt(sat_files,skiprows=1)
   
     dat_set = dat[:,3:] 
     return dat_set,num_mol,avg_A,beads,exrho,avg_chain
     
-def _analysis_call_(sat_file, rad, dr, dth, frames, enrich=False,):#cbs=None,w3bs=None, 
+def _analysis_call_(sat_file, rad, dr, dth, frames, enrich=False, ):#cbs=None,w3bs=None, 
                     #ddg=False, rat=None):
     '''
 
@@ -208,9 +205,9 @@ def _analysis_call_(sat_file, rad, dr, dth, frames, enrich=False,):#cbs=None,w3b
     '''
     data, num_mol,avg_A,beads,exrho,avg_chain = get_polar_data(sat_file)
     if (frames > 1):
-        assert np.shape(data[::frames,:]) == np.shape(rad), "Radius matrix different shape form data"
+        assert np.shape(data[::frames,:]) == np.shape(rad), "Radius matrix different shape from data"
     else:
-        assert np.shape(data) == np.shape(rad), "Radius matrix different shape form data"
+        assert np.shape(data) == np.shape(rad), "Radius matrix different shape from data"
     
     # default... don't have a way at the moment
     # to skip this step....
