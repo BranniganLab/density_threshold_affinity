@@ -359,10 +359,7 @@ def _Polar_Plot_(data_in, theta, radius, chains_groups,memb):
         except:
             grid = grid + 1
             continue
-        #for i,pro in enumerate(chains_up[:5]):
-        #    ax.scatter(np.deg2rad(pro[1::2]),pro[::2],edgecolor=sub[i],
-        #               facecolors=sub[i],linewidth=1,zorder=2,s=np.shape(data_in)[0]*10)
-        
+
         ax.set_xticklabels([])
         ax.set_yticklabels([])
         grid = grid + 1
