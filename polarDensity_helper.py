@@ -124,7 +124,7 @@ def calc_rad(dat):
     
     
    
-def Coord_Get(fl_in, Ntheta):
+def Coord_Get(fl_in):
     '''
     Function to determine the radius and theta matrix
     plt_size is dependent on the size of the membrane plotted
@@ -133,6 +133,7 @@ def Coord_Get(fl_in, Ntheta):
     dr, dth, theta, radius = Coord_Get(50)
     '''
     dat = np.loadtxt(fl_in, skiprows=1)
+    Ntheta = np.shape(dat)[1]-4
     frames = 1
     #rad = dat[:,1]+(dat[:,1]-dat[:,0])/2.0    
     rad, frames = calc_rad(dat)
@@ -141,7 +142,7 @@ def Coord_Get(fl_in, Ntheta):
     dth = the[1]-the[0]
     theta,radius=np.meshgrid(the,rad)
 
-    return rad, dr, dth, theta, radius, frames
+    return rad, dr, dth, theta, radius, frames, Ntheta
 
 def get_header_info(sat_files):
     '''
