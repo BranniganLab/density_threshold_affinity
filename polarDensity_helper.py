@@ -220,7 +220,7 @@ def _analysis_call_(sat_file, rad, dr, dth, frames, enrich=False, ):#cbs=None,w3
             rho[f::frames] = data[f::frames] / A
     else:
         rho = data / A #(rad * dr * dth)
-    if enrich == True:
+    if enrich:
         if exrho > 0:
             rho = rho / exrho
         else:
@@ -384,7 +384,7 @@ def _Polar_Plot_(data_in, theta, radius, chains_groups,memb):
 
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.21, .89, 0.5, 0.008])
-    cb=fig.colorbar(s, cax=cbar_ax,ticks=[0,0.5,1,1.5,2],orientation="horizontal")
+    fig.colorbar(s, cax=cbar_ax,ticks=[0,0.5,1,1.5,2],orientation="horizontal")
 
     plt.tight_layout()
     plt.show()
