@@ -6,11 +6,11 @@ set HeadNames [atomselect top "name PO4"] ;#B2 is DDM
 set lipids [lsort -unique [$HeadNames get resname]]
 puts $lipids
 $HeadNames delete
-puts $lipids
+puts $lipids	
 set Rmax 60.
 set Rmin 0.
 set dr 5.
-set Ntheta 30
+set Ntheta 10
 set dt 1
 set sample_frame 0
 
