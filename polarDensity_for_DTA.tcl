@@ -152,77 +152,7 @@ proc z_mid {init_frm nframes} {
     return [expr 1.0*[vecsum $z_list]/([llength $z_list]) ]
 }
 
-### Debug helpers ###
-# Shell_Test
-#
-# Tests that the sum over theta is the same as the sum over r. (I think - ES)
-# Arguments:
-#   float: the sum over r (?)
-#   list of floats: counts for theta bins
-# Result:
-#   Prints a string indicating whether or not the counts are consistent
-#
-# Issues:
-#    Should use actual error handling
-proc Shell_Test {shell_count theta_bin_counts } {
-    set theta_bin_total [Sum_list [lindex $theta_bin_counts 1]] 
-    if {$shell_count == $theta_bin_total} {
-        puts "Counting appears to be consistent"
-    } else {
-        puts "Counting appears to be inconsistent.."
-    }
 
-}
-
-# Sum_Shell_Test
-#
-# Tests that the sum over theta is the same as the sum over r. (I think - ES)
-# Arguments:
-#   str: lipid species to analyze - seltext
-#   float: Rmin, inner radius of shell
-#   float: Rmax, outer radius of shell
-#   float: dr, distance between Rmin and Rmax
-#   int: frm, the frame to analyze
-#   int: sel_num, the expected number of beads in the shell
-# Result:
-#   Prints the difference between the selection and the sum
-#
-# Issues:
-#    Should use actual error handling
-#    Should be made into a proper test
-proc Sum_Shell_Warning {species Rmin Rmax dr frm sel_num} {
-
-	set total_beads 0 
-	for {set ri $Rmin} { $ri<=${Rmax}} {set ri [expr $ri + $dr]} {
-		set rf [expr $ri + $dr]
-        set rf2 [expr $rf*$rf]
-        set ri2 [expr $ri*$ri]
-		set test_shell [atomselect top "($species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) " frame $frm]
-		incr total_beads [$test_shell num]
-	} 
-	
-	puts "[expr abs($sel_num-$total_beads)]"
-}
-
-# Species_Total_Warning
-#
-# Makes sure not all lipids are in one shell
-# Arguments:
-#   int: The number of lipids/beads in the selection
-#   int: The number of lipids/beads in the shell
-# Result:
-#   Prints a warning message if the two ints are the same.
-#
-# Issues:
-#    Should use actual error handling
-#    Should be made into a proper test
-proc Species_Total_Warning {sel_num shell_count} {
-    if {$shell_count == $sel_num} {
-        puts "Warning: One shell appears to contain all lipids!"
-        puts "Not exceptable! Exiting."
-        exit
-    }
-}
 
 # Real_vs_Expected
 #
@@ -237,24 +167,6 @@ proc Species_Total_Warning {sel_num shell_count} {
 #
 # Issues:
 #    It's not clear if this is a sanity check (sniff test) or useful data. -ES
-proc Real_vs_Expected {expected bin_counts ri rf} {
-    set scalar [expr 1.0/(3.14159265358979323846*($rf**2-$ri**2))]
-    set test_list [vecscale $bin_counts $scalar]
-    set avg_test_list [expr 1.0*[Sum_list $test_list]/[llength $bin_counts]]
-    set ratio [expr 1.0*$avg_test_list/$expected]
-    if {$ratio < .8} {
-        puts "This shell appears to be depleted\nAvg: $avg_test_list\tExpected: $expected\tRatio: $ratio"
-    } elseif {$ratio > 1.1} {
-        puts "This shell apears to be enriched\nAvg: $avg_test_list\tExpected: $expected\tRatio: $ratio"
-    } else {
-        puts "Shell appears to be randomly mixed"
-    }
-}
-
-# Determines a specific lipids leaflet
-
-
-
 # Ouputs position of the centered protein in a membrane
 # accross both leaflets
 proc Protein_Position {{a ""}} {
@@ -677,4 +589,103 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta} {
 	}
 	close $low_f
 	close $upp_f
+}
+
+### Debug helpers ###
+# Shell_Test
+#
+# Tests that the sum over theta is the same as the sum over r. (I think - ES)
+# Arguments:
+#   float: the sum over r (?)
+#   list of floats: counts for theta bins
+# Result:
+#   Prints a string indicating whether or not the counts are consistent
+#
+# Issues:
+#    Should use actual error handling
+proc Shell_Test {shell_count theta_bin_counts } {
+    set theta_bin_total [Sum_list [lindex $theta_bin_counts 1]] 
+    if {$shell_count == $theta_bin_total} {
+        puts "Counting appears to be consistent"
+    } else {
+        puts "Counting appears to be inconsistent.."
+    }
+
+}
+
+# Sum_Shell_Test
+#
+# Tests that the sum over theta is the same as the sum over r. (I think - ES)
+# Arguments:
+#   str: lipid species to analyze - seltext
+#   float: Rmin, inner radius of shell
+#   float: Rmax, outer radius of shell
+#   float: dr, distance between Rmin and Rmax
+#   int: frm, the frame to analyze
+#   int: sel_num, the expected number of beads in the shell
+# Result:
+#   Prints the difference between the selection and the sum
+#
+# Issues:
+#    Should use actual error handling
+#    Should be made into a proper test
+proc Sum_Shell_Warning {species Rmin Rmax dr frm sel_num} {
+
+	set total_beads 0 
+	for {set ri $Rmin} { $ri<=${Rmax}} {set ri [expr $ri + $dr]} {
+		set rf [expr $ri + $dr]
+        set rf2 [expr $rf*$rf]
+        set ri2 [expr $ri*$ri]
+		set test_shell [atomselect top "($species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) " frame $frm]
+		incr total_beads [$test_shell num]
+	} 
+	
+	puts "[expr abs($sel_num-$total_beads)]"
+}
+
+# Species_Total_Warning
+#
+# Makes sure not all lipids are in one shell
+# Arguments:
+#   int: The number of lipids/beads in the selection
+#   int: The number of lipids/beads in the shell
+# Result:
+#   Prints a warning message if the two ints are the same.
+#
+# Issues:
+#    Should use actual error handling
+#    Should be made into a proper test
+proc Species_Total_Warning {sel_num shell_count} {
+    if {$shell_count == $sel_num} {
+        puts "Warning: One shell appears to contain all lipids!"
+        puts "Not exceptable! Exiting."
+        exit
+    }
+}
+
+# Real_vs_Expected
+#
+# Compares a bin's density with the expected density. Prints a diagnostic string.
+# Arguments:
+#   float: the expected density
+#   float: bin_counts, the counts from the bins of the shell
+#   float: ri, the inner radius of the shell
+#   float: rf, the outer radius of the shell
+# Result:
+#   Prints a diagnostic string indicating if the shell is enriched, depeleted, or randomly mixed
+#
+# Issues:
+#    It's not clear if this is a sanity check (sniff test) or useful data. -ES
+proc Real_vs_Expected {expected bin_counts ri rf} {
+    set scalar [expr 1.0/(3.14159265358979323846*($rf**2-$ri**2))]
+    set test_list [vecscale $bin_counts $scalar]
+    set avg_test_list [expr 1.0*[Sum_list $test_list]/[llength $bin_counts]]
+    set ratio [expr 1.0*$avg_test_list/$expected]
+    if {$ratio < .8} {
+        puts "This shell appears to be depleted\nAvg: $avg_test_list\tExpected: $expected\tRatio: $ratio"
+    } elseif {$ratio > 1.1} {
+        puts "This shell apears to be enriched\nAvg: $avg_test_list\tExpected: $expected\tRatio: $ratio"
+    } else {
+        puts "Shell appears to be randomly mixed"
+    }
 }
