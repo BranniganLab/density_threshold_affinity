@@ -154,21 +154,17 @@ proc z_mid {init_frm nframes} {
 
 
 
-# Real_vs_Expected
+# Protein_Position
 #
-# Compares a bin's density with the expected density. Prints a diagnostic string.
+# Gets the position of the helices of the protein
 # Arguments:
-#   float: the expected density
-#   float: bin_counts, the counts from the bins of the shell
-#   float: ri, the inner radius of the shell
-#   float: rf, the outer radius of the shell
+#   str: a, what the hell is this?
 # Result:
-#   Prints a diagnostic string indicating if the shell is enriched, depeleted, or randomly mixed
+#   Saves the average xy coordinates of the protein transmembrane helices
 #
 # Issues:
-#    It's not clear if this is a sanity check (sniff test) or useful data. -ES
-# Ouputs position of the centered protein in a membrane
-# accross both leaflets
+#    Variable names
+#    Assumptions about protein morphology
 proc Protein_Position {{a ""}} {
     set chain_names [list "A" "B" "C" "D" "E"]
     set zed [z_mid 0 20]
