@@ -224,6 +224,19 @@ proc Species_Total_Warning {sel_num shell_count} {
     }
 }
 
+# Real_vs_Expected
+#
+# Compares a bin's density with the expected density. Prints a diagnostic string.
+# Arguments:
+#   float: the expected density
+#   float: bin_counts, the counts from the bins of the shell
+#   float: ri, the inner radius of the shell
+#   float: rf, the outer radius of the shell
+# Result:
+#   Prints a diagnostic string indicating if the shell is enriched, depeleted, or randomly mixed
+#
+# Issues:
+#    It's not clear if this is a sanity check (sniff test) or useful data. -ES
 proc Real_vs_Expected {expected bin_counts ri rf} {
     set scalar [expr 1.0/(3.14159265358979323846*($rf**2-$ri**2))]
     set test_list [vecscale $bin_counts $scalar]
@@ -234,16 +247,16 @@ proc Real_vs_Expected {expected bin_counts ri rf} {
     } elseif {$ratio > 1.1} {
         puts "This shell apears to be enriched\nAvg: $avg_test_list\tExpected: $expected\tRatio: $ratio"
     } else {
-        puts "Shell appearst to be randomly mixed"
+        puts "Shell appears to be randomly mixed"
     }
 }
 
-;# Determines a specific lipids leaflet
+# Determines a specific lipids leaflet
 
 
 
-;# Ouputs position of the centered protein in a membrane
-;# accross both leaflets
+# Ouputs position of the centered protein in a membrane
+# accross both leaflets
 proc Protein_Position {{a ""}} {
     set chain_names [list "A" "B" "C" "D" "E"]
     set zed [z_mid 0 20]
@@ -275,15 +288,15 @@ proc avg_acyl_chain_len {species} {
     set acyl_num 0
     set sel [atomselect top "$species"]
     set sel_resname [lsort -unique [$sel get resname]]
-    ;#set sel_num [llength [lsort -unique [$sel get resname]]]
+    #set sel_num [llength [lsort -unique [$sel get resname]]]
     $sel delete
     foreach res $sel_resname {
         set sel [atomselect top "${species} and (resname $res) and (not name NH3 NC3 GL1 GL2 AM1 AM2 PO4 CNO CN0 C1 C2 C3)"]
         set sel_len [llength [lsort -unique [$sel get name]]]
-        ;# 6 is the longest chain in Martini
-        ;# If there is a chain longer -> the lipid is
-        ;# a homoacid, need to add another value to 
-        ;# divide by
+        # 6 is the longest chain in Martini
+        # If there is a chain longer -> the lipid is
+        # a homoacid, need to add another value to 
+        # divide by
         if {$sel_len > 6} {
             lappend sel_resname "${res}"
         }
@@ -300,8 +313,8 @@ proc avg_acyl_chain_len {species} {
 
 proc Center_System {inpt} {
     puts "${inpt}"
-    ;# confirms your box is either square or paraelleogram-ish
-    ;# will preform qwrap or pbc wrap depending
+    # confirms your box is either square or paraelleogram-ish
+    # will preform qwrap or pbc wrap depending
 
     set pbc_angles [molinfo top get {alpha beta gamma}]
     
@@ -309,7 +322,7 @@ proc Center_System {inpt} {
     set com [measure center $sel weight mass]
     
     set counter_i 0
-    ;# continues to try and recenter's box until ~ 0'ed out
+    # continues to try and recenter's box until ~ 0'ed out
     while {[expr abs([lindex $com 0])] > 1.0 &&  [expr abs([lindex $com 1])] > 1.0} {
         
         if {$counter_i > 5} {
@@ -339,7 +352,7 @@ proc Center_System {inpt} {
 proc resnamer {input} {
 
     
-    ;# adds resname if the input is DPPC, CHOL, PUPI...
+    # adds resname if the input is DPPC, CHOL, PUPI...
     
     set out ""
     if {[string length $input] == 4 && $input != "chol"} { 
@@ -355,7 +368,7 @@ proc output_bins {fl  ri rf dtheta bins} {
     puts $fl "$bins" 
 }
 
-;# LMS keep here or a new file (please move it to a new file!)
+# LMS keep here or a new file (please move it to a new file!)
 # proc bin_over_frames {shell species dtheta sample_frame nframes dt } {
 #     set theta_bin_high [list ]
 #     set theta_bin_low [list]
@@ -419,14 +432,14 @@ proc bin_over_frames {shell species dtheta sample_frame nframes Ntheta dt ri rf 
         $shell frame $frm
         $shell update 
         set singleFrame_counts [bin_frame $shell $species $dtheta $frm ]
-        ;# you'll need to create bin_frame, using lines 284-325 (or around those) of your previous code
+        # you'll need to create bin_frame, using lines 284-325 (or around those) of your previous code
         set singleFrame_upper [lindex $singleFrame_counts 0] 
 	    #puts $singleFrame_upper
-        ;#I assume here that bin_frame returns upper and lower as two lists inside another list, you can do it however
+        #I assume here that bin_frame returns upper and lower as two lists inside another list, you can do it however
         set singleFrame_lower [lindex $singleFrame_counts 1]
         set theta_bins [theta_histogram $singleFrame_upper $singleFrame_lower $Ntheta]
 
-        ;# should be fixed, do not change [lrepeat [expr $Ntheta+1] to [lrepeat [expr $Ntheta] 
+        # should be fixed, do not change [lrepeat [expr $Ntheta+1] to [lrepeat [expr $Ntheta] 
         if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
             error "theta_bin_high/low and theta_bins do not have the same length."
         }
@@ -436,9 +449,9 @@ proc bin_over_frames {shell species dtheta sample_frame nframes Ntheta dt ri rf 
 	    #puts $theta_bin_low
         #TODO MAKE A SWITCH
 	#output_bins $fupper $ri $rf $dtheta [lindex $theta_bins 0] 
-        ;#open fupper before the loop starts and close afterwards
+        #open fupper before the loop starts and close afterwards
         #output_bins $flower $ri $rf $dtheta [lindex $theta_bins 1] 
-        ;#same thing     
+        #same thing     
     }
   return [list ${theta_bin_high} ${theta_bin_low}]
 }
@@ -481,7 +494,7 @@ proc local_mid_plane {atsel_in frame_i} {
 
 
 
-;# does what it says it does, bins over a single frame
+# does what it says it does, bins over a single frame
 proc bin_frame {shell species dtheta frm } {
     set indexs [$shell get index]
     set resids [$shell get resid]
@@ -490,19 +503,19 @@ proc bin_frame {shell species dtheta frm } {
     set theta_low_out [list]
     set resd_old 0
     set high_low 0
-    ;#set shel_count [expr $shel_count + $nShell]
+    #set shel_count [expr $shel_count + $nShell]
     foreach indx $indexs resd $resids {
         #loop over lipids in the shell
         set a "($species and index $indx)"
         set b "(resid $resd)" ;#and (name PO4 ROH)
-        ;# change 4
+        # change 4
         set thislipid [atomselect top $a frame $frm]
         if {[string length ${species}] == 2} {
 	    	if {[$thislipid get name] == "PO4"} {
 	        	continue
 	    	}
     	}
-        ;# change 5
+        # change 5
 
         if {${resd_old} != ${resd}} {
         	set high_low [local_mid_plane $b  $frm]
@@ -524,7 +537,7 @@ proc bin_frame {shell species dtheta frm } {
     return [list $theta_high_out $theta_low_out] 
 }
 
-;# FAR more useful than the other version (theta clean up)
+# FAR more useful than the other version (theta clean up)
 proc theta_histogram {singleFrame_upper singleFrame_lower Ntheta } {
     
     set theta_bin_out [list]
@@ -534,7 +547,7 @@ proc theta_histogram {singleFrame_upper singleFrame_lower Ntheta } {
         set theta_bin_counts [lcount $ud]
         #Shell_Test $shel_count $theta_bin_counts
         set theta_bins {}
-        ;# make this into the new lcount? better Idea TEST lcount
+        # make this into the new lcount? better Idea TEST lcount
         for {set ti 0} { $ti<=$Ntheta} {incr ti 1} {
             set tindex [lsearch [lindex $theta_bin_counts 0]  $ti]
             if { $tindex >= 0} {
@@ -549,13 +562,13 @@ proc theta_histogram {singleFrame_upper singleFrame_lower Ntheta } {
     return $theta_bin_out
 }
 
-;# TODO I don't think I need this function anymore
+# TODO I don't think I need this function anymore
 proc theta_clean_up {theta_bin_high theta_bin_low shel_count  Ntheta delta_frame low_f upp_f} {
     
     theta_bin_out [list ]
 
     foreach ud [list $theta_bin_low $theta_bin_high] {
-        ;#Species_Total_Warning $sel_num $shel_count
+        #Species_Total_Warning $sel_num $shel_count
         puts "Cleaning up for shell $ri to $rf"
         #cleanup and output 
         set theta_bin_counts [lcount $ud]
@@ -575,16 +588,15 @@ proc theta_clean_up {theta_bin_high theta_bin_low shel_count  Ntheta delta_frame
     return $theta_bin_time_averages
 }
 
-;########################################################################################
-;# polarDensity Funciton
+### polarDensity Funciton ###
 
 proc polarDensityBin { outfile species Rmin Rmax dr Ntheta} {
-    ;#if {$species == "CHOL"} { set species "resname CHOL" }
-	;#source /u2/home_u2/lms464/github/JPC_Special/common/grace/assign_helices_3RQW_CG_lms.tcl;#assign_helices_2BG9_CG_lms2.tcl
+    #if {$species == "CHOL"} { set species "resname CHOL" }
+	#source /u2/home_u2/lms464/github/JPC_Special/common/grace/assign_helices_3RQW_CG_lms.tcl;#assign_helices_2BG9_CG_lms2.tcl
 	source /u2/home_u2/lms464/github/JPC_Special/common/grace/assign_helices_2BG9_CG_lms2.tcl
     
-    ;#set Rmin 0
-    ;#set Rmax 36
+    #set Rmin 0
+    #set Rmax 36
 
     set species [resnamer ${species}]
     
@@ -610,7 +622,7 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta} {
 	set low_f [open "${outfile}.low.dat" w]
     set upp_f [open "${outfile}.upp.dat" w]
 	set dtheta [expr 360.0/(1.0*($Ntheta))]
-    ;#Center_System "name PO4"
+    #Center_System "name PO4"
 	
     foreach lu [list $low_f $upp_f] zed [list "(z<0)" "(z>0)"] {
         set sel [ atomselect top "(($species) and $zed) and (name PO4 ROH)"  frame 0]
@@ -629,11 +641,11 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta} {
         puts "#Lipid species $species : ${sel_num} molecules, Num beads : ${num_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Density : [format {%0.5f} [expr $expected]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
 	    puts $lu "#Lipid species $species : ${sel_num} molecules, Num beads : ${num_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Density : [format {%0.5f} [expr $expected]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
     }
-    ;#Center_System "occupancy 1 to 4 and name BB"
-    ;#Align "occupancy 1 to 4 and name BB"
+    #Center_System "occupancy 1 to 4 and name BB"
+    #Align "occupancy 1 to 4 and name BB"
 
     
-	;#unset lipsize
+	#unset lipsize
 	set sample_frame 100
 	set delta_frame [expr ($nframes - $sample_frame) / $dt]
 	for {set ri $Rmin} { $ri<=${Rmax}} { set ri [expr $ri + $dr]} {
@@ -650,7 +662,7 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta} {
         set theta_bin [bin_over_frames $shell $species $dtheta $sample_frame $nframes $Ntheta $dt $ri $rf $upp_f $low_f]
         set theta_bin_high [lindex $theta_bin 0]
         set theta_bin_low [lindex $theta_bin 1]
-        ;#puts ${theta_bin_high}
+        #puts ${theta_bin_high}
         #set shel_count [expr $shel_count + [lindex $theta_bin 2]]
         $shell delete	
         puts ""
@@ -661,7 +673,7 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta} {
         #foreach tbu [lindex $theta_bin_averages 0] tbl [lindex $theta_bin_averages 1] ;#{
         output_bins $upp_f $ri $rf $dtheta "$time_avg_upper" 
         output_bins $low_f $ri $rf $dtheta "$time_avg_lower" 
-        ;#}
+        #}
 	}
 	close $low_f
 	close $upp_f
