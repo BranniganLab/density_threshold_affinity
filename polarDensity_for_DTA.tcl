@@ -40,27 +40,36 @@ load ${QWRAP}/qwrap.so
 #plt.pcolormesh(theta,radius,density,cmap="RdBu",zorder=0,edgecolors='k',lw=.001)
 #plt.show()
 
+# get_avg_area
+#
+# Calculates the average area of a molecule in a simulation box.
+# Arguments:
+#     molid (str): The molecule ID of the molecule for which the average area needs to be calculated.
+# Results:
+#     float: The average area of the molecule in the simulation box.
 proc get_avg_area {molid} {
-	;#set nframes [molinfo $molid get numframes]
     set box [pbc get -all]
     set xbox [list]
     set ybox [list]
-	#set total 0
-	# for {set frm 0} {$frm < $nframes} {incr frm 1} {
-	# 	set xbox [molinfo $molid get a]
-	# 	set ybox [molinfo $molid get b]
-	# 	set total [expr $total + $xbox * $ybox]
-	# }
     foreach r $box {
         lappend xbox [lindex $r 0]
         lappend ybox [lindex $r 1]
     }
     set x [expr 1.0 * [vecsum $xbox] / [llength $xbox]]
     set y [expr 1.0 * [vecsum $ybox] / [llength $ybox]]
-	set avg [expr 1.0 * $x * $y]
-	return $avg
+    set avg [expr 1.0 * $x * $y]
+    return $avg
 }
 
+# lcount 
+#
+# Takes a list as input and returns a list of unique elements in the input list along with their counts.
+# Arguments:
+#   list: A list of elements.
+# Outputs:
+#   A list containing two lists:
+#   - The first list contains the unique elements from the input list.
+#   - The second list contains the counts of each unique element in the input list.
 proc lcount list {
     foreach x $list {lappend arr($x) {}}
     set res1 {}	
@@ -73,12 +82,26 @@ proc lcount list {
     return $res
  }
  
+# RtoD
+#
+# Converts an angle from radians to degrees
+# Arguments:
+#   float: an angle in radians
+# Outputs:
+#   float: the same angle in degrees
  proc RtoD {r} {
     set pi 3.14159265358979323846
     return [expr $r*180.0/$pi]
 }
 
-
+# get_theta
+#
+# Gets the angle from the (x,y) coordinates
+# Arguments:
+#   float: x
+#   float: y
+# Outputs:
+#   float: the angle of the point in degrees
 proc get_theta {x y} {
     set pi 3.14159265358979323846
     set tmp  [expr {atan2($y,$x)}]
