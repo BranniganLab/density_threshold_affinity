@@ -98,10 +98,10 @@ proc lcount list {
 #
 # Gets the angle from the (x,y) coordinates
 # Arguments:
-#   float: x
-#   float: y
+#   float: x position
+#   float: y position
 # Outputs:
-#   float: the angle of the point in degrees
+#   float: the angle of the point in degrees relative to the origin
 proc get_theta {x y} {
     set pi 3.14159265358979323846
     set tmp  [expr {atan2($y,$x)}]
@@ -113,6 +113,16 @@ proc get_theta {x y} {
     return [RtoD $theta]
 }
 
+# Sum_list
+#
+# Sums over a list
+# Arguments:
+#   list: a list of numbers
+# Outputs:
+#   float: the sum over the entire list
+#
+# Issues:
+#    Function name violates style guide
 proc Sum_list {list_in} {
     set list_out 0
     foreach li $list_in {
@@ -121,6 +131,17 @@ proc Sum_list {list_in} {
     return $list_out
 }
 
+# z_mid
+#
+# Finds the average mid-plane
+# Arguments:
+#   int: first frame
+#   nframes: The number of frames over which to average
+# Outputs:
+#   float: The average z value of all the beads
+#
+# Issues:
+#    Headgroup beads should be an argument
 proc z_mid {init_frm nframes} {
     set z_list {}
     for {set frm ${init_frm}} {${frm} < ${nframes}} {incr frm} {
