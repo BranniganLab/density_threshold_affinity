@@ -118,7 +118,7 @@ def calc_rad(dat):
     # starts at 0, didn't it start at 4?
     rad1,counts = np.unique(dat[:,0], return_counts=True)
     rad2 = np.unique(dat[:,1])
-    rad = rad2+(rad2-rad1)/2.0
+    rad = rad2-(rad2-rad1)/2.0
     counts = counts[0]
     return rad,counts
     
