@@ -1,4 +1,7 @@
 
+set CENTER_AND_ALIGN 0
+set USE_QWRAP 0
+
 set UTILS "../densitymap/TCL/helpers" 
 source ./polarDensity_for_DTA.tcl
 
