@@ -3,8 +3,7 @@
 
 # set QWRAP ;# https://github.com/jhenin/qwrap
 source $UTILS/BinTools.tcl
-set CENTER_AND_ALIGN 1
-set USE_QWRAP 1
+
 
 if {$USE_QWRAP == 1} {load ${UTILS}/qwrap.so}
 
