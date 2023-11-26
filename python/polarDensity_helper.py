@@ -144,7 +144,7 @@ def Coord_Get(fl_in):
 
     return rad, dr, dth, theta, radius, frames, Ntheta
 
-def get_header_info(sat_files):
+def get_header_info(fpath):
     '''
     Parameters
     ----------
@@ -158,18 +158,14 @@ def get_header_info(sat_files):
         Number of molecules, number of beads per mol, and expected
         density.
     '''
-    line = None
-    if (sat_files.name.find("Neutral")!=-1 or sat_files.name.find("Anionic")!=-1):
-        sat_files = sat_files.replace(".1.",".header.")
-        line = open(sat_files,'r').readline()
-    else:
-        line = open(sat_files,'r').readline()
+    line = open(fpath,'r').readline()
     num_mol = float(line.split(",")[0].split(":")[1].split(" ")[1])
     beads = float(line.split(",")[1].split(":")[1].split(" ")[1])
     avg_A = float(line.split(',')[2].split(":")[1].split(" ")[1])
     exrho = float(line.split(",")[3].split(":")[1].split("/")[0])
     avg_chain = float(line.split(",")[4].split(":")[1].split(" ")[1])
     return num_mol,avg_A,beads,exrho,avg_chain
+
 
 def get_polar_data(sat_files):
     """
