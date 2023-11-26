@@ -1,12 +1,16 @@
 
  package require pbctools
- set UTILS "/u2/home_u2/lms464/github/JPC_Special/common/utils" 
- set QWRAP "/u1/home/lms464/lms464/github/qwrap"
-# 
+
+# set QWRAP ;# https://github.com/jhenin/qwrap
 source $UTILS/BinTools.tcl
+set CENTER_AND_ALIGN 1
+set USE_QWRAP 1
+
+if {$USE_QWRAP == 1} {load ${UTILS}/qwrap.so}
+
 # ;# TODO What is the point of outputing each lipid species to a different file?
 # 
-load ${QWRAP}/qwrap.so
+
 # 
 # ;#Lipid_Saturation_HeadG are a series of macros to parse Martini lipids
 # source ${UTILS}/Lipid_Saturation_HeadG.tcl
@@ -157,19 +161,19 @@ proc Real_vs_Expected {expected bin_counts ri rf} {
 
 ;# Determines a specific lipids leaflet
 
-
-
-;# Ouputs position of the centered protein in a membrane
-;# accross both leaflets
-proc Protein_Position {{a ""}} {
-    set chain_names [list "A" "B" "C" "D" "E"]
+;#Outputs xy position of helix centers to file for each leaflet; center is calculated using the part of the helix in the given leaflet
+proc Protein_Position {chain_names helix_occupancy_list {a ""} } {
+	;# list for the chain names
+    #set chain_names [list "A" "B" "C" "D" "E"]
+    ;# finds the center of the membranes
     set zed [z_mid 0 20]
-	set occupancy [list 1 2 3 4]
+	;# calculates the center of mass for subunit alpha helices in both leaflets
+    puts "Writing coordinates for [llength $chain_names] chains and [llength $helix_occupancy_list] helices per chain"
 	foreach eq {"<" ">"} eqtxt {"lwr" "upr"} {
-		set fout [open "/u2/home_u2/lms464/github/JPC_Special/tasks/17_Aim1/Data/Protein${a}_coords_${eqtxt}.dat" w]
+		set fout [open "./Protein${a}_coords_${eqtxt}.dat" w]
         puts $fout  "# chain A ooc1r occ1the occ2r occ2the... "
         foreach chnm $chain_names {
-            foreach occ $occupancy {
+            foreach occ $helix_occupancy_list {
                 set sel [atomselect top "(chain ${chnm}) and (occupancy $occ and name BB) and (z ${eq} $zed)" frame 0]
                 set com [measure center $sel weight mass]
                 $sel delete
@@ -177,8 +181,7 @@ proc Protein_Position {{a ""}} {
                 set y [lindex $com 1]
                 set r [expr sqrt($x*$x+$y*$y)]
                 set theta [get_theta $x $y]
-                puts "chain ${chnm} and occupancy $occ $r $theta"
-
+                #puts "chain ${chnm} and occupancy $occ $r $theta"
                 puts -nonewline $fout "$r $theta "
             }
             puts $fout ""
@@ -216,6 +219,7 @@ proc avg_acyl_chain_len {species} {
 }
 
 proc Center_System {inpt} {
+    global USE_QWRAP
     puts "${inpt}"
     ;# confirms your box is either square or paraelleogram-ish
     ;# will preform qwrap or pbc wrap depending
@@ -237,7 +241,7 @@ proc Center_System {inpt} {
             return
         }
         
-        if {([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0)} {
+        if {($USE_QWRAP==0) || (([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0))} {
             puts "qwrap may not be optimal for your system...\n"
             puts "Running pbc wrap. To verify proper centering"
             puts "pbc wrap will be run multiple times" ; after 100
@@ -352,15 +356,16 @@ proc bin_over_frames {shell species dtheta sample_frame nframes Ntheta dt ri rf 
 	    set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 1]]
 	    #puts $theta_bin_low
         #TODO MAKE A SWITCH
-	#output_bins $fupper $ri $rf $dtheta [lindex $theta_bins 0] 
+        output_bins $fupper $ri $rf $dtheta [lindex $theta_bins 0] 
         ;#open fupper before the loop starts and close afterwards
-        #output_bins $flower $ri $rf $dtheta [lindex $theta_bins 1] 
+        output_bins $flower $ri $rf $dtheta [lindex $theta_bins 1] 
         ;#same thing     
     }
   return [list ${theta_bin_high} ${theta_bin_low}]
 }
 
-proc local_mid_plane {atsel_in frame_i} {
+#; procedure that was used in JCP 2021 for nAChR
+proc local_mid_plane2 {atsel_in frame_i} {
     set temp_sel [atomselect top "(name PO4 ROH) and (pbwithin 50 of $atsel_in) and not ($atsel_in)" frame $frame_i]
     set mid_point [lindex [measure center $temp_sel weight mass] 2]
     $temp_sel delete
@@ -375,26 +380,57 @@ proc local_mid_plane {atsel_in frame_i} {
     }
 }
 
-# proc local_mid_plane {atsel_in frame_i} {
+;# Determines if the lipid is in the outer or iner leaflet and sets the user value accordingly
+;# Returns +1 if the lipid is in the upper leaflet and -1 if it is in the lower leaflet 
+proc local_mid_plane {atsel_in frame_i} {
+    
+    
+    set sel_resid [atomselect top "$atsel_in" frame $frame_i]
+    set ind 1
+    if { [string range [lsort -unique [$sel_resid get resname]] end-1 end] == "PA" } {
+    	set ind 0
+    }
+    set sel_Z [${sel_resid} get z] 
+	if {[lindex ${sel_Z} $ind] < [lindex ${sel_Z} end] } { 
+        $sel_resid set user2 -1
+		return -1 
+        
+	} else { 
+        $sel_resid set user2 1
+		return 1 
+	}
+    $sel_resid delete
+}
 
-# 	;# Method ONLY works under the assumption lipids are hetero-acidic
-# 	;# having a saturate or mono-unsaturated  
+;# Calculates the total number of lipids and beads of the given species in each leaflet 
+;# Returns the following list : [[lower_leaflet_beads lower_leaflet_lipids] [upper_leaflet_beads upper_leaflet_lipids]] 
+proc get_leaflet_totals {species frame_i} {
+    set sel [ atomselect top "(($species)) and (name PO4 ROH)"  frame $frame_i]
+    set sel_num [llength [lsort -unique [$sel get resid] ] ]
+    set sel_resid_list [lsort -unique [$sel get resid] ]
+    set totals {}
+    $sel delete
+    if {$sel_num < 1} {
+        set totals [[list 0 0] [list 0 0]] 
+    } else {
+        #assign leaflets to user2 field of each bead for this species
+        foreach sel_resid $sel_resid_list {
+            set selstring "${species} and (resid $sel_resid) and (not name PO4 ROH)"
+            set leaflet [local_mid_plane $selstring $frame_i]
+        }   
+        #count the number of lipids and the number of beads in each leaflet
+        foreach leaf [list  "(user2<0)" "(user2>0)"] {
+            set sel [ atomselect top "(${species} and $leaf)"  frame $frame_i]
+            set num_beads [$sel num]
+            set num_lipids [llength [lsort -unique [$sel get resid] ]]
+            lappend totals [list $num_beads $num_lipids]
+            $sel delete
+        }
+    }
+    return $totals
+}
 
-#     set sel_resid [atomselect top "$atsel_in" frame $frame_i]
-#     set ind 1
-#     ;# Says choose the PO4 bead. PA dosen't have a 2 bead head group, only PO4
-#     if { [string range [lsort -unique [$sel_resid get resname]] end-1 end] == "PA" } {
-#     	set ind 0
-#     }
-#     set sel_Z [${sel_resid} get z] 
-#     ;#set sel_com [measure center ${sel_resid} weight mass]
-#     $sel_resid delete
-# 	if {[lindex ${sel_Z} $ind] < [lindex ${sel_Z} end] } { 
-# 		return 1 
-# 	} else { 
-# 		return 0
-# 	}
-# }
+
 
 
 
@@ -411,9 +447,10 @@ proc bin_frame {shell species dtheta frm } {
     foreach indx $indexs resd $resids {
         #loop over lipids in the shell
         set a "($species and index $indx)"
-        set b "(resid $resd)" ;#and (name PO4 ROH)
+        set b "(resid $resd and not name W BB SC1 SC2 SC3 SC4)" ;#fragile hack to avoid non lipid beads with the same resid, does not exclude IONS and needs updating ASAP
         ;# change 4
         set thislipid [atomselect top $a frame $frm]
+        set high_low 0 ;#reinitialize
         if {[string length ${species}] == 2} {
 	    	if {[$thislipid get name] == "PO4"} {
 	        	continue
@@ -426,16 +463,18 @@ proc bin_frame {shell species dtheta frm } {
         }
         set x [$thislipid get x]
         set y [$thislipid get y]
-        $thislipid delete
+        $thislipid set user2 $high_low
         set theta [get_theta $x $y]
         set ti [expr int($theta/$dtheta)] 
-        #determine theta bin
         if {$high_low > 0} {
             lappend theta_low_out $ti
-        } else {
+        } elseif {$high_low <0} {
             lappend theta_high_out $ti
+        } else {
+            puts "WARNING: lipid $resd did not get assigned a leaflet"
         }
-
+        $thislipid set user [expr $ti+1]
+        $thislipid delete
     }
     
     return [list $theta_high_out $theta_low_out] 
@@ -495,10 +534,12 @@ proc theta_clean_up {theta_bin_high theta_bin_low shel_count  Ntheta delta_frame
 ;########################################################################################
 ;# polarDensity Funciton
 
-proc polarDensityBin { outfile species Rmin Rmax dr Ntheta} {
+proc polarDensityBin { outfile species Rmin Rmax dr Ntheta dt sample_frame protein_chain_list helix_list} {
+    global UTILS
+    global CENTER_AND_ALIGN
+        
     ;#if {$species == "CHOL"} { set species "resname CHOL" }
 	;#source /u2/home_u2/lms464/github/JPC_Special/common/grace/assign_helices_3RQW_CG_lms.tcl;#assign_helices_2BG9_CG_lms2.tcl
-	source /u2/home_u2/lms464/github/JPC_Special/common/grace/assign_helices_2BG9_CG_lms2.tcl
     
     ;#set Rmin 0
     ;#set Rmax 36
@@ -512,50 +553,50 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta} {
         error "No lipid saturation set exists"
 	}
 	
-	;# TODO CHANGE THIS BACK
- 	Center_System "occupancy 1 to 4 and name BB"
-    Center_System "occupancy 1 to 4 and name BB"
-    Center_System "occupancy 1 to 4 and name BB"
-
- 	Align "occupancy 1 to 4 and name BB"
-    Protein_Position   
-	set dt 1
+	;# Center's system (weak hack)
+    if {$CENTER_AND_ALIGN == 1} {
+ 	Center_System "occupancy $helix_list and name BB"
+    Center_System "occupancy $helix_list and name BB"
+    Center_System "occupancy $helix_list and name BB"
+    ;# aligns protein
+ 	Align "occupancy $helix_list and name BB"
+    }
+ 	;# outputs protein positions
+    Protein_Position $protein_chain_list $helix_list
+    ;# initialize some constants
+    
     set area [get_avg_area top]
 	set nframes [molinfo top get numframes]
+    
     $sel delete
 	puts "Acyl Chain:\t$species"
 	set low_f [open "${outfile}.low.dat" w]
     set upp_f [open "${outfile}.upp.dat" w]
+	set low_f_avg [open "${outfile}.low.avg.dat" w]
+    set upp_f_avg [open "${outfile}.upp.avg.dat" w]
 	set dtheta [expr 360.0/(1.0*($Ntheta))]
     ;#Center_System "name PO4"
 	
-    foreach lu [list $low_f $upp_f] zed [list "(z<0)" "(z>0)"] {
-        set sel [ atomselect top "(($species) and $zed) and (name PO4 ROH)"  frame 0]
-        set sel_num [llength [lsort -unique [$sel get resid] ] ]
-        if {$sel_num < 1} {
-            set num_beads 0
-        	set expected 0
-        } else {
-	        set sel_resid [lsort -unique [$sel get resid] ]
-	        $sel delete
-	        set beads [atomselect top "${species} and (resid $sel_resid) and (not name PO4)" frame 0]
-	        set num_beads [$beads num]
-	        set expected [expr 1.0 * $num_beads/$area]
-	        $beads delete
-    	}
-        puts "#Lipid species $species : ${sel_num} molecules, Num beads : ${num_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Density : [format {%0.5f} [expr $expected]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
-	    puts $lu "#Lipid species $species : ${sel_num} molecules, Num beads : ${num_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Density : [format {%0.5f} [expr $expected]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
+    set totals [get_leaflet_totals $species 0]
+    
+    foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
+        
+        set expected_beads [lindex $leaf_total 0]
+        set expected_lipids [lindex $leaf_total 1]
+        set expected_bead_density [expr 1.0 * [lindex $leaf_total 0]/$area]
+        puts "#Lipid species $species : ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
+	    puts $lu "#Lipid species $species : ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
+        puts $avgfile "#Lipid species $species : ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
     }
     ;#Center_System "occupancy 1 to 4 and name BB"
     ;#Align "occupancy 1 to 4 and name BB"
 
     
 	;#unset lipsize
-	set sample_frame 100
 	set delta_frame [expr ($nframes - $sample_frame) / $dt]
 	for {set ri $Rmin} { $ri<=${Rmax}} { set ri [expr $ri + $dr]} {
 		#loop over shells
-		puts "Ring {$ri [expr ${ri}+${dr}]}"
+		puts "Now on shell {$ri [expr ${ri}+${dr}]}"
 		set rf [expr $ri + $dr]
 		set rf2 [expr $rf*$rf]
 		set ri2 [expr $ri*$ri]
@@ -576,10 +617,13 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta} {
         set time_avg_lower [vecscale $theta_bin_low [expr 1.0 / (1.0 * $delta_frame)]]
 		puts ""
         #foreach tbu [lindex $theta_bin_averages 0] tbl [lindex $theta_bin_averages 1] ;#{
-        output_bins $upp_f $ri $rf $dtheta "$time_avg_upper" 
-        output_bins $low_f $ri $rf $dtheta "$time_avg_lower" 
+        output_bins $upp_f_avg $ri $rf $dtheta "$time_avg_upper" 
+        output_bins $low_f_avg $ri $rf $dtheta "$time_avg_lower" 
         ;#}
 	}
 	close $low_f
 	close $upp_f
+	close $low_f_avg
+	close $upp_f_avg
 }
+            
