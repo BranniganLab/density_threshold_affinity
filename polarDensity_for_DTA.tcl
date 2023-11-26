@@ -3,8 +3,8 @@
 
 # set QWRAP ;# https://github.com/jhenin/qwrap
 source $UTILS/BinTools.tcl
-set CENTER_AND_ALIGN 0
-set USE_QWRAP 0
+set CENTER_AND_ALIGN 1
+set USE_QWRAP 1
 
 if {$USE_QWRAP == 1} {load ${UTILS}/qwrap.so}
 
@@ -216,6 +216,7 @@ proc avg_acyl_chain_len {species} {
 }
 
 proc Center_System {inpt} {
+    global USE_QWRAP
     puts "${inpt}"
     # confirms your box is either square or paraelleogram-ish
     # will preform qwrap or pbc wrap depending
