@@ -1,10 +1,10 @@
 source get_counts.tcl
-set UTILS "../../densitymap/TCL/helpers"
-set USE_QWRAP 0
-source ../polarDensity_for_DTA.tcl
-set ASSIGN_LEAFLETS 1
+#set UTILS "../../densitymap/TCL/helpers"
+#set USE_QWRAP 0
+#source ../polarDensity_for_DTA.tcl
+set ASSIGN_LEAFLETS 0
 set species "DPPC"
-set area 154
+set area 125
 
 set step [expr $area**(0.5)]
 
@@ -20,28 +20,41 @@ set XMAX [expr $XMAX-$step]
 set YMAX [expr $YMAX-$step]
 
 if {$ASSIGN_LEAFLETS == 1} {
+	puts "assigning leaflets"
 	set nframes [molinfo top get numframes]
 	set all_lipids [atomselect top "resname $species"]
-	set resids [lsort -unique [$all_lipids get resid]]
+	set resids [lsort -integer -unique [$all_lipids get resid]]
 	foreach resid $resids {
+		if {[expr $resid%100] == 0} { puts "on resid $resid at [clock milliseconds]" }
+		set sel_resid [atomselect top "resname $species"]
 		for {set frm 0} {$frm < $nframes} {incr frm} {
-			local_mid_plane "resname $species and resid $resid" $frm
+			$sel_resid frame $frm
+			$sel_resid update
+			set ind 1
+			set sel_Z [${sel_resid} get z] 
+			if {[lindex ${sel_Z} $ind] < [lindex ${sel_Z} end] } { 
+				$sel_resid set user2 -1
+			} else { 
+				$sel_resid set user2 1
+			}
 		}
+		$sel_resid delete
 	}
+	$all_lipids delete
 }
 
 set box_width [lindex [measure minmax $all] 1 0]
 $all delete
 
-set outfile [open "counts_${area}_GBsorted.out" w]   
+set outfile [open "counts_${area}.out" w]   
 
-foreach bfield {1 '-1'} {
+foreach field {1 '-1'} {
 	set xmin $XMIN
 	while {$xmin < $XMAX} {
 		set ymin $YMIN
 		while {$ymin < $YMAX} {
-			puts "Running at $xmin $ymin leaflet $bfield"
-			set data [get_count_with_area $area $xmin $ymin "resname DPPC and beta $bfield"]
+			puts "Running at $xmin $ymin leaflet $field"
+			set data [get_count_with_area $area $xmin $ymin "resname DPPC and beta $field"]
 			puts $outfile $data
 
 			set ymin [expr $ymin + $step]
