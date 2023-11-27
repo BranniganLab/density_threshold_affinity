@@ -1,7 +1,9 @@
 source get_counts.tcl
-
+set UTILS "../../densitymap/TCL/helpers"
+set USE_QWRAP 0
+source ../polarDensity_for_DTA.tcl
+set ASSIGN_LEAFLETS 1
 set species "DPPC"
-set midresid 1522
 set area 154
 
 set step [expr $area**(0.5)]
@@ -17,16 +19,21 @@ set YMIN [expr $YMIN+$step]
 set XMAX [expr $XMAX-$step]
 set YMAX [expr $YMAX-$step]
 
-set upper [atomselect top "resname $species and resid < $midresid"]
-$upper set beta 1
-set lower [atomselect top "resname $species and resid >= $midresid"]
-$lower set beta -1
-
+if {$ASSIGN_LEAFLETS == 1} {
+	set nframes [molinfo top get numframes]
+	set all_lipids [atomselect top "resname $species"]
+	set resids [lsort -unique [$all_lipids get resid]]
+	foreach resid $resids {
+		for {set frm 0} {$frm < $nframes} {incr frm} {
+			local_mid_plane "resname $species and resid $resid" $frm
+		}
+	}
+}
 
 set box_width [lindex [measure minmax $all] 1 0]
 $all delete
 
-set outfile [open "counts_${area}.out" w]   
+set outfile [open "counts_${area}_GBsorted.out" w]   
 
 foreach bfield {1 '-1'} {
 	set xmin $XMIN
