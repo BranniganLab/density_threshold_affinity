@@ -19,7 +19,9 @@ set YMIN [expr $YMIN+$step]
 set XMAX [expr $XMAX-$step]
 set YMAX [expr $YMAX-$step]
 
+set fieldid "beta"
 if {$ASSIGN_LEAFLETS == 1} {
+	set fieldid "user2"
 	puts "assigning leaflets"
 	set nframes [molinfo top get numframes]
 	set all_lipids [atomselect top "resname $species"]
@@ -54,7 +56,7 @@ foreach field {1 '-1'} {
 		set ymin $YMIN
 		while {$ymin < $YMAX} {
 			puts "Running at $xmin $ymin leaflet $field"
-			set data [get_count_with_area $area $xmin $ymin "resname DPPC and beta $field"]
+			set data [get_count_with_area $area $xmin $ymin "resname DPPC and $fieldid $field"]
 			puts $outfile $data
 
 			set ymin [expr $ymin + $step]
