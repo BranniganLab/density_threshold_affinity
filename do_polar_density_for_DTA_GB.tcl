@@ -10,7 +10,7 @@ set lipids [lsort -unique [$HeadNames get resname]]
 puts $lipids
 $HeadNames delete
 puts $lipids	
-set Rmax 60.
+set Rmax 40.
 set Rmin 0.
 set dr 5.
 set Ntheta 10
