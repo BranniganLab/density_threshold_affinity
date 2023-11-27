@@ -179,7 +179,10 @@ def get_dg(site, RT=0.6427483):
     Returns:
         float: The difference in free energy between the two probability distributions, p_< and p_>
     """
-    p_lessthan = np.sum(site.densities[:int(site.Npeak)])
-    p_greaterthan = np.sum(site.densities[int(site.Npeak):])
+    beads = np.arange(len(site.densities))
+    mask_lt = beads<=site.Npeak
+    mask_gt = beads>site.Npeak
+    p_lessthan = np.sum(site.densities[mask_lt])
+    p_greaterthan = np.sum(site.densities[mask_gt])
     dG = -RT * np.log(p_greaterthan / p_lessthan)
     return dG
