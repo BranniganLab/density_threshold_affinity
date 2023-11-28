@@ -381,23 +381,20 @@ proc local_mid_plane2 {atsel_in frame_i} {
 ;# Determines if the lipid is in the outer or iner leaflet and sets the user value accordingly
 ;# Returns +1 if the lipid is in the upper leaflet and -1 if it is in the lower leaflet 
 proc local_mid_plane {atsel_in frame_i} {
-    
-    
-    set sel_resid [atomselect top "$atsel_in" frame $frame_i]
-    set ind 1
-    if { [string range [lsort -unique [$sel_resid get resname]] end-1 end] == "PA" } {
-    	set ind 0
-    }
-    set sel_Z [${sel_resid} get z] 
+	set sel_resid [atomselect top "$atsel_in" frame $frame_i]
+	set ind 1
+	if { [string range [lsort -unique [$sel_resid get resname]] end-1 end] == "PA" } {
+		set ind 0
+	}
+	set sel_Z [${sel_resid} get z] 
 	if {[lindex ${sel_Z} $ind] < [lindex ${sel_Z} end] } { 
-        $sel_resid set user2 -1
+		$sel_resid set user2 -1
 		return -1 
-        
 	} else { 
-        $sel_resid set user2 1
+		$sel_resid set user2 1
 		return 1 
 	}
-    $sel_resid delete
+    	$sel_resid delete
 }
 
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
@@ -417,11 +414,11 @@ proc get_leaflet_totals {species frame_i} {
             set leaflet [local_mid_plane $selstring $frame_i]
         }   
         #count the number of lipids and the number of beads in each leaflet
-        foreach leaf [list  "(user2<0)" "(user2>0)"] {
+        foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
             set sel [ atomselect top "(${species} and $leaf)"  frame $frame_i]
             set num_beads [$sel num]
             set num_lipids [llength [lsort -unique [$sel get resid] ]]
-            lappend totals [list $num_beads $num_lipids]
+            lappend totals [list $txtstr $num_beads $num_lipids]
             $sel delete
         }
     }
@@ -579,13 +576,13 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta dt sample_frame prote
     set totals [get_leaflet_totals $species 0]
     
     foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
-        
-        set expected_beads [lindex $leaf_total 0]
-        set expected_lipids [lindex $leaf_total 1]
-        set expected_bead_density [expr 1.0 * [lindex $leaf_total 0]/$area]
-        puts "#Lipid species $species : ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
-	    puts $lu "#Lipid species $species : ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
-        puts $avgfile "#Lipid species $species : ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
+        set leaflet_str [lindex $leaf_total 0]
+        set expected_beads [lindex $leaf_total 1]
+        set expected_lipids [lindex $leaf_total 2]
+        set expected_bead_density [expr 1.0 * $expected_beads/$area]
+        puts "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
+	    puts $lu "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
+        puts $avgfile "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len ${species}] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
     }
     #Center_System "occupancy 1 to 4 and name BB"
     #Align "occupancy 1 to 4 and name BB"
@@ -627,3 +624,4 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta dt sample_frame prote
 	close $upp_f_avg
 }
 
+            

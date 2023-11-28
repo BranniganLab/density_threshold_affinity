@@ -138,7 +138,7 @@ def Coord_Get(fl_in):
     #rad = dat[:,1]+(dat[:,1]-dat[:,0])/2.0    
     rad, frames = calc_rad(dat)
     dr = rad[1]-rad[0]
-    the = np.linspace(0,2*np.pi,Ntheta)
+    the = np.linspace(0,2*np.pi,Ntheta+1)[:-1]
     dth = the[1]-the[0]
     theta,radius=np.meshgrid(the,rad)
 
