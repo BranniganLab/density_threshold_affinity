@@ -29,7 +29,7 @@ class Site:
     Npeak: float=0
     mean: float=0
 
-def make_simple_site(the_data, inner_r, outer_r, nth, Ntheta, dr, dth, exrho, frames, the_thetas, title=""):
+def make_simple_site(the_data, inner_r=0, outer_r=0, nth=1, Ntheta=1, dr=1, dth=1, exrho=0, frames=1, the_thetas=None, title="", accessible_area=None):
     """
     Create a Site object with specified inner and outer radii, number of theta bins, and title.
     Calculate the shell data based on the given parameters using the get_shell function.
@@ -59,12 +59,16 @@ def make_simple_site(the_data, inner_r, outer_r, nth, Ntheta, dr, dth, exrho, fr
     the_site.counts = tmp_shell[:,the_thetas]
     if nth > 1:
         the_site.counts = np.sum(the_site.counts, axis=-1)
-    the_site.area = get_area(the_site, dth)
+
+    if accessible_area is not None:
+        the_site.area = accessible_area
+    else:
+        the_site.area = get_area(the_site, dth)
     the_site = get_site_stats(the_site, exrho)
 
     return the_site
 
-def combine_sites(list_of_sites, exrho, newtitle="composite site"):
+def combine_sites(list_of_sites, exrho, newtitle="composite site", custom_area=None):
     """
     Combines the properties of the input sites to create a new composite site.
 
@@ -82,8 +86,12 @@ def combine_sites(list_of_sites, exrho, newtitle="composite site"):
         new_site.inner_r = new_site.inner_r + site.inner_r
         new_site.outer_r = new_site.outer_r + site.outer_r
         new_site.counts = new_site.counts + site.counts
-        new_site.area = new_site.area + site.area
+        if custom_area is None:
+            new_site.area = new_site.area + site.area
         
+    if custom_area is not None:
+        new_site.area = custom_area
+
     new_site = get_site_stats(new_site, exrho)
     new_site.title = newtitle
 
