@@ -381,23 +381,20 @@ proc local_mid_plane2 {atsel_in frame_i} {
 ;# Determines if the lipid is in the outer or iner leaflet and sets the user value accordingly
 ;# Returns +1 if the lipid is in the upper leaflet and -1 if it is in the lower leaflet 
 proc local_mid_plane {atsel_in frame_i} {
-    
-    
-    set sel_resid [atomselect top "$atsel_in" frame $frame_i]
-    set ind 1
-    if { [string range [lsort -unique [$sel_resid get resname]] end-1 end] == "PA" } {
-    	set ind 0
-    }
-    set sel_Z [${sel_resid} get z] 
+	set sel_resid [atomselect top "$atsel_in" frame $frame_i]
+	set ind 1
+	if { [string range [lsort -unique [$sel_resid get resname]] end-1 end] == "PA" } {
+		set ind 0
+	}
+	set sel_Z [${sel_resid} get z] 
 	if {[lindex ${sel_Z} $ind] < [lindex ${sel_Z} end] } { 
-        $sel_resid set user2 -1
+		$sel_resid set user2 -1
 		return -1 
-        
 	} else { 
-        $sel_resid set user2 1
+		$sel_resid set user2 1
 		return 1 
 	}
-    $sel_resid delete
+    	$sel_resid delete
 }
 
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
