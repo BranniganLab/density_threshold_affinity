@@ -68,7 +68,7 @@ def make_simple_site(the_data, inner_r=0, outer_r=0, nth=1, Ntheta=1, dr=1, dth=
 
     return the_site
 
-def combine_sites(list_of_sites, exrho, newtitle="composite site", custom_area=None):
+def combine_sites(list_of_sites, exrho, newtitle="composite site", custom_area=None, symmetric=False):
     """
     Combines the properties of the input sites to create a new composite site.
 
@@ -76,16 +76,20 @@ def combine_sites(list_of_sites, exrho, newtitle="composite site", custom_area=N
         list_of_sites (list): A list of `Site` objects representing the individual sites to be combined.
         exrho (float): The expected density of the bin from the bulk continuum approximation.
         newtitle (str, optional): The title to be assigned to the new composite site. Default is "composite site".
-
+        custom_area (float, optional): A custom area definition
+        symmetric (bool, optional): Whether or not the combined sites are symmetric copies of each other. Default False.
     Returns:
         Site: A new `Site` object representing the composite site with combined properties and updated attributes.
     """
     new_site = Site()
     new_site.counts = np.zeros_like(list_of_sites[0].counts)
     for site in list_of_sites:
-        new_site.inner_r = new_site.inner_r + site.inner_r
-        new_site.outer_r = new_site.outer_r + site.outer_r
-        new_site.counts = new_site.counts + site.counts
+        new_site.inner_r = np.min([new_site.inner_r, site.inner_r])
+        new_site.outer_r = np.max([new_site.outer_r, site.outer_r])
+        if symmetric:
+            new_site.counts = np.concatenate([new_site.counts, site.counts])
+        else:
+            new_site.counts = new_site.counts + site.counts
         if custom_area is None:
             new_site.area = new_site.area + site.area
         
@@ -133,8 +137,8 @@ def plot_density(site: Site, ax):
     """
     dG = get_dg(site)
 
-    ax.vlines(site.Npeak, 0, np.max(site.densities), color='k', linestyles='dashed', label="expected mean")
-    ax.vlines(site.mean, 0, np.max(site.densities), color='red', linestyles='solid', label="actual mean")
+    ax.vlines(site.Npeak, 0, np.max(site.densities), color='red', linestyles='solid', label=r"$N_\mathrm{peak}$")
+    #ax.vlines(site.mean, 0, np.max(site.densities), color='red', linestyles='solid', label="actual mean")
     ax.plot(np.arange(len(site.densities)), site.densities, label=r"$\Delta G =$"+f"{np.round(dG,2)}kcal/mol")
 
     ax.legend()
