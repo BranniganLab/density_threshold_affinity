@@ -462,9 +462,9 @@ proc bin_frame {shell species dtheta frm } {
         set theta [get_theta $x $y]
         set ti [expr int($theta/$dtheta)] 
         if {$high_low > 0} {
-            lappend theta_low_out $ti
-        } elseif {$high_low <0} {
             lappend theta_high_out $ti
+        } elseif {$high_low <0} {
+            lappend theta_low_out $ti
         } else {
             puts "WARNING: lipid $resd did not get assigned a leaflet"
         }
