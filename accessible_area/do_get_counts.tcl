@@ -1,18 +1,8 @@
-source get_counts.tcl
-#set UTILS "../../densitymap/TCL/helpers"
-#set USE_QWRAP 0
-#source ../polarDensity_for_DTA.tcl
-set ASSIGN_LEAFLETS 0
-set species "DPPC"
-set area 125
-
-set step [expr $area**(0.5)]
-
-set all [atomselect top "name PO4"]
-set XMIN [lindex [measure minmax $all] 0 0]
-set YMIN [lindex [measure minmax $all] 0 1]
-set XMAX [lindex [measure minmax $all] 1 0]
-set YMAX [lindex [measure minmax $all] 1 1]
+variable help_me_dir [file dirname [file normalize [info script]]]
+source $help_me_dir/get_counts.tcl
+set UTILS "$help_me_dir/../../densitymap/TCL/helpers"
+set USE_QWRAP 0
+source $help_me_dir/../polarDensity_for_DTA.tcl
 
 set XMIN [expr $XMIN+$step]
 set YMIN [expr $YMIN+$step]
