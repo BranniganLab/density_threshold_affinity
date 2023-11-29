@@ -326,7 +326,7 @@ proc output_bins {fl  ri rf dtheta bins} {
 
 # }
 
-proc bin_over_frames {shell species lipidbeads_selstr dtheta sample_frame nframes Ntheta dt ri rf  flower fupper} {
+proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta sample_frame nframes Ntheta dt ri rf  flower fupper} {
     
     set theta_bin_high [lrepeat [expr $Ntheta+1] 0]
     set theta_bin_low [lrepeat [expr $Ntheta+1] 0]
@@ -335,7 +335,7 @@ proc bin_over_frames {shell species lipidbeads_selstr dtheta sample_frame nframe
 	    #puts $frm
         $shell frame $frm
         $shell update 
-        set singleFrame_counts [bin_frame $shell $species $lipidbeads_selstr $dtheta $frm ]
+        set singleFrame_counts [bin_frame $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm ]
         # you'll need to create bin_frame, using lines 284-325 (or around those) of your previous code
         set singleFrame_upper [lindex $singleFrame_counts 1] 
 	    #puts $singleFrame_upper
@@ -397,9 +397,31 @@ proc local_mid_plane {atsel_in frame_i} {
     	$sel_resid delete
 }
 
+;# Determines if the lipid is in the outer or iner leaflet and sets the user value accordingly
+;# Returns +1 if the lipid is in the upper leaflet and -1 if it is in the lower leaflet 
+proc leaflet_detector {atsel_in head tail frame_i} {
+	set sel_resid [atomselect top "$atsel_in" frame $frame_i]
+    set sel_head [atomselect top "$atsel_in and name $head" frame $frame_i]
+    set sel_tail [atomselect top "$atsel_in and name $tail" frame $frame_i]
+
+	set head_Z [${sel_head} get z] 
+	set tail_Z [${sel_tail} get z] 
+    
+	if {$head_Z < $tail_Z } { 
+		$sel_resid set user2 -1
+		return -1 
+	} else { 
+		$sel_resid set user2 1
+		return 1 
+	}
+    	$sel_resid delete
+        $sel_head delete
+        $sel_tail delete
+}
+
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
 ;# Returns the following list : [[lower_leaflet_beads lower_leaflet_lipids] [upper_leaflet_beads upper_leaflet_lipids]] 
-proc get_leaflet_totals {species  lipidbeads_selstr frame_i} {
+proc get_leaflet_totals {species headname tailname lipidbeads_selstr frame_i} {
     set sel [ atomselect top "(($species)) and $lipidbeads_selstr"  frame $frame_i]
     set sel_num [llength [lsort -unique [$sel get resid] ] ]
     set sel_resid_list [lsort -unique [$sel get resid] ]
@@ -411,7 +433,7 @@ proc get_leaflet_totals {species  lipidbeads_selstr frame_i} {
         #assign leaflets to user2 field of each bead for this species
         foreach sel_resid $sel_resid_list {
             set selstring "${species} and (resid $sel_resid) and $lipidbeads_selstr"
-            set leaflet [local_mid_plane $selstring $frame_i]
+            set leaflet [leaflet_detector $selstring $headname $tailname $frame_i]
         }   
         #count the number of lipids and the number of beads in each leaflet
         foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
@@ -430,7 +452,7 @@ proc get_leaflet_totals {species  lipidbeads_selstr frame_i} {
 
 
 # does what it says it does, bins over a single frame
-proc bin_frame {shell species lipidbeads_selstr dtheta frm } {
+proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm } {
     set indexs [$shell get index]
     set resids [$shell get resid]
     set nShell [$shell num]
@@ -453,7 +475,7 @@ proc bin_frame {shell species lipidbeads_selstr dtheta frm } {
         # change 5
 
         if {${resd_old} != ${resd}} {
-        	set high_low [local_mid_plane $b  $frm]
+        	set high_low [leaflet_detector $b $headname $tailname $frm]
         }
         set x [$thislipid get x]
         set y [$thislipid get y]
@@ -528,7 +550,7 @@ proc theta_clean_up { theta_bin_low theta_bin_high shel_count  Ntheta delta_fram
 ### polarDensity Funciton ###
 
 
-proc polarDensityBin { outfile species Rmin Rmax dr Ntheta dt sample_frame protein_chain_list helix_list midplane_selstr backbone_selstr acylchain_selstr lipidbeads_selstr} {
+proc polarDensityBin { outfile species Rmin Rmax dr Ntheta dt sample_frame protein_chain_list helix_list midplane_selstr backbone_selstr acylchain_selstr lipidbeads_selstr headname tailname} {
     global UTILS
     global CENTER_AND_ALIGN
         
@@ -539,14 +561,14 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta dt sample_frame prote
     #set Rmin 0
     #set Rmax 36
 
-    set species [resnamer ${species}]
-
+    #set species [resnamer ${species}]
+    puts $species
     
-    set sel [atomselect top "$species"]
+    set sel [atomselect top "resname $species"]
 	set sel_num [$sel num]
 	
 	if {$sel_num == 0} {
-        error "No lipid saturation set exists"
+        error "No lipid of species $species"
 	}
 	
 	;# Center's system (weak hack)
@@ -573,16 +595,16 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta dt sample_frame prote
 	set dtheta [expr 360.0/(1.0*($Ntheta))]
     #Center_System "name PO4"
 	
-    set totals [get_leaflet_totals $species $lipidbeads_selstr 0 ]
+    set totals [get_leaflet_totals "resname $species" $headname $tailname $lipidbeads_selstr 0 ]
     
     foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
         set leaflet_str [lindex $leaf_total 0]
         set expected_beads [lindex $leaf_total 1]
         set expected_lipids [lindex $leaf_total 2]
         set expected_bead_density [expr 1.0 * $expected_beads/$area]
-        puts "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len ${species} $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
-	    puts $lu "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len ${species} $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
-        puts $avgfile "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len ${species} $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
+        puts "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
+	    puts $lu "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
+        puts $avgfile "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
     }
     #Center_System "occupancy 1 to 4 and name BB"
     #Align "occupancy 1 to 4 and name BB"
@@ -596,13 +618,13 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta dt sample_frame prote
 		set rf [expr $ri + $dr]
 		set rf2 [expr $rf*$rf]
 		set ri2 [expr $ri*$ri]
-		set shell [atomselect top "($species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) and $lipidbeads_selstr"]
+		set shell [atomselect top "(resname $species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) and $lipidbeads_selstr"]
         puts [$shell num]
 		#selects lipids in the radial shell
 		#set shel_count 0
         #set theta_bin_high {}
         #set theta_bin_low {}		
-        set theta_bin [bin_over_frames $shell $species $lipidbeads_selstr $dtheta $sample_frame $nframes $Ntheta $dt $ri $rf $low_f $upp_f ]
+        set theta_bin [bin_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $sample_frame $nframes $Ntheta $dt $ri $rf $low_f $upp_f ]
         set theta_bin_high [lindex $theta_bin 1]
         set theta_bin_low [lindex $theta_bin 0]
         puts $theta_bin
