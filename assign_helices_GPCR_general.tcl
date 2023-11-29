@@ -5,12 +5,12 @@ set start_list [list 32 67 101 146 196 267 305]
 set end_list [list 62 96 136 171 231 300 329]
 
 #gromacs numbering, comment out for canonical numbering
-#set start_list [list 1 36 70 115 165 205 245]
-#set end_list [list 31 65 105 140 200 235 265]
+set start_list [list 1 36 70 115 165 205 245]
+set end_list [list 31 65 105 140 200 235 265]
 
 
 set res_sel_str "alpha" ;#atomistic
-#set res_sel_str "name BB SC1 to SC4" ;#Martini, comment out for atomistic 
+set res_sel_str "name BB SC1 to SC4" ;#Martini, comment out for atomistic 
 
 
 set sel [atomselect top "all"]

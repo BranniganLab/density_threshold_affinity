@@ -326,7 +326,8 @@ proc output_bins {fl  ri rf dtheta bins} {
 
 # }
 
-proc bin_over_frames {shell species lipidbeads_selstr dtheta sample_frame nframes Ntheta dt ri rf fupper flower} {
+proc bin_over_frames {shell species lipidbeads_selstr dtheta sample_frame nframes Ntheta dt ri rf  flower fupper} {
+    
     set theta_bin_high [lrepeat [expr $Ntheta+1] 0]
     set theta_bin_low [lrepeat [expr $Ntheta+1] 0]
     for {set frm $sample_frame} {$frm < ${nframes}} {incr frm $dt} {
@@ -336,29 +337,29 @@ proc bin_over_frames {shell species lipidbeads_selstr dtheta sample_frame nframe
         $shell update 
         set singleFrame_counts [bin_frame $shell $species $lipidbeads_selstr $dtheta $frm ]
         # you'll need to create bin_frame, using lines 284-325 (or around those) of your previous code
-        set singleFrame_upper [lindex $singleFrame_counts 0] 
+        set singleFrame_upper [lindex $singleFrame_counts 1] 
 	    #puts $singleFrame_upper
         #I assume here that bin_frame returns upper and lower as two lists inside another list, you can do it however
-        set singleFrame_lower [lindex $singleFrame_counts 1]
-        set theta_bins [theta_histogram $singleFrame_upper $singleFrame_lower $Ntheta]
+        set singleFrame_lower [lindex $singleFrame_counts 0]
+        set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper  $Ntheta]
 
         # should be fixed, do not change [lrepeat [expr $Ntheta+1] to [lrepeat [expr $Ntheta] 
         if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
             error "theta_bin_high/low and theta_bins do not have the same length."
         }
-        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 0] ]
+        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1] ]
         #puts [lindex $theta_bins 1]
-	    set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 1]]
+	    set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
 	    #puts $theta_bin_low
         #TODO MAKE A SWITCH
 
-        output_bins $fupper $ri $rf $dtheta [lindex $theta_bins 0] 
+        output_bins $fupper $ri $rf $dtheta [lindex $theta_bins 1] 
         ;#open fupper before the loop starts and close afterwards
-        output_bins $flower $ri $rf $dtheta [lindex $theta_bins 1] 
+        output_bins $flower $ri $rf $dtheta [lindex $theta_bins 0] 
         ;#same thing     
 
     }
-  return [list ${theta_bin_high} ${theta_bin_low}]
+  return [list  ${theta_bin_low} ${theta_bin_high}]
 }
 
 #; procedure that was used in JCP 2021 for nAChR
@@ -445,7 +446,7 @@ proc bin_frame {shell species lipidbeads_selstr dtheta frm } {
         set thislipid [atomselect top $a frame $frm]
         set high_low 0 ;#reinitialize
         if {[string length ${species}] == 2} {
-	    	if {[$thislipid get name] == "PO4"} { ;#GB has no idea what this does. 
+	    	if {([$thislipid get name] == "PO4") || ([$thislipid get name] == "P") } { ;#GB has no idea what this does. 
 	        	continue
 	    	}
     	}
@@ -460,9 +461,9 @@ proc bin_frame {shell species lipidbeads_selstr dtheta frm } {
         set theta [get_theta $x $y]
         set ti [expr int($theta/$dtheta)] 
         if {$high_low > 0} {
-            lappend theta_low_out $ti
-        } elseif {$high_low <0} {
             lappend theta_high_out $ti
+        } elseif {$high_low <0} {
+            lappend theta_low_out $ti
         } else {
             puts "WARNING: lipid $resd did not get assigned a leaflet"
         }
@@ -470,15 +471,15 @@ proc bin_frame {shell species lipidbeads_selstr dtheta frm } {
         $thislipid delete
     }
     
-    return [list $theta_high_out $theta_low_out] 
+    return [list $theta_low_out $theta_high_out] ;#lower before upper is the convention
 }
 
 # FAR more useful than the other version (theta clean up)
-proc theta_histogram {singleFrame_upper singleFrame_lower Ntheta } {
+proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
     
     set theta_bin_out [list]
 
-    foreach ud [list $singleFrame_upper $singleFrame_lower] {
+    foreach ud [list $singleFrame_lower $singleFrame_upper ] {
         #cleanup and output 
         set theta_bin_counts [lcount $ud]
         #Shell_Test $shel_count $theta_bin_counts
@@ -499,11 +500,11 @@ proc theta_histogram {singleFrame_upper singleFrame_lower Ntheta } {
 }
 
 # TODO I don't think I need this function anymore
-proc theta_clean_up {theta_bin_high theta_bin_low shel_count  Ntheta delta_frame low_f upp_f} {
+proc theta_clean_up { theta_bin_low theta_bin_high shel_count  Ntheta delta_frame low_f upp_f} {
     
     theta_bin_out [list ]
 
-    foreach ud [list $theta_bin_low $theta_bin_high] {
+    foreach ud [list  $theta_bin_high $theta_bin_low] {
         #Species_Total_Warning $sel_num $shel_count
         puts "Cleaning up for shell $ri to $rf"
         #cleanup and output 
@@ -596,13 +597,15 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta dt sample_frame prote
 		set rf2 [expr $rf*$rf]
 		set ri2 [expr $ri*$ri]
 		set shell [atomselect top "($species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) and $lipidbeads_selstr"]
+        puts [$shell num]
 		#selects lipids in the radial shell
 		#set shel_count 0
         #set theta_bin_high {}
         #set theta_bin_low {}		
-        set theta_bin [bin_over_frames $shell $species $lipidbeads_selstr $dtheta $sample_frame $nframes $Ntheta $dt $ri $rf $upp_f $low_f]
-        set theta_bin_high [lindex $theta_bin 0]
-        set theta_bin_low [lindex $theta_bin 1]
+        set theta_bin [bin_over_frames $shell $species $lipidbeads_selstr $dtheta $sample_frame $nframes $Ntheta $dt $ri $rf $low_f $upp_f ]
+        set theta_bin_high [lindex $theta_bin 1]
+        set theta_bin_low [lindex $theta_bin 0]
+        puts $theta_bin
         #puts ${theta_bin_high}
         #set shel_count [expr $shel_count + [lindex $theta_bin 2]]
         $shell delete	
