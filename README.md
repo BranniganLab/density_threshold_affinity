@@ -3,7 +3,7 @@ Descended from: https://github.com/BranniganLab/densitymap
 
 Detailed protocol is in preparation.
 
-# Basic usage (well-tested on Linux for some use cases, mac coming soon):
+# Basic usage:
 1. Clone this repository
 2. Create or obtain unbiased coarse-grained (e.g. Martini) simulations of a membrane protein (only one protein currently possible without modifications)
 3. Make sure the trajectory is whole (e.g. `gmx trjconv -f [inputname].xtc -s md.tpr -o [ouputname].xtc -ur compact -pbc mol -center`)
