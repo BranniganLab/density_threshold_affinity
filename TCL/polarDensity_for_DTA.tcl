@@ -400,23 +400,28 @@ proc local_mid_plane {atsel_in frame_i} {
 ;# Determines if the lipid is in the outer or iner leaflet and sets the user value accordingly
 ;# Returns +1 if the lipid is in the upper leaflet and -1 if it is in the lower leaflet 
 proc leaflet_detector {atsel_in head tail frame_i} {
-	set sel_resid [atomselect top "$atsel_in" frame $frame_i]
-    set sel_head [atomselect top "$atsel_in and name $head" frame $frame_i]
-    set sel_tail [atomselect top "$atsel_in and name $tail" frame $frame_i]
-
-	set head_Z [${sel_head} get z] 
-	set tail_Z [${sel_tail} get z] 
-    
-	if {$head_Z < $tail_Z } { 
-		$sel_resid set user2 -1
-		return -1 
-	} else { 
-		$sel_resid set user2 1
-		return 1 
-	}
-    	$sel_resid delete
+    global USE_LOCAL_MID_PLANE
+    if {$USE_LOCAL_MID_PLANE == 1} {
+        local_mid_plane $atsel_in $frame_i
+    } else {
+        set sel_resid [atomselect top "$atsel_in" frame $frame_i]
+        set sel_head [atomselect top "$atsel_in and name $head" frame $frame_i]
+        set sel_tail [atomselect top "$atsel_in and name $tail" frame $frame_i]
+        
+        set head_Z [${sel_head} get z] 
+        set tail_Z [${sel_tail} get z] 
+        
+        if {$head_Z < $tail_Z } { 
+            $sel_resid set user2 -1
+            return -1 
+        } else { 
+            $sel_resid set user2 1
+            return 1 
+        }
+        $sel_resid delete
         $sel_head delete
         $sel_tail delete
+    }
 }
 
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
@@ -627,7 +632,7 @@ proc polarDensityBin { outfile species Rmin Rmax dr Ntheta dt sample_frame prote
         set theta_bin [bin_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $sample_frame $nframes $Ntheta $dt $ri $rf $low_f $upp_f ]
         set theta_bin_high [lindex $theta_bin 1]
         set theta_bin_low [lindex $theta_bin 0]
-        puts $theta_bin
+        #puts $theta_bin
         #puts ${theta_bin_high}
         #set shel_count [expr $shel_count + [lindex $theta_bin 2]]
         $shell delete	
