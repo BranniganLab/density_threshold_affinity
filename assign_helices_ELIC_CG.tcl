@@ -30,9 +30,10 @@ set M4_end_list   [[atomselect top "resid $M4_end and name BB"] get residue]
 
 puts $M1_start_list
 puts $M4_end_list
-foreach start $M1_start_list end $M4_end_list chainId [list A B C D E] {
+foreach start $M1_start_list end $M4_end_list chainId [list E D C B A] {
     set tempsel [atomselect top "residue $start to $end"]
     $tempsel set chain $chainId
+    $tempsel delete
 }
 
 
