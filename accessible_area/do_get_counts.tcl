@@ -1,6 +1,6 @@
 variable help_me_dir [file dirname [file normalize [info script]]]
 source $help_me_dir/get_counts.tcl
-set UTILS "$help_me_dir/../../densitymap/TCL/helpers"
+set UTILS "$help_me_dir/../TCL/helpers"
 set USE_QWRAP 0
 source $help_me_dir/../polarDensity_for_DTA.tcl
 

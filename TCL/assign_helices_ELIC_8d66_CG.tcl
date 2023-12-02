@@ -27,3 +27,8 @@ set M4 [atomselect top "resid $M4start to $M4end and name BB SC1 to SC4"]
 $M4 set occupancy 4
 $M4 delete
 
+# Center the system
+#set tocenter [atomselect top "occupancy > 0"]
+#$selall moveby [vecexpr -1 [measure center $tocenter] mult]
+#$selall delete
+

@@ -10,7 +10,7 @@ $proBeads delete
 
 
 set M1_start    192 
-set M1_end	216
+set M1_end	    216
 set M2_start    218
 set M2_end	243
 set M3_start	251
