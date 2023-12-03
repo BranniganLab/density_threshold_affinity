@@ -272,7 +272,7 @@ proc output_bins {fl  ri rf dtheta bins} {
 }
 
 #
-proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta sample_frame nframes Ntheta dt ri rf  flower fupper} {
+proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta sample_frame nframes Ntheta dt ri rf  flower fupper leaflet_algorithm} {
     
     set theta_bin_high [lrepeat [expr $Ntheta+1] 0]
     set theta_bin_low [lrepeat [expr $Ntheta+1] 0]
@@ -281,7 +281,7 @@ proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta s
         #puts $frm
         $shell frame $frm
         $shell update 
-        set singleFrame_counts [bin_frame $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm ]
+        set singleFrame_counts [bin_frame $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm $leaflet_algorithm ]
         # you'll need to create bin_frame, using lines 284-325 (or around those) of your previous code
         set singleFrame_upper [lindex $singleFrame_counts 1] 
         #puts $singleFrame_upper
@@ -324,9 +324,33 @@ proc local_mid_plane2 {atsel_in frame_i} {
     }
 }
 
-;# Determines if the lipid is in the outer or iner leaflet and sets the user value accordingly
-;# Returns +1 if the lipid is in the upper leaflet and -1 if it is in the lower leaflet 
-proc local_mid_plane {atsel_in frame_i} {
+
+proc leaflet_sorter_0 {atsel_in head tail frame_i} {
+    ;#originally by Grace Brannigan
+    #puts "Sorting into leaflets using leaflet_sorter_0"
+    set sel_resid [atomselect top "$atsel_in" frame $frame_i]
+    set sel_head [atomselect top "$atsel_in and name $head" frame $frame_i]
+    set sel_tail [atomselect top "$atsel_in and name $tail" frame $frame_i]
+    
+    set head_Z [${sel_head} get z] 
+    set tail_Z [${sel_tail} get z] 
+    
+    if {$head_Z < $tail_Z } { 
+        $sel_resid set user2 -1
+        return -1 
+    } else { 
+        $sel_resid set user2 1
+        return 1 
+    }
+    $sel_resid delete
+    $sel_head delete
+    $sel_tail delete
+}
+
+
+proc leaflet_sorter_1 {atsel_in frame_i} {
+    ;#originally by Liam Sharp
+    #puts "Sorting into leaflets using leaflet_sorter_1"
     set sel_resid [atomselect top "$atsel_in" frame $frame_i]
     set ind 1
     if { [string range [lsort -unique [$sel_resid get resname]] end-1 end] == "PA" } {
@@ -343,36 +367,48 @@ proc local_mid_plane {atsel_in frame_i} {
     $sel_resid delete
 }
 
+
+proc leaflet_sorter_2 {atsel_in frame_i} {
+    ;#originally by Jahmal Ennis, designed for cholesterol 
+    #puts "Sorting into leaflets using leaflet_sorter_2"
+    set sel_resid [atomselect top "$atsel_in" frame $frame_i]
+    set ind 1
+    if { [string range [lsort -unique [$sel_resid get resname]] end-1 end] == "PA" } {
+        set ind 0
+    }
+    if { [lsort -unique [$sel_resid get resname]] == "CHOL" } {
+        set ind 2
+    }
+    if { $ind == 2 } {
+        set chol_com_z [lindex [measure center $sel_resid weight mass] end]
+        if {$chol_com_z < 0} {
+            $sel_resid set user2 -1
+            return -1
+        } else {
+            $sel_resid set user2 1
+            return 1
+        }
+    }
+}
+
+
 ;# Determines if the lipid is in the outer or iner leaflet and sets the user value accordingly
 ;# Returns +1 if the lipid is in the upper leaflet and -1 if it is in the lower leaflet 
-proc leaflet_detector {atsel_in head tail frame_i} {
-    global LEAFLET_SORTING_ALGORITHM
-    if {$LEAFLET_SORTING_ALGORITHM == 1} {
-        local_mid_plane $atsel_in $frame_i
-    } else {
-        set sel_resid [atomselect top "$atsel_in" frame $frame_i]
-        set sel_head [atomselect top "$atsel_in and name $head" frame $frame_i]
-        set sel_tail [atomselect top "$atsel_in and name $tail" frame $frame_i]
-        
-        set head_Z [${sel_head} get z] 
-        set tail_Z [${sel_tail} get z] 
-        
-        if {$head_Z < $tail_Z } { 
-            $sel_resid set user2 -1
-            return -1 
-        } else { 
-            $sel_resid set user2 1
-            return 1 
-        }
-        $sel_resid delete
-        $sel_head delete
-        $sel_tail delete
+proc leaflet_detector {atsel_in head tail frame_i leaflet_algorithm} {
+    if {$leaflet_algorithm == 0} {
+        leaflet_sorter_0 $atsel_in $head $tail $frame_i
+    } elseif { $leaflet_algorithm == 1 } {
+        leaflet_sorter_1 $atsel_in $frame_i
+    } elseif { $leaflet_algorithm == 2 } {
+        leaflet_sorter_2 $atsel_in $frame_i
+    } else { 
+        puts "Option $LEAFLET_SORTING_ALGORITHM not recognized as a leaflet sorting option.  Defaulting to option 1." 
     }
 }
 
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
 ;# Returns the following list : [[lower_leaflet_beads lower_leaflet_lipids] [upper_leaflet_beads upper_leaflet_lipids]] 
-proc get_leaflet_totals {species headname tailname lipidbeads_selstr frame_i} {
+proc get_leaflet_totals {species headname tailname lipidbeads_selstr frame_i leaflet_algorithm} {
     set sel [ atomselect top "(($species)) and $lipidbeads_selstr"  frame $frame_i]
     set sel_num [llength [lsort -unique [$sel get resid] ] ]
     set sel_resid_list [lsort -unique [$sel get resid] ]
@@ -384,7 +420,7 @@ proc get_leaflet_totals {species headname tailname lipidbeads_selstr frame_i} {
         #assign leaflets to user2 field of each bead for this species
         foreach sel_resid $sel_resid_list {
             set selstring "${species} and (resid $sel_resid) and $lipidbeads_selstr"
-            set leaflet [leaflet_detector $selstring $headname $tailname $frame_i]
+            set leaflet [leaflet_detector $selstring $headname $tailname $frame_i $leaflet_algorithm]
         }   
         #count the number of lipids and the number of beads in each leaflet
         foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
@@ -403,7 +439,7 @@ proc get_leaflet_totals {species headname tailname lipidbeads_selstr frame_i} {
 
 
 # does what it says it does, bins over a single frame
-proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm } {
+proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm leaflet_algorithm} {
     set indexs [$shell get index]
     set resids [$shell get resid]
     set nShell [$shell num]
@@ -426,7 +462,7 @@ proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm } {
         # change 5
         
         if {${resd_old} != ${resd}} {
-            set high_low [leaflet_detector $b $headname $tailname $frm]
+            set high_low [leaflet_detector $b $headname $tailname $frm $leaflet_algorithm]
         }
         set x [$thislipid get x]
         set y [$thislipid get y]
@@ -501,6 +537,7 @@ proc theta_clean_up { theta_bin_low theta_bin_high shel_count  Ntheta delta_fram
 ### polarDensity Funciton ###
 
 
+
 proc polarDensityBin { config_file_name } { 
     global UTILS
     global CENTER_AND_ALIGN    
@@ -536,7 +573,7 @@ proc polarDensityBin { config_file_name } {
         set low_f_avg [open "${outfile}.low.avg.dat" w]
         set upp_f_avg [open "${outfile}.upp.avg.dat" w]
         set dtheta [expr 360.0/(1.0*($Ntheta))]
-        set totals [get_leaflet_totals "resname $species" $headname $tailname $lipidbeads_selstr 0 ]
+        set totals [get_leaflet_totals "resname $species" $headname $tailname $lipidbeads_selstr 0 $LEAFLET_SORTING_ALGORITHM ]
         
         foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
             set leaflet_str [lindex $leaf_total 0]
@@ -558,7 +595,7 @@ proc polarDensityBin { config_file_name } {
             set ri2 [expr $ri*$ri]
             set shell [atomselect top "(resname $species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) and $lipidbeads_selstr"]
             puts [$shell num]		
-            set theta_bin [bin_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $sample_frame $nframes $Ntheta $dt $ri $rf $low_f $upp_f ]
+            set theta_bin [bin_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $sample_frame $nframes $Ntheta $dt $ri $rf $low_f $upp_f $LEAFLET_SORTING_ALGORITHM]
             set theta_bin_high [lindex $theta_bin 1]
             set theta_bin_low [lindex $theta_bin 0]
             $shell delete	
