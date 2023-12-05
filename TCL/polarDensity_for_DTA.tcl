@@ -2,10 +2,6 @@
 package require pbctools
 
 # set QWRAP ;# https://github.com/jhenin/qwrap
-source $UTILS/BinTools.tcl
-
-
-if {$USE_QWRAP == 1} {load ${UTILS}/qwrap.so}
 
 # ;# TODO What is the point of outputing each lipid species to a different file?
 # 
@@ -539,9 +535,11 @@ proc theta_clean_up { theta_bin_low theta_bin_high shel_count  Ntheta delta_fram
 
 
 proc polarDensityBin { config_file_name } { 
-    global UTILS
-    global CENTER_AND_ALIGN    
+    #global UTILS
+    #global CENTER_AND_ALIGN    
     source $config_file_name
+    source $UTILS/BinTools.tcl
+    if {$USE_QWRAP == 1} {load ${UTILS}/qwrap.so}
     source ${helix_assignment_script}
     
     foreach species $lipids lipidbeads_selstr $lipidbeads_selstrs acylchain_selstr $acylchain_selstrs headname $headnames tailname $tailnames {
