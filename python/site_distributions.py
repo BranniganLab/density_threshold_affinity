@@ -96,10 +96,13 @@ def combine_sites(list_of_sites,
             new_site.counts = np.concatenate([new_site.counts, site.counts])
         else:
             new_site.counts = new_site.counts + site.counts
-        if custom_area is None:
+        if not symmetric and custom_area is None:
             new_site.area = new_site.area + site.area
-        
+
+    if symmetric:
+        new_site.area = list_of_sites[0].area
     if custom_area is not None:
+        print("Warning: custom area overrides other area calculations and assignments")
         new_site.area = custom_area
 
     new_site = get_site_stats(new_site, exrho)
