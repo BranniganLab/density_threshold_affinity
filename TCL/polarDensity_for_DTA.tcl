@@ -535,8 +535,6 @@ proc theta_clean_up { theta_bin_low theta_bin_high shel_count  Ntheta delta_fram
 
 
 proc polarDensityBin { config_file_name } { 
-    #global UTILS
-    #global CENTER_AND_ALIGN    
     source $config_file_name
     source $UTILS/BinTools.tcl
     if {$USE_QWRAP == 1} {load ${UTILS}/qwrap.so}
