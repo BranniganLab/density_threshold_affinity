@@ -2,6 +2,7 @@ import pandas as pd
 from polarDensity_helper import Coord_Get, get_header_info
 from dataclasses import dataclass
 import numpy as np
+from string import ascii_uppercase
 @dataclass
 class Site:
     """
@@ -28,6 +29,7 @@ class Site:
     densities: list=None
     Npeak: float=0
     mean: float=0
+    expPunocc: float=0
 
 def make_simple_site(the_data, inner_r=0, outer_r=0, nth=1, Ntheta=1, dr=1, dth=1, exrho=0, frames=1, the_thetas=None, title="", accessible_area=None):
     """
@@ -68,7 +70,11 @@ def make_simple_site(the_data, inner_r=0, outer_r=0, nth=1, Ntheta=1, dr=1, dth=
 
     return the_site
 
-def combine_sites(list_of_sites, exrho, newtitle="composite site", custom_area=None, symmetric=False):
+def combine_sites(list_of_sites, 
+                  exrho, 
+                  newtitle="composite site", 
+                  custom_area=None, 
+                  symmetric=False):
     """
     Combines the properties of the input sites to create a new composite site.
 
@@ -191,10 +197,65 @@ def get_dg(site, RT=0.6427483):
     Returns:
         float: The difference in free energy between the two probability distributions, p_< and p_>
     """
-    beads = np.arange(len(site.densities))
-    mask_lt = beads<=site.Npeak
-    mask_gt = beads>site.Npeak
-    p_lessthan = np.sum(site.densities[mask_lt])
-    p_greaterthan = np.sum(site.densities[mask_gt])
-    dG = -RT * np.log(p_greaterthan / p_lessthan)
+    if site.Npeak == 0:
+        dG = -RT * np.log(site.expPunocc/site.densities[0])
+
+    else:
+        beads = np.arange(len(site.densities))
+        mask_lt = beads<=site.Npeak
+        mask_gt = beads>site.Npeak
+        p_lessthan = np.sum(site.densities[mask_lt])
+        p_greaterthan = np.sum(site.densities[mask_gt])
+        dG = -RT * np.log(p_greaterthan / p_lessthan)
     return dG
+
+
+def plot_site(ax, thetas, mintheta, maxtheta, rmin, rmax):
+    """
+    Plot a filled region on a polar plot, representing a binding site within a specified range of angles and radii.
+
+    Parameters:
+    ax (matplotlib.axes.Axes): The matplotlib axes object representing the polar plot.
+    thetas (numpy.ndarray): An array of angles defining the polar plot.
+    mintheta (int): The index of the starting angle for the binding site.
+    maxtheta (int): The index of the ending angle for the binding site.
+    rmin (float): The minimum radius of the binding site.
+    rmax (float): The maximum radius of the binding site.
+
+    Returns:
+    matplotlib.axes.Axes: The modified matplotlib axes object with the filled region representing the binding site.
+    """
+    minangle = thetas[mintheta]+thetas[1]/2
+    maxangle = thetas[maxtheta%len(thetas)]+thetas[1]/2
+    if maxangle<minangle:
+        maxangle = minangle+maxangle+thetas[1]*1.5
+    angles = np.linspace(minangle, maxangle,50)
+    ax.fill_between(angles, rmin, rmax, edgecolor='black', facecolor='none')
+    return ax
+
+def make_symmetric_sites(the_data, theta_start, width, rmin, rmax, Ntheta, dr, dth, exrho, frames, binspersubunit=10, subunits=5, sitename="site"):
+    """
+    Create a list of symmetric binding sites based on the given parameters.
+
+    Args:
+        the_data (array-like): The data (bin counts) for the whole system.
+        theta_start (int): The starting theta bin index.
+        width (int): The width of each theta bin.
+        rmin (float): The minimum radius of the binding site.
+        rmax (float): The maximum radius of the binding site.
+        binspersubunit (int, optional): The number of bins per subunit. Defaults to 10.
+        subunits (int, optional): The number of subunits. Defaults to 5.
+        sitename (str, optional): The base name for the binding sites. Defaults to "site".
+
+    Returns:
+        list: A list of symmetric binding sites.
+    """
+    sites = []
+    n_radial_bins = binspersubunit*subunits
+    ts = np.arange(theta_start,n_radial_bins,binspersubunit)
+    units = ascii_uppercase[:subunits]
+    for unit, tmin in zip(units, ts):
+        the_thetas = np.arange(tmin,tmin+width)%n_radial_bins
+        toadd = make_simple_site(the_data, rmin, rmax, width, Ntheta, dr, dth, exrho, frames, the_thetas, sitename+unit)
+        sites.append(toadd)
+    return sites
