@@ -1,6 +1,5 @@
 
 package require pbctools
-#Grace Brannigan 7/2018
 
 
 # get_avg_area
@@ -310,9 +309,7 @@ proc get_leaflet_totals {species headname tailname lipidbeads_selstr frame_i lea
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
 proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame_i frame_f leaflet_algorithm} {
     set sel [ atomselect top "(($species)) and $lipidbeads_selstr"  frame $frame_i]
-    puts "(($species)) and $lipidbeads_selstr"
     set sel_num [llength [lsort -unique [$sel get resid] ] ]
-    puts $sel_num
     set sel_resid_list [lsort -unique [$sel get resid] ]
     set totals {}
     if {$sel_num < 1} {
@@ -326,7 +323,6 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
         #copy leaflet values from $frame_i to all frames between $frame_i and $frame_f
         set leaflet_list [$sel get user2] 
         for {set interim_frame [expr $frame_i + 1]} {$interim_frame < [expr $frame_f]} {incr interim_frame} {
-            puts "frame: $interim_frame"
             $sel frame $interim_frame
             $sel set user2 $leaflet_list
         }
@@ -346,9 +342,12 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
 ;# Returns the following list : [[lower_leaflet_beads lower_leaflet_lipids] [upper_leaflet_beads upper_leaflet_lipids]] 
 proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr start end skip leaflet_algorithm} {
+    set num_reassignments 0
     for {set update_frame $start} {$update_frame < ${end}} {incr update_frame $skip} {
         frame_leaflet_assignment $species $headname $tailname $lipidbeads_selstr $update_frame [expr $update_frame + $skip] $leaflet_algorithm
+        incr num_reassignments
     }
+    puts "Checked for leaflet reassignments $num_reassignments times."
 }
     
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
@@ -397,10 +396,10 @@ proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
 
 
 #bins a single shell over many frames
-proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta sample_frame nframes Ntheta dt ri rf  flower fupper leaflet_algorithm} {
+proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta start end Ntheta dt ri rf  flower fupper leaflet_algorithm} {
     set theta_bin_high [lrepeat [expr $Ntheta+1] 0]
     set theta_bin_low [lrepeat [expr $Ntheta+1] 0]
-    for {set frm $sample_frame} {$frm < ${nframes}} {incr frm $dt} {
+    for {set frm $start} {$frm < ${end}} {incr frm $dt} {
         $shell frame $frm
         $shell update 
         set singleFrame_counts [bin_frame $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm $leaflet_algorithm ]
@@ -471,8 +470,11 @@ proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm lea
 
 
 
-proc polarDensityBin { config_file_name } { 
-    source $config_file_name
+proc polarDensityBin { config_file_script } { 
+    set start_frame 0 ; #default value before potential change in $config_file_script
+    set nframes [molinfo top get numframes]
+    set end_frame $nframes ;#default value before potential change in $config_file_script
+    source $config_file_script
     source $UTILS/BinTools.tcl
     if {$USE_QWRAP == 1} {load ${UTILS}/qwrap.so}
     source ${helix_assignment_script}
@@ -497,7 +499,15 @@ proc polarDensityBin { config_file_name } {
         output_helix_centers $chainlist $helixlist $backbone_selstr $midplane_selstr
         ;# initialize some constants
         set area [get_avg_area top]
-        set nframes [molinfo top get numframes]
+
+        if { $start_frame > $nframes } {
+            puts "Error: specified start frame $start_frame is greater than number of frames $nframes" 
+            set end $nframes
+        }
+        if { $end_frame > $nframes } {
+            puts "Warning: specified end frame $end_frame is greater than number of frames; setting end frame to $nframes" 
+            set end $nframes
+        }
         $sel delete
         puts "Acyl Chain:\t$species"
         set low_f [open "${outfile}.low.dat" w]
@@ -505,7 +515,7 @@ proc polarDensityBin { config_file_name } {
         set low_f_avg [open "${outfile}.low.avg.dat" w]
         set upp_f_avg [open "${outfile}.upp.avg.dat" w]
         set dtheta [expr 360.0/(1.0*($Ntheta))]
-        set totals [frame_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr 0 0 $LEAFLET_SORTING_ALGORITHM ]
+        set totals [frame_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $start_frame $start_frame $LEAFLET_SORTING_ALGORITHM ]
         
         foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
             set leaflet_str [lindex $leaf_total 0]
@@ -517,8 +527,8 @@ proc polarDensityBin { config_file_name } {
                 puts $avgfile "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
         }
         
-        trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr 0 $nframes $leaflet_reassign_t $LEAFLET_SORTING_ALGORITHM
-        set delta_frame [expr ($nframes - $sample_frame) / $dt]
+        trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $start_frame $end_frame $leaflet_reassign_t $LEAFLET_SORTING_ALGORITHM
+        set delta_frame [expr ($end_frame - $start_frame) / $dt]
         for {set ri $Rmin} { $ri<=${Rmax}} { set ri [expr $ri + $dr]} {
             #loop over shells
             puts "Now on shell {$ri [expr ${ri}+${dr}]}"
@@ -527,7 +537,7 @@ proc polarDensityBin { config_file_name } {
             set ri2 [expr $ri*$ri]
             set shell [atomselect top "(resname $species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) and $lipidbeads_selstr"]
             #puts [$shell num]		
-            set theta_bin [bin_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $sample_frame $nframes $Ntheta $dt $ri $rf $low_f $upp_f $LEAFLET_SORTING_ALGORITHM]
+            set theta_bin [bin_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $start $end $Ntheta $dt $ri $rf $low_f $upp_f $LEAFLET_SORTING_ALGORITHM]
             set theta_bin_high [lindex $theta_bin 1]
             set theta_bin_low [lindex $theta_bin 0]
             $shell delete	
