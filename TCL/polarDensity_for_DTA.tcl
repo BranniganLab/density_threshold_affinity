@@ -102,7 +102,6 @@ proc z_mid {init_frm nframes midplane_selstr} {
 ;#Outputs xy position of helix centers to file for each leaflet; center is calculated using the part of the helix in the given leaflet
 proc output_helix_centers {chain_names helix_occupancy_list  backbone_selstr midplane_selstr {a ""} } {
     ;# list for the chain names
-    #set chain_names [list "A" "B" "C" "D" "E"]
     ;# finds the center of the membranes
     set zed [z_mid 0 20 $midplane_selstr]
     ;# calculates the center of mass for subunit alpha helices in both leaflets
@@ -193,20 +192,6 @@ proc center_system {inpt} {
         incr counter_i
     }
     $sel delete
-}
-
-proc resnamer {input} {
-    
-    
-    # adds resname if the input is DPPC, CHOL, PUPI...
-    
-    set out ""
-    if {[string length $input] == 4 && $input != "chol"} { 
-        set out "resname $input"
-    } else {
-        set out "$input"
-    }
-    return $out
 }
 
 proc output_bins {fl  ri rf dtheta bins} {
@@ -353,10 +338,6 @@ proc get_leaflet_totals {species headname tailname lipidbeads_selstr frame_i lea
 }
 
 
-
-
-
-# does what it says it does, bins over a single frame
 proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm leaflet_algorithm} {
     set indexs [$shell get index]
     set resids [$shell get resid]
@@ -364,30 +345,29 @@ proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm lea
     set theta_high_out [list]
     set theta_low_out [list]
     set resd_old 0
-    set high_low 0
-    #set shel_count [expr $shel_count + $nShell]
+    set leaflet 0
     foreach indx $indexs resd $resids {
         #loop over lipids in the shell
         set a "($species and index $indx)"
         set b "(resid $resd and $species and $lipidbeads_selstr)" 
         set thislipid [atomselect top $a frame $frm]
-        set high_low 0 ;#reinitialize
+        set leaflet 0 ;#reinitialize
         if {[string length ${species}] == 2} {
             if {([$thislipid get name] == "PO4") || ([$thislipid get name] == "P") } { ;#GB has no idea what this does. 
                 continue
             }
         }
         if {${resd_old} != ${resd}} {
-            set high_low [leaflet_detector $b $headname $tailname $frm $leaflet_algorithm]
+            set leaflet [leaflet_detector $b $headname $tailname $frm $leaflet_algorithm]
         }
         set x [$thislipid get x]
         set y [$thislipid get y]
-        $thislipid set user2 $high_low
+        $thislipid set user2 $leaflet
         set theta [get_theta $x $y]
         set ti [expr int($theta/$dtheta)] 
-        if {$high_low > 0} {
+        if {$leaflet > 0} {
             lappend theta_high_out $ti
-        } elseif {$high_low <0} {
+        } elseif {$leaflet <0} {
             lappend theta_low_out $ti
         } else {
             puts "WARNING: lipid $resd did not get assigned a leaflet"
@@ -399,7 +379,6 @@ proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm lea
     return [list $theta_low_out $theta_high_out] ;#lower before upper is the convention
 }
 
-# FAR more useful than the other version (theta clean up)
 proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
     
     set theta_bin_out [list]
