@@ -2,7 +2,7 @@
 # 0 for sorting based on orientation of specified head & tail; 
 # 1 for legacy sorting based on orientation of default termini (aka classic local_mid_plane); 
 # 2 for sorting based on position relative to origin (tested only with cholesterol so far) 
-set LEAFLET_SORTING_ALGORITHM 0; 
+set LEAFLET_SORTING_ALGORITHM 1; 
 
 
 set CENTER_AND_ALIGN 0
