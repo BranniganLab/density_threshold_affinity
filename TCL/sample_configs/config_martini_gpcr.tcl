@@ -11,6 +11,7 @@ set UTILS "./helpers"
 
 set dt 1
 set sample_frame 0
+set leaflet_reassign_t 5; #how frequently to reassign lipids to leaflets
 set start 0 ;#WARNING: not yet used, planned for future
 set end 10  ;#WARNING: not yet used, planned for future
 

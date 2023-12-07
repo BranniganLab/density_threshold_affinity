@@ -155,6 +155,7 @@ proc avg_acyl_chain_len {species acylchain_selstr} {
     
 }
 
+
 proc center_system {inpt} {
     global USE_QWRAP
     puts "${inpt}"
@@ -192,40 +193,6 @@ proc center_system {inpt} {
         incr counter_i
     }
     $sel delete
-}
-
-proc output_bins {fl  ri rf dtheta bins} {
-    puts -nonewline $fl "[format {%0.2f} $ri]  [format {%0.2f} $rf] [format {%0.2f} $dtheta]  " 
-    puts $fl "$bins" 
-}
-
-#
-proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta sample_frame nframes Ntheta dt ri rf  flower fupper leaflet_algorithm} {
-    set theta_bin_high [lrepeat [expr $Ntheta+1] 0]
-    set theta_bin_low [lrepeat [expr $Ntheta+1] 0]
-    for {set frm $sample_frame} {$frm < ${nframes}} {incr frm $dt} {
-        $shell frame $frm
-        $shell update 
-        set singleFrame_counts [bin_frame $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm $leaflet_algorithm ]
-        set singleFrame_upper [lindex $singleFrame_counts 1] 
-        set singleFrame_lower [lindex $singleFrame_counts 0]
-        set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper  $Ntheta]
-        
-        # should be fixed, do not change [lrepeat [expr $Ntheta+1] to [lrepeat [expr $Ntheta] 
-        if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
-            error "theta_bin_high/low and theta_bins do not have the same length."
-        }
-        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1] ]
-        #puts [lindex $theta_bins 1]
-        set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
-        #puts $theta_bin_low
-        output_bins $fupper $ri $rf $dtheta [lindex $theta_bins 1] 
-        ;#open fupper before the loop starts and close afterwards
-        output_bins $flower $ri $rf $dtheta [lindex $theta_bins 0] 
-        ;#same thing     
-        
-    }
-    return [list  ${theta_bin_low} ${theta_bin_high}]
 }
 
 proc leaflet_sorter_0 {atsel_in head tail frame_i} {
@@ -309,8 +276,9 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_algorithm} {
     }
 }
 
+;# Unnecessary; duplicated by frame_leaflet_assignment with frame_f = frame_i
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
-;# Returns the following list : [[lower_leaflet_beads lower_leaflet_lipids] [upper_leaflet_beads upper_leaflet_lipids]] 
+;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]]  
 proc get_leaflet_totals {species headname tailname lipidbeads_selstr frame_i leaflet_algorithm} {
     set sel [ atomselect top "(($species)) and $lipidbeads_selstr"  frame $frame_i]
     set sel_num [llength [lsort -unique [$sel get resid] ] ]
@@ -337,46 +305,70 @@ proc get_leaflet_totals {species headname tailname lipidbeads_selstr frame_i lea
     return $totals
 }
 
-
-proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm leaflet_algorithm} {
-    set indexs [$shell get index]
-    set resids [$shell get resid]
-    set nShell [$shell num]
-    set theta_high_out [list]
-    set theta_low_out [list]
-    set resd_old 0
-    set leaflet 0
-    foreach indx $indexs resd $resids {
-        #loop over lipids in the shell
-        set a "($species and index $indx)"
-        set b "(resid $resd and $species and $lipidbeads_selstr)" 
-        set thislipid [atomselect top $a frame $frm]
-        set leaflet 0 ;#reinitialize
-        if {[string length ${species}] == 2} {
-            if {([$thislipid get name] == "PO4") || ([$thislipid get name] == "P") } { ;#GB has no idea what this does. 
-                continue
-            }
+;# Calculates the total number of lipids and beads of the given species in each leaflet 
+;# Assigns the leaflet to user2 
+;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
+proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame_i frame_f leaflet_algorithm} {
+    set sel [ atomselect top "(($species)) and $lipidbeads_selstr"  frame $frame_i]
+    puts "(($species)) and $lipidbeads_selstr"
+    set sel_num [llength [lsort -unique [$sel get resid] ] ]
+    puts $sel_num
+    set sel_resid_list [lsort -unique [$sel get resid] ]
+    set totals {}
+    if {$sel_num < 1} {
+        set totals [[list 0 0] [list 0 0]] 
+    } else {
+        #assign leaflets from $frame_i to user2 field of each bead for this species
+        foreach sel_resid $sel_resid_list {
+            set selstring "${species} and (resid $sel_resid) and $lipidbeads_selstr"
+            set leaflet [leaflet_detector $selstring $headname $tailname $frame_i $leaflet_algorithm]
         }
-        if {${resd_old} != ${resd}} {
-            set leaflet [leaflet_detector $b $headname $tailname $frm $leaflet_algorithm]
+        #copy leaflet values from $frame_i to all frames between $frame_i and $frame_f
+        set leaflet_list [$sel get user2] 
+        for {set interim_frame [expr $frame_i + 1]} {$interim_frame < [expr $frame_f]} {incr interim_frame} {
+            puts "frame: $interim_frame"
+            $sel frame $interim_frame
+            $sel set user2 $leaflet_list
         }
-        set x [$thislipid get x]
-        set y [$thislipid get y]
-        $thislipid set user2 $leaflet
-        set theta [get_theta $x $y]
-        set ti [expr int($theta/$dtheta)] 
-        if {$leaflet > 0} {
-            lappend theta_high_out $ti
-        } elseif {$leaflet <0} {
-            lappend theta_low_out $ti
-        } else {
-            puts "WARNING: lipid $resd did not get assigned a leaflet"
+        #count the number of lipids and the number of beads in each leaflet
+        foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
+            set leaf_sel [ atomselect top "(${species} and $leaf)"  frame $frame_i]
+            set num_beads [$leaf_sel num]
+            set num_lipids [llength [lsort -unique [$leaf_sel get resid] ]]
+            lappend totals [list $txtstr $num_beads $num_lipids]
+            $leaf_sel delete
         }
-        $thislipid set user [expr $ti+1]
-        $thislipid delete
     }
+    $sel delete
+    return $totals
+}
+
+;# Calculates the total number of lipids and beads of the given species in each leaflet 
+;# Returns the following list : [[lower_leaflet_beads lower_leaflet_lipids] [upper_leaflet_beads upper_leaflet_lipids]] 
+proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr start end skip leaflet_algorithm} {
+    for {set update_frame $start} {$update_frame < ${end}} {incr update_frame $skip} {
+        frame_leaflet_assignment $species $headname $tailname $lipidbeads_selstr $update_frame [expr $update_frame + $skip] $leaflet_algorithm
+    }
+}
     
-    return [list $theta_low_out $theta_high_out] ;#lower before upper is the convention
+;# Calculates the total number of lipids and beads of the given species in each leaflet 
+;# Returns the following list : [[lower_leaflet_beads lower_leaflet_lipids] [upper_leaflet_beads upper_leaflet_lipids]] 
+proc clean_leaflet_assignments {species lipidbeads_selstr start end} {
+    set sel [ atomselect top "$species and $lipidbeads_selstr"]
+    set selnum [$sel num]
+
+    for {set update_frame $start} {$update_frame < ${end}} {incr update_frame} {
+        $sel frame $update_frame
+        $sel set user2 [lrepeat $selnum 0.0]
+        puts "Cleaning $selnum beads of leaflet assignments in frame $update_frame"
+    }
+    $sel delete
+}
+    
+    
+proc output_bins {fl  ri rf dtheta bins} {
+    puts -nonewline $fl "[format {%0.2f} $ri]  [format {%0.2f} $rf] [format {%0.2f} $dtheta]  " 
+    puts $fl "$bins" 
 }
 
 proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
@@ -402,6 +394,77 @@ proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
     }
     return $theta_bin_out
 }
+
+
+#bins a single shell over many frames
+proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta sample_frame nframes Ntheta dt ri rf  flower fupper leaflet_algorithm} {
+    set theta_bin_high [lrepeat [expr $Ntheta+1] 0]
+    set theta_bin_low [lrepeat [expr $Ntheta+1] 0]
+    for {set frm $sample_frame} {$frm < ${nframes}} {incr frm $dt} {
+        $shell frame $frm
+        $shell update 
+        set singleFrame_counts [bin_frame $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm $leaflet_algorithm ]
+        set singleFrame_upper [lindex $singleFrame_counts 1] 
+        set singleFrame_lower [lindex $singleFrame_counts 0]
+        set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper  $Ntheta]
+        
+        # should be fixed, do not change [lrepeat [expr $Ntheta+1] to [lrepeat [expr $Ntheta] 
+        if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
+            error "theta_bin_high/low and theta_bins do not have the same length."
+        }
+        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1] ]
+        #puts [lindex $theta_bins 1]
+        set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
+        #puts $theta_bin_low
+        output_bins $fupper $ri $rf $dtheta [lindex $theta_bins 1] 
+        ;#open fupper before the loop starts and close afterwards
+        output_bins $flower $ri $rf $dtheta [lindex $theta_bins 0] 
+        ;#same thing     
+        
+    }
+    return [list  ${theta_bin_low} ${theta_bin_high}]
+}
+
+
+proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm leaflet_algorithm} {
+    set indexs [$shell get index]
+    set resids [$shell get resid]
+    set nShell [$shell num]
+    set theta_high_out [list]
+    set theta_low_out [list]
+    set resd_old 0
+    set leaflet 0
+    foreach indx $indexs resd $resids {
+        #loop over lipids in the shell
+        set a "($species and index $indx)"
+        set b "(resid $resd and $species and $lipidbeads_selstr)" 
+        set thislipid [atomselect top $a frame $frm]
+#       if {[string length ${species}] == 2} {
+#           if {([$thislipid get name] == "PO4") || ([$thislipid get name] == "P") } { ;#GB has no idea what this does. 
+#               continue
+#           }
+#       }
+        set x [$thislipid get x]
+        set y [$thislipid get y]
+        set leaflet [$thislipid get user2] ;
+        set theta [get_theta $x $y]
+        set ti [expr int($theta/$dtheta)] 
+        if {$leaflet > 0} {
+            lappend theta_high_out $ti
+        } elseif {$leaflet <0} {
+            lappend theta_low_out $ti
+        } else {
+            puts "WARNING: lipid $resd did not get assigned a leaflet for frame $frm"
+        }
+        $thislipid set user [expr $ti+1]
+        $thislipid delete
+    }
+    
+    return [list $theta_low_out $theta_high_out] ;#lower before upper is the convention
+}
+
+
+
 
 
 ### polarDensity Function ###
@@ -442,7 +505,7 @@ proc polarDensityBin { config_file_name } {
         set low_f_avg [open "${outfile}.low.avg.dat" w]
         set upp_f_avg [open "${outfile}.upp.avg.dat" w]
         set dtheta [expr 360.0/(1.0*($Ntheta))]
-        set totals [get_leaflet_totals "resname $species" $headname $tailname $lipidbeads_selstr 0 $LEAFLET_SORTING_ALGORITHM ]
+        set totals [frame_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr 0 0 $LEAFLET_SORTING_ALGORITHM ]
         
         foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
             set leaflet_str [lindex $leaf_total 0]
@@ -454,7 +517,7 @@ proc polarDensityBin { config_file_name } {
                 puts $avgfile "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
         }
         
-        ;#unset lipsize
+        trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr 0 $nframes $leaflet_reassign_t $LEAFLET_SORTING_ALGORITHM
         set delta_frame [expr ($nframes - $sample_frame) / $dt]
         for {set ri $Rmin} { $ri<=${Rmax}} { set ri [expr $ri + $dr]} {
             #loop over shells
