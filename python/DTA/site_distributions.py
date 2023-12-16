@@ -1,5 +1,3 @@
-import pandas as pd
-from polarDensity_helper import Coord_Get, get_header_info
 from dataclasses import dataclass
 import numpy as np
 from string import ascii_uppercase

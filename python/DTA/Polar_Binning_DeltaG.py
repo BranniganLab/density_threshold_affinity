@@ -679,28 +679,30 @@ def build_probability_dg(chains_groups, area):
 
 ######################## "GLOBAL" Values ######################################
 
-chains_groups = ["CHOL","DOPC", "DPPC", "DPPS", "DPSM", "OAPE", "OIPC",
-                 "OIPE", "OUPC", "OUPE", "OUPS", "PAP1", "PAP2", "PAP3", 
-                 "PAPA", "PAPC", "PAPE", "PAPI", "PAPS", "PBSM", "PFPC", 
-                 "PIPI", "PNSM", "POP1", "POP2", "POP3", "POPA", "POPC", 
-                 "POPE", "POPI", "POPS", "POSM", "PUPC", "PUPE", "PUPI",
-                 "PUPS","PC","PE","SM","PS","PA","PI","P1a","P2a","P3a",
-                 "n0Zw","n9Zw","n6Zw","n3Zw","n0Ne","n9Ne","n6Ne","n3Ne",
-                 "n0","n9","n6","n3","Neutral","Anionic"]
-ar = ["104","50.","63.","81.","34.","173","117","184","195","161","68.","74.","68.","63.","40.","211","273","205","302","273"]
+if __name__=="__main__":
 
-#get_error_ratio(chains_groups,10)
+    chains_groups = ["CHOL","DOPC", "DPPC", "DPPS", "DPSM", "OAPE", "OIPC",
+                    "OIPE", "OUPC", "OUPE", "OUPS", "PAP1", "PAP2", "PAP3", 
+                    "PAPA", "PAPC", "PAPE", "PAPI", "PAPS", "PBSM", "PFPC", 
+                    "PIPI", "PNSM", "POP1", "POP2", "POP3", "POPA", "POPC", 
+                    "POPE", "POPI", "POPS", "POSM", "PUPC", "PUPE", "PUPI",
+                    "PUPS","PC","PE","SM","PS","PA","PI","P1a","P2a","P3a",
+                    "n0Zw","n9Zw","n6Zw","n3Zw","n0Ne","n9Ne","n6Ne","n3Ne",
+                    "n0","n9","n6","n3","Neutral","Anionic"]
+    ar = ["104","50.","63.","81.","34.","173","117","184","195","161","68.","74.","68.","63.","40.","211","273","205","302","273"]
 
-#get_dG_error(PG, PL)
+    #get_error_ratio(chains_groups,10)
 
-# chains_groups = ["CHOL", "PUPS", "DPPS","POPI"]
-#ceg.area_error(ar)
-#ceg.calc_area_error(chains_groups,10)
-#get_prob_error(chains_groups, 10)
-#calc_error(chains_groups,10)
-#get_error_ratio(chains_groups, 10)
-# get_dg_histogram(["CHOL","n0", "n9","n6","n3"],4)
-# get_dg_histogram(["CHOL","n0", "n9","n6","n3"],5)
-# build_data_set(chains_groups,ar)#,True,ar_vals)
-# build_probability_dg(chains_groups,ar)
-plot_mean_dist(["PS","PA","PI","P1a","P2a","P3a"])
+    #get_dG_error(PG, PL)
+
+    # chains_groups = ["CHOL", "PUPS", "DPPS","POPI"]
+    #ceg.area_error(ar)
+    #ceg.calc_area_error(chains_groups,10)
+    #get_prob_error(chains_groups, 10)
+    #calc_error(chains_groups,10)
+    #get_error_ratio(chains_groups, 10)
+    # get_dg_histogram(["CHOL","n0", "n9","n6","n3"],4)
+    # get_dg_histogram(["CHOL","n0", "n9","n6","n3"],5)
+    # build_data_set(chains_groups,ar)#,True,ar_vals)
+    # build_probability_dg(chains_groups,ar)
+    plot_mean_dist(["PS","PA","PI","P1a","P2a","P3a"])

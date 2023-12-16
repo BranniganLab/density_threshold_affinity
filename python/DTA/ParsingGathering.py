@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcol
-import polarRadial_Complex_helper as pc
+from . import polarRadial_Complex_helper as pc
 
 class MidpointNormalize(mcol.Normalize):
 	"""

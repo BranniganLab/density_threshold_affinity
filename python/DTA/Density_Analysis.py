@@ -8,7 +8,7 @@ Created on Thu Aug  6 17:56:25 2020
 
 import numpy as np
 import pandas as pd
-import polarDensity_helper as pc
+from . import polarDensity_helper as pc
 
 
 
@@ -114,16 +114,17 @@ def Density(memb, ddg=False, lipids=False, enrich=False):
     if ddg == False:
         #plot density or enrichment density
         pc._Polar_Plot_(den_tmp, theta, radius, chains_groups,memb)
-    
-   
-# enrich and lipids have not been implemented  
 
-chains_groups = ["CHOL","DOPC", "DPPC", "DPPS", "DPSM", "OAPE", "OIPC",
-                 "OIPE", "OUPC", "OUPE", "OUPS", "PAP1", "PAP2", "PAP3", 
-                 "PAPA", "PAPC", "PAPE", "PAPI", "PAPS", "PBSM", "PFPC", 
-                 "PIPI", "PNSM", "POP1", "POP2", "POP3", "POPA", "POPC", 
-                 "POPE", "POPI", "POPS", "POSM", "PUPC", "PUPE", "PUPI",
-                 "PUPS"]     
-HG = ["PC","PE","SM","PS","PA","PI","P1a","P2a","P3a"]
-acyl = ["n0","n9","n6","n3"]
-ddG_sum= Density("synps", ddg=False, lipids=["Neutral","Anionic"], enrich=True) #lipids=["n0","n9","n6","n3","CHOL"]
+if __name__== "__main__":
+    
+    # enrich and lipids have not been implemented  
+
+    chains_groups = ["CHOL","DOPC", "DPPC", "DPPS", "DPSM", "OAPE", "OIPC",
+                    "OIPE", "OUPC", "OUPE", "OUPS", "PAP1", "PAP2", "PAP3", 
+                    "PAPA", "PAPC", "PAPE", "PAPI", "PAPS", "PBSM", "PFPC", 
+                    "PIPI", "PNSM", "POP1", "POP2", "POP3", "POPA", "POPC", 
+                    "POPE", "POPI", "POPS", "POSM", "PUPC", "PUPE", "PUPI",
+                    "PUPS"]     
+    HG = ["PC","PE","SM","PS","PA","PI","P1a","P2a","P3a"]
+    acyl = ["n0","n9","n6","n3"]
+    ddG_sum= Density("synps", ddg=False, lipids=["Neutral","Anionic"], enrich=True) #lipids=["n0","n9","n6","n3","CHOL"]
