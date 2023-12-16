@@ -8,9 +8,9 @@ Created on Thu Aug  6 11:24:11 2020
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import polarRadial_Complex_helper as pc
+from . import polarRadial_Complex_helper as pc
 import matplotlib.colors as mcol
-import ParsingGathering as pg
+from . import ParsingGathering as pg
 #import Calc_Error_dG as ceg
 
 
