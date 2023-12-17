@@ -26,12 +26,13 @@ class Site:
     area: float=0
     densities: list=None
     Npeak: float=0
+    peak: int=0
     mean: float=0
     expPunocc: float=0
     theta_vals: list=None
     dr: float=0
 
-def make_simple_site(the_data, inner_r=0, outer_r=0, nth=1, Ntheta=1, dr=1, dth=1, exrho=0, frames=1, the_thetas=None, title="", accessible_area=None):
+def make_simple_site(the_data, inner_r=0, outer_r=0, nth=1, Ntheta=1, dr=1, dth=1, exrho=0, frames=1, the_thetas=None, title="", Npeak=None, accessible_area=None):
     """
     Create a Site object with specified inner and outer radii, number of theta bins, and title.
     Calculate the shell data based on the given parameters using the get_shell function.
@@ -69,16 +70,20 @@ def make_simple_site(the_data, inner_r=0, outer_r=0, nth=1, Ntheta=1, dr=1, dth=
         the_site.area = accessible_area
     else:
         the_site.area = get_area(the_site, dth)
-    the_site = get_site_stats(the_site, exrho)
+    the_site = get_site_stats(the_site)
 
     the_site.theta_vals = (the_thetas*dth)%(2*np.pi)
     the_site.dr = dr
+    if Npeak is not None:
+        the_site.Npeak = Npeak
+    else:
+        the_site.Npeak = the_site.peak
     return the_site
 
-def combine_sites(list_of_sites, 
-                  exrho, 
-                  newtitle="composite site", 
-                  custom_area=None, 
+def combine_sites(list_of_sites,
+                  exrho,
+                  newtitle="composite site",
+                  custom_area=None,
                   symmetric=False):
     """
     Combines the properties of the input sites to create a new composite site.
@@ -110,7 +115,7 @@ def combine_sites(list_of_sites,
         print("Warning: custom area overrides other area calculations and assignments")
         new_site.area = custom_area
 
-    new_site = get_site_stats(new_site, exrho)
+    new_site = get_site_stats(new_site)
     new_site.title = newtitle
 
     return new_site
@@ -162,7 +167,7 @@ def plot_density(site: Site, ax):
 
     return ax
 
-def get_site_stats(site, exrho):
+def get_site_stats(site):
     """
     Calculate the statistics of a given site object and return an updated new_site object with additional attributes.
 
@@ -177,7 +182,7 @@ def get_site_stats(site, exrho):
     frequencies = np.bincount(site.counts.astype(int).flatten())
     new_site.densities = frequencies/np.sum(frequencies)
     
-    new_site.Npeak = exrho*site.area
+    new_site.peak = np.argmax(new_site.densities)
     new_site.mean = np.mean(site.counts)
     return new_site
 
