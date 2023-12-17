@@ -1,13 +1,19 @@
 """
-safep
+DTA
 
-Tools for Analyzing and Debugging (SA)FEP calculations
+Tools for Doing Density Threshold Analysis
 """
 
 __version__ = "0.2"
 __author__ = 'Brannigan Lab'
 __credits__ = 'Rutgers University - Camden'
-__all__=['Density_Analysis', 'enrichment_plotters', 'ParsingGathering', 'Polar_Binning_DeltaG', 'polarDensity_helper', 'polarRadial_Complex_helper', ' site_distributions']
+__all__=['Density_Analysis',
+         'enrichment_plotters',
+        'ParsingGathering',
+        'Polar_Binning_DeltaG',
+        'polarDensity_helper',
+        'polarRadial_Complex_helper',
+        'site_distributions']
 
 
 from .Density_Analysis import *
