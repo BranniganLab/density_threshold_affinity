@@ -55,10 +55,13 @@ def make_simple_site(the_data, inner_r=0, outer_r=0, nth=1, Ntheta=1, dr=1, dth=
     """
     the_site = Site(inner_r, outer_r, nth, title)
 
-    tmp_shell = get_shell(the_data, the_site, frames, Ntheta, dr)
-    the_site.counts = tmp_shell[:,the_thetas]
-    if nth > 1:
-        the_site.counts = np.sum(the_site.counts, axis=-1)
+    if len(the_data)>0:
+        tmp_shell = get_shell(the_data, the_site, frames, Ntheta, dr)
+        the_site.counts = tmp_shell[:,the_thetas]
+        if nth > 1:
+            the_site.counts = np.sum(the_site.counts, axis=-1)
+    else:
+        the_site.counts = np.ndarray([])
 
     if accessible_area is not None:
         the_site.area = accessible_area
@@ -234,7 +237,7 @@ def plot_site(ax, thetas, mintheta, maxtheta, rmin, rmax):
     ax.fill_between(angles, rmin, rmax, edgecolor='black', facecolor='none')
     return ax
 
-def make_symmetric_sites(the_data, theta_start, width, rmin, rmax, Ntheta, dr, dth, exrho, frames, binspersubunit=10, subunits=5, sitename="site"):
+def make_symmetric_sites(the_data, theta_start, width, inner_r, outer_r, Ntheta, dr, dth, exrho, frames, binspersubunit=10, subunits=5, sitename="site"):
     """
     Create a list of symmetric binding sites based on the given parameters.
 
@@ -257,6 +260,7 @@ def make_symmetric_sites(the_data, theta_start, width, rmin, rmax, Ntheta, dr, d
     units = ascii_uppercase[:subunits]
     for unit, tmin in zip(units, ts):
         the_thetas = np.arange(tmin,tmin+width)%n_radial_bins
-        toadd = make_simple_site(the_data, rmin, rmax, width, Ntheta, dr, dth, exrho, frames, the_thetas, sitename+unit)
+        toadd = make_simple_site(the_data, inner_r, outer_r, width, Ntheta, dr, dth, exrho, frames, the_thetas, sitename+unit)
         sites.append(toadd)
     return sites
+
