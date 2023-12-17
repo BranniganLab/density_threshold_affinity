@@ -98,11 +98,12 @@ def combine_sites(list_of_sites,
         Site: A new `Site` object representing the composite site with combined properties and updated attributes.
     """
     new_site = Site()
-    new_site.counts = np.zeros_like(list_of_sites[0].counts)
     for site in list_of_sites:
         new_site.inner_r = np.min([new_site.inner_r, site.inner_r])
         new_site.outer_r = np.max([new_site.outer_r, site.outer_r])
-        if symmetric:
+        if new_site.counts is None:
+            new_site.counts = site.counts
+        elif symmetric:
             new_site.counts = np.concatenate([new_site.counts, site.counts])
         else:
             new_site.counts = new_site.counts + site.counts
