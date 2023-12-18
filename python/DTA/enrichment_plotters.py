@@ -200,27 +200,7 @@ def plot_single(toplot,
     return ax
 
 
-#  orange   light blue   green       purple      amber      blue       red 
-#"#E69F00"  "#56B4E9"  "#009E73"   "#CC79A7"   "#F5C710"  "#0072B2"  "#D55E00"  
-SUB = ["#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#F5C710", "#0072B2", "#D55E00"]
 
-def plot_helices(helices, colorbychain, ax, markersize=3):
-    if len(np.shape(helices))==1:
-        helices = np.reshape(helices, (1,len(helices)))
-    for i,pro in enumerate(helices[:]):
-        if colorbychain:
-            colors = SUB[i]
-        else:
-            colors = SUB[:len(pro[::2])]        
-        ax.scatter(np.deg2rad(pro[1::2]),
-                    pro[::2],
-                    color=colors,
-                    linewidth=None,
-                    zorder=1, 
-                    s=markersize,
-                    )
-        
-    return ax
 
 
 # def polar_plot(data_in, 
