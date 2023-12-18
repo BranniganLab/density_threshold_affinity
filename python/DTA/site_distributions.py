@@ -292,3 +292,16 @@ def outline_site(ax, site):
     the_thetas = np.append(the_thetas, the_thetas[-1]+dtheta)
     ax.fill_between(the_thetas, site.inner_r, site.outer_r, facecolor=(0,0,0,0), edgecolor='k')
     return ax
+
+
+def plot_bulk_counts(ax, bulk_counts, area, lw=3):
+    frequencies = np.bincount(bulk_counts.astype(int).flatten())
+    probabilities = frequencies/np.sum(frequencies)
+    ax.plot(range(len(probabilities)), probabilities, linewidth=lw)
+    ax.set_ylabel("P")
+    ax.set_xlabel(f"Number of beads in an area about {area} "+r"$\AA^2$")
+    bulk_mode = np.argmax(probabilities)
+    ax.vlines([bulk_mode], 0, np.max(probabilities), color = 'black', linestyles='dashed', label = f"mode={bulk_mode}")
+    #ax.legend()
+
+    return ax
