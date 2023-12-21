@@ -155,15 +155,16 @@ def plot_density(site: Site, ax):
     Returns:
         ax: The modified ax object with the plot.
     """
-    dG = get_dg(site)
+    #dG = get_dg(site)
 
     ax.vlines(site.Npeak, 0, np.max(site.densities), color='red', linestyles='solid', label=r"$N_\mathrm{peak}$")
     #ax.vlines(site.mean, 0, np.max(site.densities), color='red', linestyles='solid', label="actual mean")
-    ax.plot(np.arange(len(site.densities)), site.densities, label=r"$\Delta G =$"+f"{np.round(dG,2)}kcal/mol")
+    #ax.plot(np.arange(len(site.densities)), site.densities, label=r"$\Delta G =$"+f"{np.round(dG,2)}kcal/mol")
+    ax.plot(np.arange(len(site.densities)), site.densities)
 
     ax.legend()
-    ax.set_xlabel(r"$N_\mathrm{beads}$")
-    ax.set_ylabel("Probability Density")
+    ax.set_xlabel(r"$n_\mathrm{Y}$")
+    ax.set_ylabel(r"$P_{n_Y}$")
     ax.set_title(site.title)
 
     return ax
