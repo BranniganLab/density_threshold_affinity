@@ -269,7 +269,6 @@ proc output_bins {fl  ri rf dtheta bins} {
 
 #
 proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta sample_frame nframes Ntheta dt ri rf  flower fupper leaflet_algorithm} {
-    
     set theta_bin_high [lrepeat [expr $Ntheta+1] 0]
     set theta_bin_low [lrepeat [expr $Ntheta+1] 0]
     for {set frm $sample_frame} {$frm < ${nframes}} {incr frm $dt} {
@@ -293,6 +292,7 @@ proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta s
     }
     return [list  ${theta_bin_low} ${theta_bin_high}]
 }
+
 
 #; procedure that was used in JCP 2021 for nAChR
 proc local_mid_plane2 {atsel_in frame_i} {
@@ -489,32 +489,6 @@ proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
         lappend theta_bin_out $theta_bins
     }
     return $theta_bin_out
-}
-
-# TODO I don't think I need this function anymore
-proc theta_clean_up { theta_bin_low theta_bin_high shel_count  Ntheta delta_frame low_f upp_f} {
-    
-    theta_bin_out [list ]
-    
-    foreach ud [list  $theta_bin_high $theta_bin_low] {
-        #Species_Total_Warning $sel_num $shel_count
-        puts "Cleaning up for shell $ri to $rf"
-        #cleanup and output 
-        set theta_bin_counts [lcount $ud]
-        #Shell_Test $shel_count $theta_bin_counts
-        set theta_bin_time_averages {}
-        for {set ti 0} { $ti<=$Ntheta} {incr ti 1} {
-            set tindex [lsearch [lindex $theta_bin_counts 0] $ti]
-            if { $tindex >= 0} {
-                set time_average [expr 1.0 * [lindex [lindex $theta_bin_counts 1] $tindex]/(1.0*($delta_frame))] 
-            } else { 
-                set time_average 0.0
-            }
-            lappend theta_bin_time_averages $time_average
-        }
-        lappend theta_bin_out $theta_bin_time_averages
-    }
-    return $theta_bin_time_averages
 }
 
 
