@@ -1,44 +1,6 @@
 
 package require pbctools
 
-# set QWRAP ;# https://github.com/jhenin/qwrap
-
-# ;# TODO What is the point of outputing each lipid species to a different file?
-# 
-
-# 
-# ;#Lipid_Saturation_HeadG are a series of macros to parse Martini lipids
-# source ${UTILS}/Lipid_Saturation_HeadG.tcl
-
-
-#Grace Brannigan 7/2018
-
-#Sample Use:
-#Assuming trajectory of interest is loaded AND top.  All frames will be used so any frames to be ignored would need to be unloaded
-#set HeadNames [atomselect top "name PO4 ROH B2"] ;#B2 is DDM
-#set lipids [lsort -unique [$HeadNames get resname]]
-#$HeadNames delete
-#set RMax 40.
-#set RMin 5.
-#set dr 2.
-#set Ntheta 30
-#foreach lip in $lipids {
-#polarDensityBin $lip.dat $lip $Rmin $Rmax $dr $Ntheta	
-#}
-
-###############################################Sample plotting within python
-#
-#Ntheta = 30
-#data = np.loadtxt('DPPC.dat',skiprows=2)
-#rad = data[:,1] + (data[:,1]-data[:,0])/2.0
-#the = np.linspace(0,2*np.pi,Ntheta +1)
-#theta,radius=np.meshgrid(the,rad)
-#density = data[:,3:]/radius 
-#plt.figure(figsize = (5,5))
-#plt.subplot(projection="polar")
-#plt.pcolormesh(theta,radius,density,cmap="RdBu",zorder=0,edgecolors='k',lw=.001)
-#plt.show()
-
 # get_avg_area
 #
 # Calculates the average area of a molecule in a simulation box.
