@@ -10,7 +10,7 @@ set USE_QWRAP 1
 set UTILS "./helpers" 
 
 set dt 1
-set sample_frame 0
+set sample_frame 0  ;#The frame at which you want to start sampling
 set start 0 ;#WARNING: not yet used, planned for future
 set end 10  ;#WARNING: not yet used, planned for future
 
