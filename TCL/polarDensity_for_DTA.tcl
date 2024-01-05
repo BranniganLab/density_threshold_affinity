@@ -276,14 +276,15 @@ proc leaflet_sorter_0 {atsel_in head tail frame_i} {
     
     if {$head_Z < $tail_Z } { 
         $sel_resid set user2 -1
-        return -1 
+        set result -1 
     } else { 
         $sel_resid set user2 1
-        return 1 
+        set result 1 
     }
     $sel_resid delete
     $sel_head delete
     $sel_tail delete
+    return $result
 }
 
 proc leaflet_sorter_1 {atsel_in frame_i} {
@@ -297,12 +298,13 @@ proc leaflet_sorter_1 {atsel_in frame_i} {
     set sel_Z [${sel_resid} get z] 
     if {[lindex ${sel_Z} $ind] < [lindex ${sel_Z} end] } { 
         $sel_resid set user2 -1
-        return -1 
+        set result -1 
     } else { 
         $sel_resid set user2 1
-        return 1 
+        set result 1 
     }
     $sel_resid delete
+    return $result
 }
 
 proc leaflet_sorter_2 {atsel_in frame_i} {
@@ -320,12 +322,13 @@ proc leaflet_sorter_2 {atsel_in frame_i} {
         set chol_com_z [lindex [measure center $sel_resid weight mass] end]
         if {$chol_com_z < 0} {
             $sel_resid set user2 -1
-            return -1
+            set result -1
         } else {
             $sel_resid set user2 1
-            return 1
+            set result 1
         }
     }
+    return $result
 }
 
 
