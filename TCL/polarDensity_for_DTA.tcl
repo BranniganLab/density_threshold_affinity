@@ -267,8 +267,7 @@ proc output_bins {fl  ri rf dtheta bins} {
     puts $fl "$bins" 
 }
 
-#
-proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta sample_frame nframes Ntheta dt ri rf  flower fupper leaflet_algorithm} {
+proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta sample_frame nframes Ntheta dt ri rf flower fupper leaflet_algorithm} {
     set theta_bin_high [lrepeat [expr $Ntheta+1] 0]
     set theta_bin_low [lrepeat [expr $Ntheta+1] 0]
     for {set frm $sample_frame} {$frm < ${nframes}} {incr frm $dt} {
