@@ -34,7 +34,7 @@ Detailed protocol is in preparation.
 
 8. From the tk console:
 
-   ```> source polarDensity_for_DTA.tcl```
+   ```> source TCL/polarDensity_for_DTA.tcl```
 
    ```> polarDensityBin <config file path>```  
 9. Open the plot_enrichment.ipynb jupyter notebook using your method of choice (e.g. VSCode or a local host)
