@@ -1,13 +1,14 @@
+#Point SRC toward the TCL directory in your repo folder
+set SRC "/home/js2746/Polar_Binning_DeltaG/TCL"
+
 # Options for LEAFLET_SORTING_ALGORITHM
 # 0 for sorting based on orientation of specified head & tail; 
 # 1 for legacy sorting based on orientation of default termini (aka classic local_mid_plane); 
 # 2 for sorting based on position relative to origin (tested only with cholesterol so far) 
 set LEAFLET_SORTING_ALGORITHM 2; 
 
-
 set CENTER_AND_ALIGN 1
 set USE_QWRAP 1
-set UTILS "./helpers" 
 
 set dt 1
 set sample_frame 0  ;#The frame at which you want to start sampling
@@ -33,3 +34,4 @@ set Rmin 0. ;#minimum radius (in Angstroms)
 set dr 1 ;#radial bin width (in Angstroms)
 set Ntheta 50 ;#number of angular bins 
 
+set UTILS "${SRC}/helpers" 

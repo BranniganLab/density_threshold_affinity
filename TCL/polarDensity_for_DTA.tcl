@@ -538,7 +538,7 @@ proc polarDensityBin { config_file_name } {
     source $config_file_name
     source $UTILS/BinTools.tcl
     if {$USE_QWRAP == 1} {load ${UTILS}/qwrap.so}
-    source ${helix_assignment_script}
+    source ${SRC}/${helix_assignment_script}
     
     foreach species $lipids lipidbeads_selstr $lipidbeads_selstrs acylchain_selstr $acylchain_selstrs headname $headnames tailname $tailnames {
         set outfile "$species"
