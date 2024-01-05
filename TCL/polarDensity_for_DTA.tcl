@@ -276,14 +276,14 @@ proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta s
         #puts $frm
         $shell frame $frm
         $shell update 
-        set singleFrame_counts [bin_frame $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm $leaflet_algorithm ]
+        set singleFrame_counts [bin_frame $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm $leaflet_algorithm]
         set singleFrame_upper [lindex $singleFrame_counts 1]
         set singleFrame_lower [lindex $singleFrame_counts 0]
-        set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper  $Ntheta] 
+        set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper $Ntheta] 
         if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
             error "theta_bin_high/low and theta_bins do not have the same length."
         }
-        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1]
+        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1]]
         set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
         #TODO MAKE A SWITCH
         
