@@ -150,8 +150,6 @@ proc z_mid {init_frm nframes midplane_selstr} {
     return [expr 1.0*[vecsum $z_list]/([llength $z_list]) ]
 }
 
-
-
 ;#Outputs xy position of helix centers to file for each leaflet; center is calculated using the part of the helix in the given leaflet
 proc Protein_Position {chain_names helix_occupancy_list  backbone_selstr midplane_selstr {a ""} } {
     ;# list for the chain names
@@ -182,7 +180,6 @@ proc Protein_Position {chain_names helix_occupancy_list  backbone_selstr midplan
 }
 
 proc avg_acyl_chain_len {species acylchain_selstr} {
-    
     set acyl_num 0
     set sel [atomselect top "$species"]
     set sel_resname [lsort -unique [$sel get resname]]
@@ -249,10 +246,7 @@ proc Center_System {inpt} {
 }
 
 proc resnamer {input} {
-    
-    
     # adds resname if the input is DPPC, CHOL, PUPI...
-    
     set out ""
     if {[string length $input] == 4 && $input != "chol"} { 
         set out "resname $input"
@@ -292,7 +286,6 @@ proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta s
     return [list  ${theta_bin_low} ${theta_bin_high}]
 }
 
-
 #; procedure that was used in JCP 2021 for nAChR
 proc local_mid_plane2 {atsel_in frame_i} {
     set temp_sel [atomselect top "(name PO4 ROH) and (pbwithin 50 of $atsel_in) and not ($atsel_in)" frame $frame_i]
@@ -308,7 +301,6 @@ proc local_mid_plane2 {atsel_in frame_i} {
         return 1
     }
 }
-
 
 proc leaflet_sorter_0 {atsel_in head tail frame_i} {
     ;#originally by Grace Brannigan
@@ -332,7 +324,6 @@ proc leaflet_sorter_0 {atsel_in head tail frame_i} {
     $sel_tail delete
 }
 
-
 proc leaflet_sorter_1 {atsel_in frame_i} {
     ;#originally by Liam Sharp
     #puts "Sorting into leaflets using leaflet_sorter_1"
@@ -351,7 +342,6 @@ proc leaflet_sorter_1 {atsel_in frame_i} {
     }
     $sel_resid delete
 }
-
 
 proc leaflet_sorter_2 {atsel_in frame_i} {
     ;#originally by Jahmal Ennis, designed for cholesterol 
@@ -421,10 +411,6 @@ proc get_leaflet_totals {species headname tailname lipidbeads_selstr frame_i lea
     return $totals
 }
 
-
-
-
-
 # does what it says it does, bins over a single frame
 proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm leaflet_algorithm} {
     set indexs [$shell get index]
@@ -467,7 +453,6 @@ proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm lea
     return [list $theta_low_out $theta_high_out] ;#lower before upper is the convention
 }
 
-# FAR more useful than the other version (theta clean up)
 proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
     
     set theta_bin_out [list]
