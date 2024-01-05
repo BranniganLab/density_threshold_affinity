@@ -382,14 +382,16 @@ proc leaflet_sorter_2 {atsel_in frame_i} {
 ;# Returns +1 if the lipid is in the upper leaflet and -1 if it is in the lower leaflet 
 proc leaflet_detector {atsel_in head tail frame_i leaflet_algorithm} {
     if {$leaflet_algorithm == 0} {
-        leaflet_sorter_0 $atsel_in $head $tail $frame_i
+        set leaflet [leaflet_sorter_0 $atsel_in $head $tail $frame_i]
     } elseif { $leaflet_algorithm == 1 } {
-        leaflet_sorter_1 $atsel_in $frame_i
+        set leaflet [leaflet_sorter_1 $atsel_in $frame_i]
     } elseif { $leaflet_algorithm == 2 } {
-        leaflet_sorter_2 $atsel_in $frame_i
-    } else { 
-        puts "Option $LEAFLET_SORTING_ALGORITHM not recognized as a leaflet sorting option.  Defaulting to option 1." 
+        set leaflet [leaflet_sorter_2 $atsel_in $frame_i]
+    } else {
+        puts "Option ${LEAFLET_SORTING_ALGORITHM} not recognized as a leaflet sorting option.  Defaulting to option 1."
+        set leaflet [leaflet_sorter_0 $atsel_in $head $tail $frame_i]
     }
+    return $leaflet
 }
 
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
