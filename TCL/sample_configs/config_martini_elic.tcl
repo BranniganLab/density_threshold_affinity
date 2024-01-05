@@ -7,8 +7,8 @@ set SRC "/home/js2746/Polar_Binning_DeltaG/TCL"
 # 2 for sorting based on position relative to origin (tested only with cholesterol so far) 
 set LEAFLET_SORTING_ALGORITHM 1; 
 
-set CENTER_AND_ALIGN 1
-variable USE_QWRAP 1
+set CENTER_AND_ALIGN 0 ;# set to one if system not already centered/aligned around protein
+variable USE_QWRAP 0 ;# set to one if qwrap is installed
 
 set dt 1
 set sample_frame 0 ;#The frame at which you want to start sampling
