@@ -278,28 +278,18 @@ proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta s
         $shell frame $frm
         $shell update 
         set singleFrame_counts [bin_frame $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm $leaflet_algorithm ]
-        # you'll need to create bin_frame, using lines 284-325 (or around those) of your previous code
-        set singleFrame_upper [lindex $singleFrame_counts 1] 
-        #puts $singleFrame_upper
-        #I assume here that bin_frame returns upper and lower as two lists inside another list, you can do it however
+        set singleFrame_upper [lindex $singleFrame_counts 1]
         set singleFrame_lower [lindex $singleFrame_counts 0]
-        set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper  $Ntheta]
-        
-        # should be fixed, do not change [lrepeat [expr $Ntheta+1] to [lrepeat [expr $Ntheta] 
+        set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper  $Ntheta] 
         if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
             error "theta_bin_high/low and theta_bins do not have the same length."
         }
-        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1] ]
-        #puts [lindex $theta_bins 1]
+        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1]
         set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
-        #puts $theta_bin_low
         #TODO MAKE A SWITCH
         
         output_bins $fupper $ri $rf $dtheta [lindex $theta_bins 1] 
-        ;#open fupper before the loop starts and close afterwards
-        output_bins $flower $ri $rf $dtheta [lindex $theta_bins 0] 
-        ;#same thing     
-        
+        output_bins $flower $ri $rf $dtheta [lindex $theta_bins 0]         
     }
     return [list  ${theta_bin_low} ${theta_bin_high}]
 }
@@ -443,7 +433,6 @@ proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm lea
     set theta_low_out [list]
     set resd_old 0
     set high_low 0
-    #set shel_count [expr $shel_count + $nShell]
     foreach indx $indexs resd $resids {
         #loop over lipids in the shell
         set a "($species and index $indx)"
@@ -451,12 +440,10 @@ proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm lea
         set thislipid [atomselect top $a frame $frm]
         set high_low 0 ;#reinitialize
         if {[string length ${species}] == 2} {
-            if {([$thislipid get name] == "PO4") || ([$thislipid get name] == "P") } { ;#GB has no idea what this does. 
+            if {([$thislipid get name] == "PO4") || ([$thislipid get name] == "P") } { 
                 continue
             }
-        }
-        # change 5
-        
+        }        
         if {${resd_old} != ${resd}} {
             set high_low [leaflet_detector $b $headname $tailname $frm $leaflet_algorithm]
         }
