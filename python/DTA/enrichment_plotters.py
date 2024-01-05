@@ -415,11 +415,6 @@ def read_rep(file_list, chains_groups, leaflets=['low','upp'], enrich=True):
             A = (radius * dr * dth)
             thetas = np.unique(theta)
 
-        filename = fl.name
-
-        tmp_chain = filename.split('.')[0]
-        tmp_nm = filename.split('.')[2]
-
         idx+=1
         toadd = np.loadtxt(fl, skiprows=1)
         toadd = toadd[:,3:-1]
