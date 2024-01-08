@@ -179,6 +179,25 @@ def plot_single(toplot,
                 yticks=[],
                 xticks=[],
                 cmap='RdBu'):
+    """
+    Create a polar plot with a color mesh representing the density of a given lipid in a simulation.
+
+    Parameters:
+    - toplot (array-like): The density data to be plotted.
+    - theta (array-like): The theta values for the polar plot.
+    - radius (array-like): The radius values for the polar plot.
+    - ax (matplotlib.axes.Axes): The polar subplot on which to plot the data.
+    - vmid (float, optional): The midpoint value for the color mapping. Defaults to 1.
+    - vmin (float, optional): The minimum value for the color mapping. Defaults to 0.
+    - vmax (float, optional): The maximum value for the color mapping. Defaults to 2.
+    - norm (matplotlib.colors.Normalize, optional): The normalization object for the color mapping. Defaults to None.
+    - yticks (list, optional): The y-axis tick labels. Defaults to an empty list.
+    - xticks (list, optional): The x-axis tick labels. Defaults to an empty list.
+    - cmap (str or colormap, optional): The colormap for the color mapping. Defaults to 'RdBu'.
+
+    Returns:
+    - matplotlib.axes.Axes: The modified polar subplot with the density data plotted.
+    """
     if norm is None:
         norm = pc.MidpointNormalize(midpoint=vmid,vmin=vmin,vmax=vmax)
     ax.grid(False)
@@ -414,12 +433,6 @@ def read_rep(file_list, chains_groups, leaflets=['low','upp'], enrich=True):
             rad, dr, dth, theta, radius, frames, Ntheta = pc.Coord_Get(fl)
             A = (radius * dr * dth)
             thetas = np.unique(theta)
-
-        filename = fl.name
-
-        tmp_chain = filename.split('.')[0]
-        tmp_nm = filename.split('.')[2]
-
         idx+=1
         toadd = np.loadtxt(fl, skiprows=1)
         toadd = toadd[:,3:-1]
