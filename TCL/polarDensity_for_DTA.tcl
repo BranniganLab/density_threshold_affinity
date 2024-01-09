@@ -471,6 +471,7 @@ proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm lea
 
 
 proc polarDensityBin { config_file_script } { 
+    global USE_QWRAP
     set start_frame 0 ; #default value before potential change in $config_file_script
     set nframes [molinfo top get numframes]
     set end_frame $nframes ;#default value before potential change in $config_file_script
@@ -489,9 +490,9 @@ proc polarDensityBin { config_file_script } {
         }
         ;# Center's system (weak hack)
         if {$CENTER_AND_ALIGN == 1} {
-            Center_System "occupancy $helixlist and $backbone_selstr"
-            Center_System "occupancy $helixlist and $backbone_selstr"
-            Center_System "occupancy $helixlist and $backbone_selstr"
+            center_system "occupancy $helixlist and $backbone_selstr"
+            center_system "occupancy $helixlist and $backbone_selstr"
+            center_system "occupancy $helixlist and $backbone_selstr"
             ;# aligns protein
             Align "occupancy $helixlist and $backbone_selstr"
         }
