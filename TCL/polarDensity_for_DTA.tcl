@@ -320,8 +320,7 @@ proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr 
     puts "Checked for leaflet reassignments $num_reassignments times."
 }
     
-;# Calculates the total number of lipids and beads of the given species in each leaflet 
-;# Returns the following list : [[lower_leaflet_beads lower_leaflet_lipids] [upper_leaflet_beads upper_leaflet_lipids]] 
+;#Reinitializes the user2 value for selected beads in selected frames 
 proc clean_leaflet_assignments {species lipidbeads_selstr start_frame end_frame} {
     set sel [ atomselect top "$species and $lipidbeads_selstr"]
     set selnum [$sel num]
@@ -335,7 +334,7 @@ proc clean_leaflet_assignments {species lipidbeads_selstr start_frame end_frame}
 }
     
     
-#write output
+#write radial and theta bin output to file 
 proc output_bins {fl  ri rf dtheta bins} {
     puts -nonewline $fl "[format {%0.2f} $ri]  [format {%0.2f} $rf] [format {%0.2f} $dtheta]  " 
     puts $fl "$bins" 
@@ -366,14 +365,14 @@ proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
 }
 
 
-#bins a single shell over many frames
-proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta start_frame end_frame Ntheta dt ri rf  flower fupper leaflet_algorithm} {
+;#loops over frames, binning a single radial shell into multiple theta bins. 
+proc loop_over_frames {shell species headname tailname lipidbeads_selstr dtheta start_frame end_frame Ntheta dt ri rf  flower fupper leaflet_algorithm} {
     set theta_bin_high [lrepeat [expr $Ntheta+1] 0]
     set theta_bin_low [lrepeat [expr $Ntheta+1] 0]
     for {set frm $start_frame} {$frm < ${end_frame}} {incr frm $dt} {
         $shell frame $frm
         $shell update 
-        set singleFrame_counts [bin_frame $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm $leaflet_algorithm ]
+        set singleFrame_counts [loop_over_lipids $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm $leaflet_algorithm ]
         set singleFrame_upper [lindex $singleFrame_counts 1] 
         set singleFrame_lower [lindex $singleFrame_counts 0]
         set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper  $Ntheta]
@@ -395,8 +394,8 @@ proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta s
     return [list  ${theta_bin_low} ${theta_bin_high}]
 }
 
-#bin a single shell over one frame 
-proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm leaflet_algorithm} {
+#bin a single radial shell into multiple theta bins, over one frame 
+proc loop_over_lipids {shell species headname tailname lipidbeads_selstr dtheta frm leaflet_algorithm} {
     set indexs [$shell get index]
     set resids [$shell get resid]
     set nShell [$shell num]
@@ -440,7 +439,9 @@ proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm lea
 ### polarDensity Function ###
 
 
-
+;#The main function that constructs the densities via 3 loops.  
+;#Unintuitively, the outermost loop is over shells (this function), then the next loop is over frames (loop_over_frames), and then the inner most loop is over lipids in the shell, which are assigned to angular bins
+;#This odd construction improves efficiency: the radial atomselections can be created using atomselect within, and then updated for each new frame, without a new selection being created or destroyed. There is no equivalent option for an angular "within" so angular histogramming occurs more traditionally.  
 proc polarDensityBin { config_file_script } { 
     set start_frame 0 ; #default value before potential change in $config_file_script
     set nframes [molinfo top get numframes]
@@ -507,7 +508,7 @@ proc polarDensityBin { config_file_script } {
             set ri2 [expr $ri*$ri]
             set shell [atomselect top "(resname $species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) and $lipidbeads_selstr"]
             #puts [$shell num]		
-            set theta_bin [bin_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $start_frame $end_frame $Ntheta $dt $ri $rf $low_f $upp_f $LEAFLET_SORTING_ALGORITHM]
+            set theta_bin [loop_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $start_frame $end_frame $Ntheta $dt $ri $rf $low_f $upp_f $LEAFLET_SORTING_ALGORITHM]
             set theta_bin_high [lindex $theta_bin 1]
             set theta_bin_low [lindex $theta_bin 0]
             $shell delete	
