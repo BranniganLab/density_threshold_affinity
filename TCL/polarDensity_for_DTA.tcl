@@ -415,7 +415,6 @@ proc loop_over_frames {shell species headname tailname lipidbeads_selstr dtheta 
         set singleFrame_lower [lindex $singleFrame_counts 0]
         set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper  $Ntheta]
         
-        # should be fixed, do not change [lrepeat [expr $Ntheta+1] to [lrepeat [expr $Ntheta] 
         if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
             error "theta_bin_high/low and theta_bins do not have the same length."
         }
@@ -424,9 +423,7 @@ proc loop_over_frames {shell species headname tailname lipidbeads_selstr dtheta 
         set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
         #puts $theta_bin_low
         output_bins $fupper $ri $rf $dtheta [lindex $theta_bins 1] 
-        ;#open fupper before the loop starts and close afterwards
-        output_bins $flower $ri $rf $dtheta [lindex $theta_bins 0] 
-        ;#same thing     
+        output_bins $flower $ri $rf $dtheta [lindex $theta_bins 0]   
         
     }
     return [list  ${theta_bin_low} ${theta_bin_high}]
