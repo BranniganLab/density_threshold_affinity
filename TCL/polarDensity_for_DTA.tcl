@@ -126,8 +126,9 @@ proc output_helix_centers {chain_names helix_occupancy_list  backbone_selstr mid
     }
 }
 
+;#determines the average acyl chain length for a given species 
+;#usage unclear
 proc avg_acyl_chain_len {species acylchain_selstr} {
-    
     set acyl_num 0
     set sel [atomselect top "$species"]
     set sel_resname [lsort -unique [$sel get resname]]
@@ -154,10 +155,10 @@ proc avg_acyl_chain_len {species acylchain_selstr} {
     
 }
 
-
+;# confirms your box is either square or paraelleogram-ish
+;# will perform qwrap or pbc wrap depending
 proc center_and_wrap_system {inpt USE_QWRAP} {
-    # confirms your box is either square or paraelleogram-ish
-    # will perform qwrap or pbc wrap depending
+
     set pbc_angles [molinfo top get {alpha beta gamma}]
     
     set sel [atomselect top "$inpt" frame 0]
@@ -191,8 +192,8 @@ proc center_and_wrap_system {inpt USE_QWRAP} {
     $sel delete
 }
 
+;#determines leaflet based on relative height of specified head and tail beads
 proc leaflet_sorter_0 {atsel_in head tail frame_i} {
-    ;#originally by Grace Brannigan
     #puts "Sorting into leaflets using leaflet_sorter_0"
     set sel_resid [atomselect top "$atsel_in" frame $frame_i]
     set sel_head [atomselect top "$atsel_in and name $head" frame $frame_i]
@@ -213,9 +214,10 @@ proc leaflet_sorter_0 {atsel_in head tail frame_i} {
     $sel_tail delete
 }
 
+;#originally by Liam Sharp; procedure that was used in JCP 2021 for nAChR
+;#similar to leaflet_sorter_0 but autoselects head and tail beads 
 
 proc leaflet_sorter_1 {atsel_in frame_i} {
-    ;#originally by Liam Sharp; procedure that was used in JCP 2021 for nAChR
     #puts "Sorting into leaflets using leaflet_sorter_1"
     set sel_resid [atomselect top "$atsel_in" frame $frame_i]
     set ind 1
@@ -233,9 +235,9 @@ proc leaflet_sorter_1 {atsel_in frame_i} {
     $sel_resid delete
 }
 
-
+;#originally by Jahmal Ennis, designed for cholesterol 
 proc leaflet_sorter_2 {atsel_in frame_i} {
-    ;#originally by Jahmal Ennis, designed for cholesterol 
+
     #puts "Sorting into leaflets using leaflet_sorter_2"
     set sel_resid [atomselect top "$atsel_in" frame $frame_i]
     set ind 1
@@ -258,8 +260,7 @@ proc leaflet_sorter_2 {atsel_in frame_i} {
 }
 
 
-;# Determines if the lipid is in the outer or iner leaflet and sets the user value accordingly
-;# Returns +1 if the lipid is in the upper leaflet and -1 if it is in the lower leaflet 
+;# Determines if the lipid is in the outer or iner leaflet and sets the user2 value accordingly
 proc leaflet_detector {atsel_in head tail frame_i leaflet_algorithm} {
     if {$leaflet_algorithm == 0} {
         leaflet_sorter_0 $atsel_in $head $tail $frame_i
@@ -272,34 +273,6 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_algorithm} {
     }
 }
 
-;# Unnecessary; duplicated by frame_leaflet_assignment with frame_f = frame_i
-;# Calculates the total number of lipids and beads of the given species in each leaflet 
-;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]]  
-proc get_leaflet_totals {species headname tailname lipidbeads_selstr frame_i leaflet_algorithm} {
-    set sel [ atomselect top "(($species)) and $lipidbeads_selstr"  frame $frame_i]
-    set sel_num [llength [lsort -unique [$sel get resid] ] ]
-    set sel_resid_list [lsort -unique [$sel get resid] ]
-    set totals {}
-    $sel delete
-    if {$sel_num < 1} {
-        set totals [[list 0 0] [list 0 0]] 
-    } else {
-        #assign leaflets to user2 field of each bead for this species
-        foreach sel_resid $sel_resid_list {
-            set selstring "${species} and (resid $sel_resid) and $lipidbeads_selstr"
-            set leaflet [leaflet_detector $selstring $headname $tailname $frame_i $leaflet_algorithm]
-        }   
-        #count the number of lipids and the number of beads in each leaflet
-        foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
-            set sel [ atomselect top "(${species} and $leaf)"  frame $frame_i]
-            set num_beads [$sel num]
-            set num_lipids [llength [lsort -unique [$sel get resid] ]]
-            lappend totals [list $txtstr $num_beads $num_lipids]
-            $sel delete
-        }
-    }
-    return $totals
-}
 
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
 ;# Assigns the leaflet to user2 
@@ -362,11 +335,13 @@ proc clean_leaflet_assignments {species lipidbeads_selstr start_frame end_frame}
 }
     
     
+#write output
 proc output_bins {fl  ri rf dtheta bins} {
     puts -nonewline $fl "[format {%0.2f} $ri]  [format {%0.2f} $rf] [format {%0.2f} $dtheta]  " 
     puts $fl "$bins" 
 }
 
+#
 proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
     
     set theta_bin_out [list]
@@ -376,7 +351,6 @@ proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
         set theta_bin_counts [lcount $ud]
         #Shell_Test $shel_count $theta_bin_counts
         set theta_bins {}
-        # make this into the new lcount? better Idea TEST lcount
         for {set ti 0} { $ti<=$Ntheta} {incr ti 1} {
             set tindex [lsearch [lindex $theta_bin_counts 0]  $ti]
             if { $tindex >= 0} {
@@ -421,7 +395,7 @@ proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta s
     return [list  ${theta_bin_low} ${theta_bin_high}]
 }
 
-
+#bin a single shell over one frame 
 proc bin_frame {shell species headname tailname lipidbeads_selstr dtheta frm leaflet_algorithm} {
     set indexs [$shell get index]
     set resids [$shell get resid]
