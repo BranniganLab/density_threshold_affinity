@@ -216,7 +216,6 @@ proc leaflet_sorter_0 {atsel_in head tail frame_i} {
 
 ;#originally by Liam Sharp; procedure that was used in JCP 2021 for nAChR
 ;#similar to leaflet_sorter_0 but autoselects head and tail beads 
-
 proc leaflet_sorter_1 {atsel_in frame_i} {
     #puts "Sorting into leaflets using leaflet_sorter_1"
     set sel_resid [atomselect top "$atsel_in" frame $frame_i]
@@ -260,7 +259,11 @@ proc leaflet_sorter_2 {atsel_in frame_i} {
 }
 
 
-;# Determines if the lipid is in the outer or iner leaflet and sets the user2 value accordingly
+;# Determines if the lipid is in the outer or inner leaflet and sets the user2 value accordingly
+;# Algorithm is determined by user: 
+;# 0: determines leaflet based on relative height of specified head and tail beads
+;# 1: originally by Liam Sharp; procedure that was used in JCP 2021 for nAChR; similar to leaflet_sorter_0 but autoselects head and tail beads; more appropriate for situations with many species
+;# 2: originally by Jahmal Ennis, determines whether the auto-determined headbead is above or below the center of mass (of what? the system?); more appropriate for rigid lipids like cholesterol that frequently invert or lie at parallel to the membrane
 proc leaflet_detector {atsel_in head tail frame_i leaflet_algorithm} {
     if {$leaflet_algorithm == 0} {
         leaflet_sorter_0 $atsel_in $head $tail $frame_i
