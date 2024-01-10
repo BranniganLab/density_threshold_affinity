@@ -325,7 +325,7 @@ proc clean_leaflet_assignments {species lipidbeads_selstr start_frame end_frame}
     set sel [ atomselect top "$species and $lipidbeads_selstr"]
     set selnum [$sel num]
 
-    for {set update_frame $start_frame} {$update_frame < ${end_frame}} {incr update_frame} {
+    for {set update_frame $start_frame} {$update_frame < ${ _frame}} {incr update_frame} {
         $sel frame $update_frame
         $sel set user2 [lrepeat $selnum 0.0]
         puts "Cleaning $selnum beads of leaflet assignments in frame $update_frame"
@@ -495,11 +495,11 @@ proc polarDensityBin { config_file_script } {
 
         if { $start_frame > $nframes } {
             puts "Error: specified start frame $start_frame is greater than number of frames $nframes" 
-            set end $nframes
+            set start_frame $nframes
         }
         if { $end_frame > $nframes } {
             puts "Warning: specified end frame $end_frame is greater than number of frames; setting end frame to $nframes" 
-            set end $nframes
+            set end_frame $nframes
         }
         $sel delete
         puts "Acyl Chain:\t$species"
