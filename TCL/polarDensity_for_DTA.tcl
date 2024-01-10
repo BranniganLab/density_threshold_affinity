@@ -155,12 +155,9 @@ proc avg_acyl_chain_len {species acylchain_selstr} {
 }
 
 
-proc center_system {inpt} {
-    global USE_QWRAP
-    puts "${inpt}"
+proc center_and_wrap_system {inpt USE_QWRAP} {
     # confirms your box is either square or paraelleogram-ish
     # will perform qwrap or pbc wrap depending
-    
     set pbc_angles [molinfo top get {alpha beta gamma}]
     
     set sel [atomselect top "$inpt" frame 0]
@@ -341,9 +338,9 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
 
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
 ;# Returns the following list : [[lower_leaflet_beads lower_leaflet_lipids] [upper_leaflet_beads upper_leaflet_lipids]] 
-proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr start end skip leaflet_algorithm} {
+proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr start_frame end_frame skip leaflet_algorithm} {
     set num_reassignments 0
-    for {set update_frame $start} {$update_frame < ${end}} {incr update_frame $skip} {
+    for {set update_frame $start_frame} {$update_frame < ${end_frame}} {incr update_frame $skip} {
         frame_leaflet_assignment $species $headname $tailname $lipidbeads_selstr $update_frame [expr $update_frame + $skip] $leaflet_algorithm
         incr num_reassignments
     }
@@ -352,11 +349,11 @@ proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr 
     
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
 ;# Returns the following list : [[lower_leaflet_beads lower_leaflet_lipids] [upper_leaflet_beads upper_leaflet_lipids]] 
-proc clean_leaflet_assignments {species lipidbeads_selstr start end} {
+proc clean_leaflet_assignments {species lipidbeads_selstr start_frame end_frame} {
     set sel [ atomselect top "$species and $lipidbeads_selstr"]
     set selnum [$sel num]
 
-    for {set update_frame $start} {$update_frame < ${end}} {incr update_frame} {
+    for {set update_frame $start_frame} {$update_frame < ${end_frame}} {incr update_frame} {
         $sel frame $update_frame
         $sel set user2 [lrepeat $selnum 0.0]
         puts "Cleaning $selnum beads of leaflet assignments in frame $update_frame"
@@ -396,10 +393,10 @@ proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
 
 
 #bins a single shell over many frames
-proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta start end Ntheta dt ri rf  flower fupper leaflet_algorithm} {
+proc bin_over_frames {shell species headname tailname lipidbeads_selstr dtheta start_frame end_frame Ntheta dt ri rf  flower fupper leaflet_algorithm} {
     set theta_bin_high [lrepeat [expr $Ntheta+1] 0]
     set theta_bin_low [lrepeat [expr $Ntheta+1] 0]
-    for {set frm $start} {$frm < ${end}} {incr frm $dt} {
+    for {set frm $start_frame} {$frm < ${end_frame}} {incr frm $dt} {
         $shell frame $frm
         $shell update 
         set singleFrame_counts [bin_frame $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm $leaflet_algorithm ]
@@ -478,7 +475,6 @@ proc polarDensityBin { config_file_script } {
     source $UTILS/BinTools.tcl
     if {$USE_QWRAP == 1} {load ${UTILS}/qwrap.so}
     source ${helix_assignment_script}
-    
     foreach species $lipids lipidbeads_selstr $lipidbeads_selstrs acylchain_selstr $acylchain_selstrs headname $headnames tailname $tailnames {
         set outfile "$species"
         set sel [atomselect top "resname $species"]
@@ -489,9 +485,9 @@ proc polarDensityBin { config_file_script } {
         }
         ;# Center's system (weak hack)
         if {$CENTER_AND_ALIGN == 1} {
-            Center_System "occupancy $helixlist and $backbone_selstr"
-            Center_System "occupancy $helixlist and $backbone_selstr"
-            Center_System "occupancy $helixlist and $backbone_selstr"
+            center_and_wrap_system "occupancy $helixlist and $backbone_selstr" $USE_QWRAP
+            center_and_wrap_system "occupancy $helixlist and $backbone_selstr" $USE_QWRAP
+            center_and_wrap_system "occupancy $helixlist and $backbone_selstr" $USE_QWRAP
             ;# aligns protein
             Align "occupancy $helixlist and $backbone_selstr"
         }
@@ -537,7 +533,7 @@ proc polarDensityBin { config_file_script } {
             set ri2 [expr $ri*$ri]
             set shell [atomselect top "(resname $species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) and $lipidbeads_selstr"]
             #puts [$shell num]		
-            set theta_bin [bin_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $start $end $Ntheta $dt $ri $rf $low_f $upp_f $LEAFLET_SORTING_ALGORITHM]
+            set theta_bin [bin_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $start_frame $end_frame $Ntheta $dt $ri $rf $low_f $upp_f $LEAFLET_SORTING_ALGORITHM]
             set theta_bin_high [lindex $theta_bin 1]
             set theta_bin_low [lindex $theta_bin 0]
             $shell delete	
