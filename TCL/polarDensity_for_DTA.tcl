@@ -310,7 +310,7 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
 }
 
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
-;# Returns the following list : [[lower_leaflet_beads lower_leaflet_lipids] [upper_leaflet_beads upper_leaflet_lipids]] 
+;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
 proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr start_frame end_frame skip leaflet_algorithm} {
     set num_reassignments 0
     for {set update_frame $start_frame} {$update_frame < ${end_frame}} {incr update_frame $skip} {
