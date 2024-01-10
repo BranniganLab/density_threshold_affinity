@@ -365,36 +365,7 @@ proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
 }
 
 
-;#loops over frames, binning a single radial shell into multiple theta bins. 
-proc loop_over_frames {shell species headname tailname lipidbeads_selstr dtheta start_frame end_frame Ntheta dt ri rf  flower fupper leaflet_algorithm} {
-    set theta_bin_high [lrepeat [expr $Ntheta+1] 0]
-    set theta_bin_low [lrepeat [expr $Ntheta+1] 0]
-    for {set frm $start_frame} {$frm < ${end_frame}} {incr frm $dt} {
-        $shell frame $frm
-        $shell update 
-        set singleFrame_counts [loop_over_lipids $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm $leaflet_algorithm ]
-        set singleFrame_upper [lindex $singleFrame_counts 1] 
-        set singleFrame_lower [lindex $singleFrame_counts 0]
-        set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper  $Ntheta]
-        
-        # should be fixed, do not change [lrepeat [expr $Ntheta+1] to [lrepeat [expr $Ntheta] 
-        if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
-            error "theta_bin_high/low and theta_bins do not have the same length."
-        }
-        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1] ]
-        #puts [lindex $theta_bins 1]
-        set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
-        #puts $theta_bin_low
-        output_bins $fupper $ri $rf $dtheta [lindex $theta_bins 1] 
-        ;#open fupper before the loop starts and close afterwards
-        output_bins $flower $ri $rf $dtheta [lindex $theta_bins 0] 
-        ;#same thing     
-        
-    }
-    return [list  ${theta_bin_low} ${theta_bin_high}]
-}
-
-#bin a single radial shell into multiple theta bins, over one frame 
+;#The inner-most loop of the histogramming algorithm: a loop over all lipids occupying one shell in one frame. Each lipid is assigned an angular bin and totals are updated.  
 proc loop_over_lipids {shell species headname tailname lipidbeads_selstr dtheta frm leaflet_algorithm} {
     set indexs [$shell get index]
     set resids [$shell get resid]
@@ -432,16 +403,67 @@ proc loop_over_lipids {shell species headname tailname lipidbeads_selstr dtheta 
     return [list $theta_low_out $theta_high_out] ;#lower before upper is the convention
 }
 
+;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The lipids occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
+proc loop_over_frames {shell species headname tailname lipidbeads_selstr dtheta start_frame end_frame Ntheta dt ri rf  flower fupper leaflet_algorithm} {
+    set theta_bin_high [lrepeat [expr $Ntheta+1] 0]
+    set theta_bin_low [lrepeat [expr $Ntheta+1] 0]
+    for {set frm $start_frame} {$frm < ${end_frame}} {incr frm $dt} {
+        $shell frame $frm
+        $shell update 
+        set singleFrame_counts [loop_over_lipids $shell $species $headname $tailname $lipidbeads_selstr $dtheta $frm $leaflet_algorithm ]
+        set singleFrame_upper [lindex $singleFrame_counts 1] 
+        set singleFrame_lower [lindex $singleFrame_counts 0]
+        set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper  $Ntheta]
+        
+        # should be fixed, do not change [lrepeat [expr $Ntheta+1] to [lrepeat [expr $Ntheta] 
+        if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
+            error "theta_bin_high/low and theta_bins do not have the same length."
+        }
+        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1] ]
+        #puts [lindex $theta_bins 1]
+        set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
+        #puts $theta_bin_low
+        output_bins $fupper $ri $rf $dtheta [lindex $theta_bins 1] 
+        ;#open fupper before the loop starts and close afterwards
+        output_bins $flower $ri $rf $dtheta [lindex $theta_bins 0] 
+        ;#same thing     
+        
+    }
+    return [list  ${theta_bin_low} ${theta_bin_high}]
+}
 
+
+;#The outer loop of the 3 nested histogramming loops. 
+;#Unintuitively, the outermost loop is over radial shells, then the middle loop is over frames, and the inner most loop is over lipids in the shell. 
+;#This odd construction improves efficiency: the radial atomselections can be created using "atomselect within", and then updated for each new frame in the middle loop, without a new selection being created or destroyed. There is no equivalent option for an angular "within" so angular histogramming occurs more traditionally via a loop over lipids.  
+proc loop_over_shells {Rmin Rmax dr species headname tailname lipidbeads_selstr dtheta start_frame end_frame Ntheta dt low_f upp_f low_f_avg upp_f_avg LEAFLET_SORTING_ALGORITHM} {
+    set delta_frame [expr ($end_frame - $start_frame) / $dt]
+    for {set ri $Rmin} { $ri<=${Rmax}} { set ri [expr $ri + $dr]} {
+        #loop over shells
+        puts "Now on shell {$ri [expr ${ri}+${dr}]}"
+        set rf [expr $ri + $dr]
+        set rf2 [expr $rf*$rf]
+        set ri2 [expr $ri*$ri]
+        set shell [atomselect top "(resname $species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) and $lipidbeads_selstr"]
+        #puts [$shell num]		
+        set theta_bin [loop_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $start_frame $end_frame $Ntheta $dt $ri $rf $low_f $upp_f $LEAFLET_SORTING_ALGORITHM]
+        set theta_bin_high [lindex $theta_bin 1]
+        set theta_bin_low [lindex $theta_bin 0]
+        $shell delete	
+        set time_avg_upper [vecscale $theta_bin_high [expr 1.0 / (1.0 * $delta_frame)]]
+        set time_avg_lower [vecscale $theta_bin_low [expr 1.0 / (1.0 * $delta_frame)]]
+        output_bins $upp_f_avg $ri $rf $dtheta "$time_avg_upper" 
+        output_bins $low_f_avg $ri $rf $dtheta "$time_avg_lower" 
+    }
+}
 
 
 
 ### polarDensity Function ###
 
 
-;#The main function that constructs the densities via 3 loops.  
-;#Unintuitively, the outermost loop is over shells (this function), then the next loop is over frames (loop_over_frames), and then the inner most loop is over lipids in the shell, which are assigned to angular bins
-;#This odd construction improves efficiency: the radial atomselections can be created using atomselect within, and then updated for each new frame, without a new selection being created or destroyed. There is no equivalent option for an angular "within" so angular histogramming occurs more traditionally.  
+;#The main function that initializes, constructs the densities for each lipid species, and outputs to file. 
+
 proc polarDensityBin { config_file_script } { 
     set start_frame 0 ; #default value before potential change in $config_file_script
     set nframes [molinfo top get numframes]
@@ -499,24 +521,10 @@ proc polarDensityBin { config_file_script } {
         }
         
         trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $start_frame $end_frame $leaflet_reassign_t $LEAFLET_SORTING_ALGORITHM
-        set delta_frame [expr ($end_frame - $start_frame) / $dt]
-        for {set ri $Rmin} { $ri<=${Rmax}} { set ri [expr $ri + $dr]} {
-            #loop over shells
-            puts "Now on shell {$ri [expr ${ri}+${dr}]}"
-            set rf [expr $ri + $dr]
-            set rf2 [expr $rf*$rf]
-            set ri2 [expr $ri*$ri]
-            set shell [atomselect top "(resname $species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) and $lipidbeads_selstr"]
-            #puts [$shell num]		
-            set theta_bin [loop_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $start_frame $end_frame $Ntheta $dt $ri $rf $low_f $upp_f $LEAFLET_SORTING_ALGORITHM]
-            set theta_bin_high [lindex $theta_bin 1]
-            set theta_bin_low [lindex $theta_bin 0]
-            $shell delete	
-            set time_avg_upper [vecscale $theta_bin_high [expr 1.0 / (1.0 * $delta_frame)]]
-            set time_avg_lower [vecscale $theta_bin_low [expr 1.0 / (1.0 * $delta_frame)]]
-            output_bins $upp_f_avg $ri $rf $dtheta "$time_avg_upper" 
-            output_bins $low_f_avg $ri $rf $dtheta "$time_avg_lower" 
-        }
+        
+        ;#the core calculation 
+        loop_over_shells $Rmin $Rmax $dr $species $headname $tailname $lipidbeads_selstr $dtheta $start_frame $end_frame $Ntheta $dt $low_f $upp_f $low_f_avg $upp_f_avg $LEAFLET_SORTING_ALGORITHM 
+        
         close $low_f
         close $upp_f
         close $low_f_avg
