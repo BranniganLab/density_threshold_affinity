@@ -349,9 +349,7 @@ proc output_bins {fl  ri rf dtheta bins} {
 
 #
 proc theta_histogram {singleFrame_lower singleFrame_upper  Ntheta } {
-    
     set theta_bin_out [list]
-    
     foreach ud [list $singleFrame_lower $singleFrame_upper ] {
         #cleanup and output 
         set theta_bin_counts [lcount $ud]
@@ -525,7 +523,7 @@ proc polarDensityBin { config_file_script } {
                 puts $avgfile "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
         }
         puts "Processing frames, starting at frame $start_frame and ending at frame $end_frame."
-        trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $start_frame $end_frame $leaflet_reassign_t $LEAFLET_SORTING_ALGORITHM
+        trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $start_frame $end_frame $leaflet_reassign_interval $LEAFLET_SORTING_ALGORITHM
         
         ;#the core calculation 
         loop_over_shells $Rmin $Rmax $dr $species $headname $tailname $lipidbeads_selstr $dtheta $start_frame $end_frame $Ntheta $dt $low_f $upp_f $low_f_avg $upp_f_avg $LEAFLET_SORTING_ALGORITHM 
