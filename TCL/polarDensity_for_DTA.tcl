@@ -316,7 +316,11 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
 proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr start_frame end_frame skip leaflet_algorithm} {
     set num_reassignments 0
+    puts $start_frame
+    puts $end_frame
+    puts $skip
     for {set update_frame $start_frame} {$update_frame < ${end_frame}} {incr update_frame $skip} {
+        puts "Now reassigning leaflets in frame $update_frame" 
         frame_leaflet_assignment $species $headname $tailname $lipidbeads_selstr $update_frame [expr $update_frame + $skip] $leaflet_algorithm
         incr num_reassignments
     }
@@ -502,6 +506,7 @@ proc polarDensityBin { config_file_script } {
             set end_frame $nframes
         }
         $sel delete
+
         puts "Acyl Chain:\t$species"
         set low_f [open "${outfile}.low.dat" w]
         set upp_f [open "${outfile}.upp.dat" w]
@@ -519,7 +524,7 @@ proc polarDensityBin { config_file_script } {
                 puts $lu "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
                 puts $avgfile "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
         }
-        
+        puts "Processing frames, starting at frame $start_frame and ending at frame $end_frame."
         trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $start_frame $end_frame $leaflet_reassign_t $LEAFLET_SORTING_ALGORITHM
         
         ;#the core calculation 
