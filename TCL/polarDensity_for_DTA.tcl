@@ -316,11 +316,7 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
 proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr start_frame end_frame skip leaflet_algorithm} {
     set num_reassignments 0
-    puts $start_frame
-    puts $end_frame
-    puts $skip
     for {set update_frame $start_frame} {$update_frame < ${end_frame}} {incr update_frame $skip} {
-        puts "Now reassigning leaflets in frame $update_frame" 
         frame_leaflet_assignment $species $headname $tailname $lipidbeads_selstr $update_frame [expr $update_frame + $skip] $leaflet_algorithm
         incr num_reassignments
     }
