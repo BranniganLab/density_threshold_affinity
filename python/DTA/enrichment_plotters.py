@@ -179,6 +179,25 @@ def plot_single(toplot,
                 yticks=[],
                 xticks=[],
                 cmap='RdBu'):
+    """
+    Create a polar plot with a color mesh representing the density of a given lipid in a simulation.
+
+    Parameters:
+    - toplot (array-like): The density data to be plotted.
+    - theta (array-like): The theta values for the polar plot.
+    - radius (array-like): The radius values for the polar plot.
+    - ax (matplotlib.axes.Axes): The polar subplot on which to plot the data.
+    - vmid (float, optional): The midpoint value for the color mapping. Defaults to 1.
+    - vmin (float, optional): The minimum value for the color mapping. Defaults to 0.
+    - vmax (float, optional): The maximum value for the color mapping. Defaults to 2.
+    - norm (matplotlib.colors.Normalize, optional): The normalization object for the color mapping. Defaults to None.
+    - yticks (list, optional): The y-axis tick labels. Defaults to an empty list.
+    - xticks (list, optional): The x-axis tick labels. Defaults to an empty list.
+    - cmap (str or colormap, optional): The colormap for the color mapping. Defaults to 'RdBu'.
+
+    Returns:
+    - matplotlib.axes.Axes: The modified polar subplot with the density data plotted.
+    """
     if norm is None:
         norm = pc.MidpointNormalize(midpoint=vmid,vmin=vmin,vmax=vmax)
     ax.grid(False)
@@ -200,196 +219,17 @@ def plot_single(toplot,
     return ax
 
 
-
-
-
-# def polar_plot(data_in, 
-#                theta, 
-#                radius, 
-#                chains_groups, 
-#                helices_lwr=None, 
-#                helices_upr=None, 
-#                vmax=2, 
-#                vmid=1, 
-#                vmin=0, 
-#                colorbychain=True,
-#                figwidth=20,
-#                figheight=20,
-#                xticks=[],
-#                yticks=[],
-#                cmap=plt.cm.bwr_r):
-# 	# plots densities
-# 	# data_in = array/list of density data
-# 	# theta, radius = arrays of position bins
-# 	# chains_groups = old name, really lipids to plot
-
-#     data_in = pc.sum_reps(data_in)
-#     fig = plt.figure(figsize=(figwidth,figheight))
-#     gs1=gridspec.GridSpec(len(chains_groups),2,wspace=.15, hspace=0.15)
-#     plt.rcParams.update({'font.size': 10})
-#     norm1 = pc.MidpointNormalize(midpoint=vmid,vmin=vmin,vmax=vmax)
-#     grid = 0    
-#     for cg in chains_groups:
-#         for leaf in data_in.columns:
-#             toplot = data_in.at[cg,leaf]
-#             ax = plt.subplot(gs1[grid],projection="polar")
-#             ax = plot_single(toplot, theta, radius, ax, norm=norm1, xticks=xticks, yticks=yticks, cmap=cmap)
-
-#             if leaf=="Outer":
-#                 helices = helices_upr
-#             else:
-#                 helices = helices_lwr
-
-#             ax = plot_helices(helices, colorbychain, ax, markersize=50)
-#             if grid%2==0:
-#                 ax.set_ylabel(cg)
-#             if grid < 2:
-#                 ax.set_title(leaf)
-#             grid = grid + 1
-
-#     fig.subplots_adjust(right=0.8)
-#     cbar_ax = fig.add_axes([0.21, 1, 0.5, 0.02])
-#     sm = plt.cm.ScalarMappable(cmap=cmap)
-#     cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
-#     cbar.set_ticks(np.linspace(0,1,5))
-#     cbar.ax.set_xticklabels([vmin, (vmin+vmid)/2, vmid, (vmid+vmax)/2, vmax])
-
-#     #plt.tight_layout()
-#     return fig, fig.axes
-
-
-# def polar_plot(data_in, 
-#                theta, 
-#                radius, 
-#                chains_groups, 
-#                helices_lwr=None, 
-#                helices_upr=None, 
-#                vmax=2, 
-#                vmid=1, 
-#                vmin=0, 
-#                colorbychain=True,
-#                figwidth=20,
-#                figheight=20,
-#                xticks=[],
-#                yticks=[],
-#                cmap=plt.cm.bwr_r):
-# 	# plots densities
-# 	# data_in = array/list of density data
-# 	# theta, radius = arrays of position bins
-# 	# chains_groups = old name, really lipids to plot
-
-#     data_in = pc.sum_reps(data_in)
-#     fig = plt.figure(figsize=(figwidth,figheight))
-#     gs1=gridspec.GridSpec(len(chains_groups),2,wspace=.15, hspace=0.15)
-#     plt.rcParams.update({'font.size': 10})
-#     norm1 = pc.MidpointNormalize(midpoint=vmid,vmin=vmin,vmax=vmax)
-#     grid = 0    
-#     for cg in chains_groups:
-#         for leaf in data_in.columns:
-#             toplot = data_in.at[cg,leaf]
-#             ax = plt.subplot(gs1[grid],projection="polar")
-#             ax = plot_single(toplot, theta, radius, ax, norm=norm1, xticks=xticks, yticks=yticks, cmap=cmap)
-
-#             if leaf=="Outer":
-#                 helices = helices_upr
-#             else:
-#                 helices = helices_lwr
-
-#             ax = plot_helices(helices, colorbychain, ax, markersize=50)
-#             if grid%2==0:
-#                 ax.set_ylabel(cg)
-#             if grid < 2:
-#                 ax.set_title(leaf)
-#             grid = grid + 1
-
-#     fig.subplots_adjust(right=0.8)
-#     cbar_ax = fig.add_axes([0.21, 1, 0.5, 0.02])
-#     sm = plt.cm.ScalarMappable(cmap=cmap)
-#     cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
-#     cbar.set_ticks(np.linspace(0,1,5))
-#     cbar.ax.set_xticklabels([vmin, (vmin+vmid)/2, vmid, (vmid+vmax)/2, vmax])
-
-#     #plt.tight_layout()
-#     return fig, fig.axes
-
-
-# #  orange   light blue   green       purple      amber      blue       red 
-# #"#E69F00"  "#56B4E9"  "#009E73"   "#CC79A7"   "#F5C710"  "#0072B2"  "#D55E00"  
-# sub = ["#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#F5C710", "#0072B2", "#D55E00"]
-
-
-# def plot_helices(helices, colorbychain, ax, markersize=3):
-#     if len(np.shape(helices))==1:
-#         helices = np.reshape(helices, (1,len(helices)))
-#     for i,pro in enumerate(helices[:]):
-#         if colorbychain:
-#             colors = sub[i]
-#         else:
-#             colors = sub[:len(pro[::2])]        
-#         ax.scatter(np.deg2rad(pro[1::2]),
-#                     pro[::2],
-#                     color=colors,
-#                     linewidth=None,
-#                     zorder=1, 
-#                     s=markersize,
-#                     )
-        
-#     return ax
-
-
-# #    ax = plt.subplot(111,projection="polar")
-# def plot_single(toplot, 
-#                 theta,
-#                 radius,
-#                 ax,
-#                 vmid=1,
-#                 vmin=0,
-#                 vmax=2,
-#                 norm=None,
-#                 yticks=[],
-#                 xticks=[],
-#                 cmap='RdBu'):
-#     if norm is None:
-#         norm = pc.MidpointNormalize(midpoint=vmid,vmin=vmin,vmax=vmax)
-#     ax.grid(False)
-#     plt.axis('off')
-#     s = ax.pcolormesh(theta, 
-#                         radius, 
-#                         toplot,
-#                         cmap=cmap,
-#                         norm=norm,
-#                         zorder=0,
-#                         edgecolors='face',
-#                         linewidth=0,
-#                         )
-#     s.set_edgecolor('face')
-
-#     ax.set_xticklabels(xticks)
-#     ax.set_yticklabels(yticks)
-    
-#     return ax
-
-
-
-
-
-# def plot_site(ax, thetas, mintheta, maxtheta, rmin, rmax):
-#     minangle = thetas[mintheta]+thetas[1]/2
-#     maxangle = thetas[maxtheta%len(thetas)]+thetas[1]/2
-#     if maxangle<minangle:
-#         maxangle = minangle+maxangle+thetas[1]*1.5
-#     angles = np.linspace(minangle, maxangle,50)
-#     ax.fill_between(angles, rmin, rmax, edgecolor='black', facecolor='none')
-#     return ax
-
-# def plot_sites(ax, thetas, theta_start, nthetas, rstart, depth, binspersubunit=10, subunits=5):
-#     ts = [x%len(thetas) for x in np.arange(theta_start,binspersubunit*subunits,binspersubunit)]
-#     for t in ts:
-#         ax = plot_site(ax, thetas, t, t+nthetas, rstart, rstart+depth)
-#     return ax
-
 def get_helices(the_path):
-    # Optional helix locations
+    """
+    Get helix locations from the given path.
+
+    Parameters:
+    - the_path (str): The path to the directory containing the helix coordinate files.
+
+    Returns:
+    - helices_upr (numpy.ndarray or None): The upper helix coordinates, or None if the file is not found.
+    - helices_lwr (numpy.ndarray or None): The lower helix coordinates, or None if the file is not found.
+    """
     try:
         helices_lwr = np.loadtxt(the_path.joinpath("Protein_coords_lwr.dat"))
         helices_upr = np.loadtxt(the_path.joinpath("Protein_coords_upr.dat"))
@@ -401,6 +241,19 @@ def get_helices(the_path):
     return helices_upr, helices_lwr
 
 def read_rep(file_list, chains_groups, leaflets=['low','upp'], enrich=True):
+    """
+    Reads a list of files and performs analysis on each file to generate counts and enrichments data.
+
+    Parameters:
+    - file_list (list): A list of file paths to be read and analyzed.
+    - chains_groups (list): A list of chain groups.
+    - leaflets (list, optional): A list of leaflets. Defaults to ['low', 'upp'].
+    - enrich (bool, optional): A flag to determine if enrichment analysis should be performed. Defaults to True.
+
+    Returns:
+    - counts (pandas.DataFrame): A DataFrame containing the counts data.
+    - enrichments (pandas.DataFrame): A DataFrame containing the enrichments data.
+    """
     enrichments = pd.DataFrame(index=chains_groups, columns=leaflets)
     counts = pd.DataFrame(index=chains_groups, columns=leaflets)
 
@@ -414,12 +267,6 @@ def read_rep(file_list, chains_groups, leaflets=['low','upp'], enrich=True):
             rad, dr, dth, theta, radius, frames, Ntheta = pc.Coord_Get(fl)
             A = (radius * dr * dth)
             thetas = np.unique(theta)
-
-        filename = fl.name
-
-        tmp_chain = filename.split('.')[0]
-        tmp_nm = filename.split('.')[2]
-
         idx+=1
         toadd = np.loadtxt(fl, skiprows=1)
         toadd = toadd[:,3:-1]
@@ -430,107 +277,19 @@ def read_rep(file_list, chains_groups, leaflets=['low','upp'], enrich=True):
     return counts, enrichments
 
 def get_file_list(root, lipids):
+    """
+    Get a list of file paths for a given root directory and a list of lipids.
+
+    Parameters:
+    - root (str or pathlib.Path): The root directory to search for files.
+    - lipids (list): A list of lipids to search for.
+
+    Returns:
+    - file_list (list): A list of file paths matching the given lipids in the root directory.
+    """
     file_list = []
     for lip in lipids:
         toadd = list(root.glob(f"{lip}*avg.dat") )
         file_list = np.append(file_list,toadd)
     return file_list
 
-
-# def polar_plot(data_in, theta, radius, chains_groups, helices_lwr=None, helices_upr=None, vmax=2, vmid=1, vmin=0, colorbychain=True, dr=5, leaflets=None):
-# 	# plots densities
-# 	# data_in = array/list of density data
-# 	# theta, radius = arrays of position bins
-# 	# chains_groups = old name, really lipids to plot
-
-#     data_in = pc.sum_reps(data_in)
-#     fig = plt.figure(figsize=(20,20))
-#     if leaflets is None:
-#         leaflets = data_in.columns
-#     ncolumns = len(leaflets)
-#     gs1=gridspec.GridSpec(len(chains_groups),ncolumns,wspace=.15, hspace=0.15)
-#     plt.rcParams.update({'font.size': 10})
-#     norm1 = pc.MidpointNormalize(midpoint=vmid,vmin=vmin,vmax=vmax)
-#     cmap = plt.cm.RdBu#PuOr
-#     cmap.set_bad(color='black')
-#     grid = 0
-#     #chains_up, chains_lo = prot_coord()
-#     #sub = ["g",'m','grey','green','cyan']#original
-
-#     #  orange   light blue   green      amber      blue       red       purple 
-#     #"#E69F00"  "#56B4E9"  "#009E73"  "#F5C710"  "#0072B2"  "#D55E00"  "#CC79A7" 
-#     sub = ["#E69F00", "#56B4E9", "#009E73", "#CC79A7" , "#F5C710", "#0072B2", "#D55E00"]
-
-#     thetas = np.unique(theta)
-#     dt = thetas[1]-thetas[0]    
-    
- 
-
-#     for cg in chains_groups:
-#         for leaf in leaflets:
-#             ax = plt.subplot(gs1[grid],projection="polar")
-#             # ax.grid(False)
-            
-#             ax.set_xticks(thetas)
-#             ax.set_xticklabels(np.round(np.array(thetas/dt),0).astype(int))
-#             #ax.set_xticklabels([])
-#             #ax.set_yticklabels([])
-
-#             # Ntheta = np.shape(theta)[1]
-#             # for i in np.arange(np.shape(theta)[0]):
-#             #     for j in np.arange(Ntheta):
-#             #         azimuth = theta[i,j]
-#             #         distance = radius[i,j]
-#             #         the_label = f"({np.round(azimuth,1)},{np.round(distance,0)})"
-#             #         ax.text(azimuth,distance,the_label, zorder=2, fontsize=4, rotation=np.rad2deg(azimuth)-90)
-
-#             toplot = data_in.at[cg,leaf]
-#             s = ax.pcolormesh(theta, 
-#                               radius, 
-#                               toplot,
-#                               cmap=cmap,
-#                               norm=norm1,
-#                               zorder=0,
-#                               edgecolors='none',
-#                               linewidth=0,
-#                               )
-#             s.set_edgecolor('face')
-#             if grid%ncolumns==0:
-#                 ax.set_ylabel(cg)
-#             if grid < 2:
-#                 ax.set_title(leaf)
-                
-
-#             grid = grid + 1
-            
-#             if leaf=="Outer":
-#                 helices = helices_upr
-#             else:
-#                 helices = helices_lwr
-
-#             if helices is not None:
-#                 if len(np.shape(helices))==1:
-#                     helices = np.reshape(helices, (1,len(helices)))
-#                 for i,pro in enumerate(helices[:]):
-#                     if colorbychain:
-#                         colors = sub[i]
-#                     else:
-#                         colors = sub[:len(pro[::2])]
-#                     ax.scatter(np.deg2rad(pro[1::2]),
-#                                 pro[::2],
-#                                 color=colors,
-#                                 linewidth=6,
-#                                 zorder=1, 
-#                                 s=np.shape(data_in)[0]*10,
-#                                 )
-
-
-#     fig.subplots_adjust(right=0.8)
-#     cbar_ax = fig.add_axes([0.21, .89, 0.5, 0.008])
-#     sm = plt.cm.ScalarMappable(cmap=cmap)
-#     cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
-#     cbar.set_ticks(np.linspace(0,1,5))
-#     cbar.ax.set_xticklabels([vmin, (vmin+vmid)/2, vmid, (vmid+vmax)/2, vmax])
-
-#     #plt.tight_layout()
-#     return fig, fig.axes
