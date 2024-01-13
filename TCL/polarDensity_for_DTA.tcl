@@ -463,9 +463,14 @@ proc loop_over_shells {Rmin Rmax dr species headname tailname lipidbeads_selstr 
 ;#The main function that initializes, constructs the densities for each lipid species, and outputs to file. 
 
 proc polarDensityBin { config_file_script } { 
+    ;#set defaults
     set start_frame 0 ; #default value before potential change in $config_file_script
     set nframes [molinfo top get numframes]
     set end_frame $nframes ;#default value before potential change in $config_file_script
+    set dt 1;
+    set leaflet_reassign_interval 1;
+    
+    ;#read parameters
     source $config_file_script
     source $UTILS/BinTools.tcl
     if {$USE_QWRAP == 1} {load ${UTILS}/qwrap.so}
