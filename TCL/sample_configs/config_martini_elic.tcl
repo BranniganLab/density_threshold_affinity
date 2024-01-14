@@ -3,16 +3,14 @@
 # 1 for legacy sorting based on orientation of default termini (aka classic local_mid_plane); 
 # 2 for sorting based on position relative to origin (tested only with cholesterol so far) 
 set LEAFLET_SORTING_ALGORITHM 1; 
-
-
 set CENTER_AND_ALIGN 0
 set USE_QWRAP 0
 set UTILS "./helpers" 
 
 set dt 1
-set sample_frame 0
-set start 0 ;#WARNING: not yet used, planned for future
-set end 10  ;#WARNING: not yet used, planned for future
+#set leaflet_reassign_interval 1; #optional
+#set start_frame 0 ; #optional
+#set end_frame 10  ; #optional 
 
 set backbone_selstr "name BB" ;#selection string used to define the protein backbone
 set protein_selstr "name BB SC1 to SC4" ;#selection string used to define the entire protein
@@ -28,7 +26,7 @@ set helixlist [list 1 2 3 4]; #indices for individual secondary structure elemen
 set helix_assignment_script assign_helices_ELIC_general.tcl ;# script that will assigns occupancies in helixlist to different secondary structure elements 
 set midplane_selstr "occupancy 1 to 4" ;# selection that includes all transmembrane helices
 
-set Rmax 40. ;##maximum radius of polar density map
+set Rmax 20. ;##maximum radius of polar density map
 set Rmin 0. ;#minimum radius
 set dr 5 ;#radial bin width 
 set Ntheta 50; #number of angular bins 

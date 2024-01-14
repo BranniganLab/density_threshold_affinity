@@ -10,9 +10,9 @@ set USE_QWRAP 0
 set UTILS "./helpers" 
 
 set dt 1
-set sample_frame 0
-set start 0 ;#WARNING: not yet used, planned for future
-set end 10  ;#WARNING: not yet used, planned for future
+set leaflet_reassign_t 5; #how frequently to reassign lipids to leaflets
+#set start_frame 0 ; #optional
+#set end_frame 10  ; #optional 
 
 set backbone_selstr "name BB" ;#selection string used to define the protein backbone
 set protein_selstr "name BB SC1 to SC4" ;#selection string used to define the entire protein
