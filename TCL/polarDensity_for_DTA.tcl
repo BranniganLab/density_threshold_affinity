@@ -157,7 +157,7 @@ proc avg_acyl_chain_len {species acylchain_selstr} {
 
 ;# confirms your box is either square or paraelleogram-ish
 ;# will perform qwrap or pbc wrap depending
-proc center_and_wrap_system {inpt USE_QWRAP} {
+proc center_and_wrap_system {inpt use_qwrap} {
 
     set pbc_angles [molinfo top get {alpha beta gamma}]
     
@@ -176,7 +176,7 @@ proc center_and_wrap_system {inpt USE_QWRAP} {
             return
         }
         
-        if {($USE_QWRAP==0) || (([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0))} {
+        if {($use_qwrap==0) || (([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0))} {
             puts "qwrap may not be optimal for your system...\n"
             puts "Running pbc wrap. To verify proper centering"
             puts "pbc wrap will be run multiple times" ; after 100
@@ -272,7 +272,7 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_algorithm} {
     } elseif { $leaflet_algorithm == 2 } {
         leaflet_sorter_2 $atsel_in $frame_i
     } else { 
-        puts "Option $LEAFLET_SORTING_ALGORITHM not recognized as a leaflet sorting option.  Defaulting to option 1." 
+        puts "Option $leaflet_sorting_algorithm not recognized as a leaflet sorting option.  Defaulting to option 1." 
     }
 }
 
@@ -434,7 +434,7 @@ proc loop_over_frames {shell species headname tailname lipidbeads_selstr dtheta 
 ;#The outer loop of the 3 nested histogramming loops. 
 ;#Unintuitively, the outermost loop is over radial shells, then the middle loop is over frames, and the inner most loop is over lipids in the shell. 
 ;#This odd construction improves efficiency: the radial atomselections can be created using "atomselect within", and then updated for each new frame in the middle loop, without a new selection being created or destroyed. There is no equivalent option for an angular "within" so angular histogramming occurs more traditionally via a loop over lipids.  
-proc loop_over_shells {Rmin Rmax dr species headname tailname lipidbeads_selstr dtheta start_frame end_frame Ntheta dt low_f upp_f low_f_avg upp_f_avg LEAFLET_SORTING_ALGORITHM} {
+proc loop_over_shells {Rmin Rmax dr species headname tailname lipidbeads_selstr dtheta start_frame end_frame Ntheta dt low_f upp_f low_f_avg upp_f_avg leaflet_sorting_algorithm} {
     set delta_frame [expr ($end_frame - $start_frame) / $dt]
     for {set ri $Rmin} { $ri<=${Rmax}} { set ri [expr $ri + $dr]} {
         #loop over shells
@@ -444,7 +444,7 @@ proc loop_over_shells {Rmin Rmax dr species headname tailname lipidbeads_selstr 
         set ri2 [expr $ri*$ri]
         set shell [atomselect top "(resname $species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) and $lipidbeads_selstr"]
         #puts [$shell num]		
-        set theta_bin [loop_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $start_frame $end_frame $Ntheta $dt $ri $rf $low_f $upp_f $LEAFLET_SORTING_ALGORITHM]
+        set theta_bin [loop_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $dtheta $start_frame $end_frame $Ntheta $dt $ri $rf $low_f $upp_f $leaflet_sorting_algorithm]
         set theta_bin_high [lindex $theta_bin 1]
         set theta_bin_low [lindex $theta_bin 0]
         $shell delete	
@@ -473,7 +473,7 @@ proc polarDensityBin { config_file_script } {
     ;#read parameters
     source $config_file_script
     source $UTILS/BinTools.tcl
-    if {$USE_QWRAP == 1} {load ${UTILS}/qwrap.so}
+    if {$use_qwrap == 1} {load ${UTILS}/qwrap.so}
     source ${helix_assignment_script}
     foreach species $lipids lipidbeads_selstr $lipidbeads_selstrs acylchain_selstr $acylchain_selstrs headname $headnames tailname $tailnames {
         set outfile "$species"
@@ -484,10 +484,10 @@ proc polarDensityBin { config_file_script } {
             error "No lipid of species $species"
         }
         ;# Center's system (weak hack)
-        if {$CENTER_AND_ALIGN == 1} {
-            center_and_wrap_system "occupancy $helixlist and $backbone_selstr" $USE_QWRAP
-            center_and_wrap_system "occupancy $helixlist and $backbone_selstr" $USE_QWRAP
-            center_and_wrap_system "occupancy $helixlist and $backbone_selstr" $USE_QWRAP
+        if {$center_and_align == 1} {
+            center_and_wrap_system "occupancy $helixlist and $backbone_selstr" $use_qwrap
+            center_and_wrap_system "occupancy $helixlist and $backbone_selstr" $use_qwrap
+            center_and_wrap_system "occupancy $helixlist and $backbone_selstr" $use_qwrap
             ;# aligns protein
             Align "occupancy $helixlist and $backbone_selstr"
         }
@@ -512,7 +512,7 @@ proc polarDensityBin { config_file_script } {
         set low_f_avg [open "${outfile}.low.avg.dat" w]
         set upp_f_avg [open "${outfile}.upp.avg.dat" w]
         set dtheta [expr 360.0/(1.0*($Ntheta))]
-        set totals [frame_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $start_frame $start_frame $LEAFLET_SORTING_ALGORITHM ]
+        set totals [frame_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $start_frame $start_frame $leaflet_sorting_algorithm ]
         
         foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
             set leaflet_str [lindex $leaf_total 0]
@@ -524,10 +524,10 @@ proc polarDensityBin { config_file_script } {
                 puts $avgfile "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $dr*[DtoR $dtheta]]] "
         }
         puts "Processing frames, starting at frame $start_frame and ending at frame $end_frame."
-        trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $start_frame $end_frame $leaflet_reassign_interval $LEAFLET_SORTING_ALGORITHM
+        trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $start_frame $end_frame $leaflet_reassign_interval $leaflet_sorting_algorithm
         
         ;#the core calculation 
-        loop_over_shells $Rmin $Rmax $dr $species $headname $tailname $lipidbeads_selstr $dtheta $start_frame $end_frame $Ntheta $dt $low_f $upp_f $low_f_avg $upp_f_avg $LEAFLET_SORTING_ALGORITHM 
+        loop_over_shells $Rmin $Rmax $dr $species $headname $tailname $lipidbeads_selstr $dtheta $start_frame $end_frame $Ntheta $dt $low_f $upp_f $low_f_avg $upp_f_avg $leaflet_sorting_algorithm 
         
         close $low_f
         close $upp_f
