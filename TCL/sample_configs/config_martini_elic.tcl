@@ -8,7 +8,7 @@ set USE_QWRAP 0
 set UTILS "./helpers" 
 
 set dt 1
-set leaflet_reassign_t 5; #how frequently to reassign lipids to leaflets
+#set leaflet_reassign_interval 1; #optional
 #set start_frame 0 ; #optional
 #set end_frame 10  ; #optional 
 
