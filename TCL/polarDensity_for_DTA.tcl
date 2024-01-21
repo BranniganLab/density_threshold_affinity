@@ -463,7 +463,7 @@ proc loop_over_shells {species headname tailname lipidbeads_selstr low_f upp_f l
 proc set_parameters { config_file_script } {
     global params
     array unset params
-
+    global params
     array set params {
         leaflet_sorting_algorithm 1
         center_and_align 0
@@ -491,15 +491,15 @@ proc set_parameters { config_file_script } {
     set nframes [molinfo top get numframes] 
     array set params [list end_frame $nframes]
 
-    set param_name_list [array names params]
+    set param_name_list [lsort -dictionary [array names params]]
     source $config_file_script
     set unread_params {}
     puts "------------Configuration Parameters------------"
     foreach param_name $param_name_list {
         if {[info exists $param_name]} {
             set param_value [set $param_name] 
-            puts "$param_name: $param_value"
-            array set params {$param_name $param_value}
+            array set params [list $param_name $param_value]
+            puts "$param_name: $params($param_name)"
         } else {
             lappend unread_params $param_name
         }
@@ -524,8 +524,8 @@ proc set_parameters { config_file_script } {
 proc polarDensityBin { config_file_script } { 
     ;#read parameters
     #source $config_file_script
-    set_parameters $config_file_script
     global params
+    set_parameters $config_file_script
     source $params(utils)/BinTools.tcl
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
     set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
