@@ -178,7 +178,7 @@ proc center_and_wrap_system {inpt} {
             return
         }
         
-        if {(params(use_qwrap)==0) || (([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0))} {
+        if {($params(use_qwrap)==0) || (([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0))} {
             puts "qwrap may not be optimal for your system...\n"
             puts "Running pbc wrap. To verify proper centering"
             puts "pbc wrap will be run multiple times" ; after 100
@@ -541,9 +541,9 @@ proc polarDensityBin { config_file_script } {
         }
         ;# Center's system (weak hack)
         if {$params(center_and_align) == 1} {
-            center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)" $params(use_qwrap)
-            center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)" $params(use_qwrap)
-            center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)" $params(use_qwrap)
+            center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)"
+            center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)"
+            center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)"
             ;# aligns protein
             Align "occupancy $params(helixlist) and $params(backbone_selstr)"
         }
