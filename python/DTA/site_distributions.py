@@ -44,7 +44,7 @@ def make_simple_site(the_data, inner_r=0, outer_r=0, nth=1, Ntheta=1, dr=1, dth=
         the_data (DataFrame): The data (bin counts) for the whole system.
         inner_r (float): The inner radius of the binding site.
         outer_r (float): The outer radius of the binding site.
-        nth (int): The number of theta bins.
+        nth (int): The number of theta bins IN THE SITE.
         Ntheta (int): The number of theta bins in the shell data.
         dr (float): The width of each shell.
         dth (float): The width of each theta bin.
