@@ -1,18 +1,18 @@
-# Options for LEAFLET_SORTING_ALGORITHM
+# Options for leaflet_sorting_algorithm
 # 0 for sorting based on orientation of specified head & tail; 
 # 1 for legacy sorting based on orientation of default termini (aka classic local_mid_plane); 
 # 2 for sorting based on position relative to origin (tested only with cholesterol so far) 
-set LEAFLET_SORTING_ALGORITHM 2; 
+set leaflet_sorting_algorithm 2; 
 
 
-set CENTER_AND_ALIGN 0
-set USE_QWRAP 0
-set UTILS "./helpers" 
+set center_and_align 0
+set use_qwrap 0
+set utils "./helpers" 
 
 set dt 1
-set sample_frame 0
-set start 0 ;#WARNING: not yet used, planned for future
-set end 10  ;#WARNING: not yet used, planned for future
+set leaflet_reassign_interval 5; #how frequently to reassign lipids to leaflets
+#set start_frame 0 ; #optional
+#set end_frame 10  ; #optional 
 
 set backbone_selstr "name BB" ;#selection string used to define the protein backbone
 set protein_selstr "name BB SC1 to SC4" ;#selection string used to define the entire protein
