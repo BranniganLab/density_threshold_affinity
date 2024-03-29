@@ -1,4 +1,4 @@
-# density_threshold_affinity
+# Density Threshold Affinity
 Descended from: https://github.com/BranniganLab/densitymap
 
 Detailed protocol is in preparation.
