@@ -8,7 +8,7 @@ setup(
     author='Brannigan Lab',
     author_email='grace.brannigan@rutgers.edu',
     packages=['DTA'],
-    install_requires=['numpy>=1.22.0','pandas>=1.4.0', 'matplotlib>=3.5.0'],
+    install_requires=['numpy>=2.0.0','pandas>=2.2.2', 'matplotlib>=3.9.1', 'scipy>=1.14.0'],
 
     classifiers=[
         'Development Status :: 1 - Planning',
