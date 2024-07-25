@@ -7,6 +7,7 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from matplotlib import colormaps as cmaps
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.colors import LogNorm
@@ -106,8 +107,8 @@ bins = {1:(range(4,30,6), np.repeat(27.5,5)),
 
 
 from matplotlib.colors import ListedColormap
-depleted = plt.cm.get_cmap('RdGy_r', 256)
-enriched = plt.cm.get_cmap('bwr_r', 256)
+depleted = cmaps.get_cmap('RdGy_r')
+enriched = cmaps.get_cmap('bwr_r')
 newcolors = depleted(np.linspace(0, 1, 256))
 newcolors[128:] = enriched(np.linspace(0.5,1,128))
 my_cmap = ListedColormap(newcolors)
@@ -117,8 +118,8 @@ my_cmap = ListedColormap(newcolors)
 
 
 from matplotlib.colors import ListedColormap
-depleted = plt.cm.get_cmap('PiYG', 256)
-enriched = plt.cm.get_cmap('bwr_r', 256)
+depleted = cmaps.get_cmap('PiYG')
+enriched = cmaps.get_cmap('bwr_r')
 newcolors = np.concatenate([depleted(np.linspace(0.4, 0.5, 128)), enriched(np.linspace(0.5,1,128))])
 my_cmap = ListedColormap(newcolors)
 

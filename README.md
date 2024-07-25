@@ -3,8 +3,6 @@ Descended from: https://github.com/BranniganLab/densitymap
 
 Detailed protocol is in preparation.
 
-(lms personal note, extend to include which kind of python to build)
-
 # Basic usage:
 1. Clone this repository
 2. Install the DTA package with the following commands:
@@ -21,7 +19,7 @@ Detailed protocol is in preparation.
 5. Load your trajectory into VMD
 6. On first use for this protein: 
 
-   a) write an assign_helices script based on one of the  examples provided in ./TCL
+   a) write an assign_helices script based on one of the examples provided in ./TCL
 
    b) Test your helix assignment script from the tk console:
    
@@ -40,7 +38,7 @@ Detailed protocol is in preparation.
    ```> source polarDensity_for_DTA.tcl```
 
    ```> polarDensity <config file path>```  
-9. Open the plot_enrichment.ipynb jupyter notebook using your method of choice (e.g. VSCode or a local host) (note lms include path to the polarDensity_helper)
+9. Open the plot_enrichment.ipynb jupyter notebook using your method of choice (e.g. VSCode or a local host) 
 10. Update the paths and lipid names to point to your data and run
 11. Select bins for the binding site (the show_bins notebook may be useful here)
 12. Determine the accessible area for the site (many optional methods for this, get_accessible_area.ipynb describes one method)
