@@ -3,9 +3,12 @@ Descended from: https://github.com/BranniganLab/densitymap
 
 Detailed protocol is in preparation.
 
+(lms personal note, extend to include which kind of python to build)
+
 # Basic usage:
 1. Clone this repository
 2. Install the DTA package with the following commands:
+(lms potentially incude note how to build from scratch?)
    ```
    cd Polar_Binning_DeltaG
    cd python
@@ -37,7 +40,7 @@ Detailed protocol is in preparation.
    ```> source polarDensity_for_DTA.tcl```
 
    ```> polarDensity <config file path>```  
-9. Open the plot_enrichment.ipynb jupyter notebook using your method of choice (e.g. VSCode or a local host)
+9. Open the plot_enrichment.ipynb jupyter notebook using your method of choice (e.g. VSCode or a local host) (note lms include path to the polarDensity_helper)
 10. Update the paths and lipid names to point to your data and run
 11. Select bins for the binding site (the show_bins notebook may be useful here)
 12. Determine the accessible area for the site (many optional methods for this, get_accessible_area.ipynb describes one method)
