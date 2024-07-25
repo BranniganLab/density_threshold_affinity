@@ -12,7 +12,7 @@ Detailed protocol is in preparation.
    ```
    cd Polar_Binning_DeltaG
    cd python
-   #[Optional:] conda create -n DTA
+   #[Optional:] conda create -n DTA python=3.X.X
    #[Optional:] conda activate DTA
    pip install .
    ```
@@ -21,7 +21,7 @@ Detailed protocol is in preparation.
 5. Load your trajectory into VMD
 6. On first use for this protein: 
 
-   a) write an assign_helices script based on one of the examples provided in ./TCL
+   a) write an assign_helices script based on one of the  examples provided in ./TCL
 
    b) Test your helix assignment script from the tk console:
    
