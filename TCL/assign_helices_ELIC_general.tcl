@@ -6,12 +6,12 @@ $selall delete
 set helix_code_list [list 1 2 3 4]
 
 #should be defined in calling script
-#set backbone_selstr "name BB" ;#martini
+set backbone_selstr "name BB" ;#martini
 #set backbone_selstr "alpha" ; #charmm
 
 
 #should be defined in calling script
-#set protein_selstr "name BB SC1 to SC4" ;#martini
+set protein_selstr "name BB SC1 to SC4" ;#martini
 #set protein_selstr "protein" ; #charmm
 
 #set proBeads [atomselect top $pro_selstr]
