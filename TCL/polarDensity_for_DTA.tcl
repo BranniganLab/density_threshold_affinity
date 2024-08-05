@@ -1,8 +1,5 @@
 
 package require pbctools
-source /home/liam/github/density_threshold_affinity/TCL/membOrganization.tcl
-source /home/liam/github/density_threshold_affinity/TCL/binning_tools.tcl
-source /home/liam/github/density_threshold_affinity/TCL/math_tools.tcl
 
 ;#Outputs xy position of helix centers to file for each leaflet; center is calculated using the part of the helix in the given leaflet
 proc output_helix_centers {{a ""} } {
@@ -142,7 +139,7 @@ proc set_parameters { config_file_script } {
         acylchain_selstrs {"all"}        
         chainlist {A B C D E}
         helixlist {1 2 3 4}
-        helix_assignment_script "assign_helices_ELIC_general.tcl" 
+        helix_assignment_script "./helpers/assign_helices_2BG9_CG_lms2.tcl" 
         midplane_selstr "occupancy 1 to 4"        
         Rmax 20.
         Rmin 0.
@@ -187,7 +184,9 @@ proc polarDensityBin { config_file_script } {
     #source $config_file_script
     global params
     set_parameters $config_file_script
-    source $params(utils)/BinTools.tcl
+    source $params(utils)/binning_tools.tcl
+    source $params(utils)/math_tools.tcl
+    source $params(utils)/orientation_membOrganization.tcl
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
     set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
     set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
@@ -229,7 +228,7 @@ proc polarDensityBin { config_file_script } {
         set low_f_avg [open "${outfile}.low.avg.dat" w]
         set upp_f_avg [open "${outfile}.upp.avg.dat" w]
 
-        set totals [membOrganization::frame_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $params(start_frame) $params(start_frame)]
+        set totals [lipid_assessment::frame_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $params(start_frame) $params(start_frame)]
         
         foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
             set leaflet_str [lindex $leaf_total 0]
@@ -241,7 +240,7 @@ proc polarDensityBin { config_file_script } {
             puts $avgfile "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [membOrganization::avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $params(dr)*[mathTools::DtoR $params(dtheta)]]] "
         }
         puts "Processing frames, starting at frame $params(start_frame) and ending at frame $params(end_frame)."
-        membOrganization::trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr         
+        lipid_assessment::trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr         
         ;#the core calculation 
         loop_over_shells $species $headname $tailname $lipidbeads_selstr $low_f $upp_f $low_f_avg $upp_f_avg  
         
