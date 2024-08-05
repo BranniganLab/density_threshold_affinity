@@ -161,15 +161,23 @@ proc avg_acyl_chain_len {species acylchain_selstr} {
 ;# will perform qwrap or pbc wrap depending
 proc center_and_wrap_system {inpt} {
     global params
+    set counter_i 0
+
+    # determine if cell is orthorhombic (requirement of qwrap)
     set pbc_angles [molinfo top get {alpha beta gamma}]
+    if {(([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 0]==90.0))} {
+        set orthorhombic 1
+    } else {
+        set orthorhombic 0
+    }
     
     set sel [atomselect top "$inpt" frame 0]
     set com [measure center $sel weight mass]
-    
-    set counter_i 0
-    # continues to try and recenter's box until ~ 0'ed out
+
+    # tries to recenter box until COM is 0'ed out or proc times out (5 tries)
     while {[expr abs([lindex $com 0])] > 1.0 &&  [expr abs([lindex $com 1])] > 1.0} {
         
+        ;# time-out trigger
         if {$counter_i > 5} {
             puts "Script was unable to converge system to (0,0,0)"
             puts "Please check your system vissually, there may be"
@@ -178,7 +186,7 @@ proc center_and_wrap_system {inpt} {
             return
         }
         
-        if {($params(use_qwrap)==0) || (([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0))} {
+        if {($params(use_qwrap)==0) || ($orthorhombic!=1) } {
             if {$params(use_qwrap)!=0} {
                 puts "qwrap requires orthorhombic cells.\n"
                 puts "Running pbc wrap instead and centering system at origin."
@@ -188,8 +196,9 @@ proc center_and_wrap_system {inpt} {
             pbc wrap -center com -centersel ${inpt} -all
             center_at_origin
         } else {
-            qwrap centersel "$inpt" ;#center entire system at ~0,0,0
+            qwrap centersel "$inpt"
         }
+
         $sel update
         set com [measure center $sel weight mass]
         incr counter_i
