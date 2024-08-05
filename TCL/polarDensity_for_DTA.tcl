@@ -186,6 +186,7 @@ proc center_and_wrap_system {inpt} {
             return
         }
         
+        ;# use qwrap or pbc wrap and center at origin
         if {($params(use_qwrap)==0) || ($orthorhombic!=1) } {
             if {$params(use_qwrap)!=0} {
                 puts "qwrap requires orthorhombic cells.\n"
@@ -196,13 +197,16 @@ proc center_and_wrap_system {inpt} {
             pbc wrap -center com -centersel ${inpt} -all
             center_at_origin
         } else {
+            ;# qwrap automatically centers $inpt at origin
             qwrap centersel "$inpt"
         }
 
+        ;# update the COM and counter
         $sel update
         set com [measure center $sel weight mass]
         incr counter_i
     }
+    
     $sel delete
 }
 
