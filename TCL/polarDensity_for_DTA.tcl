@@ -157,8 +157,7 @@ proc avg_acyl_chain_len {species acylchain_selstr} {
     
 }
 
-;# confirms your box is either square or paraelleogram-ish
-;# will perform qwrap or pbc wrap depending
+;# will perform qwrap or pbc wrap, depending on settings and box angles
 proc center_and_wrap_system {inpt} {
     global params
     set counter_i 0
