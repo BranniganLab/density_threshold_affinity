@@ -179,12 +179,14 @@ proc center_and_wrap_system {inpt} {
         }
         
         if {($params(use_qwrap)==0) || (([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0))} {
-            puts "qwrap may not be optimal for your system...\n"
-            puts "Running pbc wrap. To verify proper centering"
-            puts "pbc wrap will be run multiple times" ; after 100
-            foreach i {0 1 2 3} {
-                pbc wrap -centersel "$inpt" -all
+            if {$params(use_qwrap)!=0} {
+                puts "qwrap requires orthorhombic cells.\n"
+                puts "Running pbc wrap instead and centering system at origin."
+            } else {
+                puts "Running pbc wrap and centering system at origin."
             }
+            pbc wrap -center com -centersel ${inpt} -all
+            center_at_origin
         } else {
             qwrap centersel "$inpt" ;#center entire system at ~0,0,0
         }

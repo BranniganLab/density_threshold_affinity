@@ -10,20 +10,19 @@ proc DtoR {d} {
 }
 
 
-;# Centers around the protien and centers the system at 0,0,0
-proc Center { stuff } {
-    pbc wrap -center com -centersel ${stuff} -orthorhombic  -all
+;# Centers the system at 0,0,0
+proc center_at_origin {} {
     set nframes [molinfo top get numframes]
     set zero [veczero]
+    set sel [atomselect top "all"]
     for {set frames 0} {$frames < $nframes} {incr frames} {
-        set sel [atomselect top "all" frame $frames]
+        $sel frame $frames
+        $sel update
         set com [measure center $sel]
-        $sel delete
-        set sell [atomselect top "all" frame $frames]
         set mov [vecsub $zero $com]
-        $sell moveby $mov
-        $sell delete
+        $sel moveby $mov
     }
+    $sel delete
 }
 
 ;# Alignment based off vmd alignment
