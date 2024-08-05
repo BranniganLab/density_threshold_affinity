@@ -555,10 +555,9 @@ proc polarDensityBin { config_file_script } {
         if {$sel_num == 0} {
             error "No lipid of species $species"
         }
-        ;# Center's system (weak hack)
+
         if {$params(center_and_align) == 1} {
-            center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)"
-            center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)"
+            ;# wraps and centers system at origin
             center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)"
             ;# aligns protein
             Align "occupancy $params(helixlist) and $params(backbone_selstr)"
