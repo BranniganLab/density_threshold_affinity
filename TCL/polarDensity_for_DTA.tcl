@@ -190,6 +190,7 @@ proc center_and_wrap_system {inpt} {
         } else {
             qwrap centersel "$inpt" ;#center entire system at ~0,0,0
         }
+        $sel update
         set com [measure center $sel weight mass]
         incr counter_i
     }
