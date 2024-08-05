@@ -180,7 +180,7 @@ proc center_and_wrap_system {inpt} {
         ;# time-out trigger
         if {$counter_i > 5} {
             puts "Script was unable to converge system to (0,0,0)"
-            puts "Please check your system vissually, there may be"
+            puts "Please check your system visually, there may be"
             puts "unintended artifacts"
             $sel delete
             return
@@ -539,7 +539,6 @@ proc set_parameters { config_file_script } {
 
 proc polarDensityBin { config_file_script } { 
     ;#read parameters
-    #source $config_file_script
     global params
     set_parameters $config_file_script
     source $params(utils)/BinTools.tcl
