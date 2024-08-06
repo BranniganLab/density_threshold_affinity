@@ -157,40 +157,55 @@ proc avg_acyl_chain_len {species acylchain_selstr} {
     
 }
 
-;# confirms your box is either square or paraelleogram-ish
-;# will perform qwrap or pbc wrap depending
+;# will perform qwrap or pbc wrap, depending on settings and box angles
 proc center_and_wrap_system {inpt} {
     global params
+    set counter_i 0
+
+    # determine if cell is orthorhombic (requirement of qwrap)
     set pbc_angles [molinfo top get {alpha beta gamma}]
+    if {(([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 0]==90.0))} {
+        set orthorhombic 1
+    } else {
+        set orthorhombic 0
+    }
     
     set sel [atomselect top "$inpt" frame 0]
     set com [measure center $sel weight mass]
-    
-    set counter_i 0
-    # continues to try and recenter's box until ~ 0'ed out
+
+    # tries to recenter box until COM is 0'ed out or proc times out (5 tries)
     while {[expr abs([lindex $com 0])] > 1.0 &&  [expr abs([lindex $com 1])] > 1.0} {
         
+        ;# time-out trigger
         if {$counter_i > 5} {
             puts "Script was unable to converge system to (0,0,0)"
-            puts "Please check your system vissually, there may be"
+            puts "Please check your system visually, there may be"
             puts "unintended artifacts"
             $sel delete
             return
         }
         
-        if {($params(use_qwrap)==0) || (([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0) && ([lindex $pbc_angles 0]!=90.0))} {
-            puts "qwrap may not be optimal for your system...\n"
-            puts "Running pbc wrap. To verify proper centering"
-            puts "pbc wrap will be run multiple times" ; after 100
-            foreach i {0 1 2 3} {
-                pbc wrap -centersel "$inpt" -all
+        if {($params(use_qwrap)==0) || ($orthorhombic!=1) } {
+            ;# use pbc wrap and center at origin
+            if {$params(use_qwrap)!=0} {
+                puts "qwrap requires orthorhombic cells.\n"
+                puts "Running pbc wrap instead and centering system at origin."
+            } else {
+                puts "Running pbc wrap and centering system at origin."
             }
+            pbc wrap -center com -centersel ${inpt} -all
+            center_at_origin
         } else {
-            qwrap centersel "$inpt" ;#center entire system at ~0,0,0
+            ;# use qwrap (automatically centers at origin)
+            qwrap centersel "$inpt"
         }
+
+        ;# update the COM and counter
+        $sel update
         set com [measure center $sel weight mass]
         incr counter_i
     }
+
     $sel delete
 }
 
@@ -523,7 +538,6 @@ proc set_parameters { config_file_script } {
 
 proc polarDensityBin { config_file_script } { 
     ;#read parameters
-    #source $config_file_script
     global params
     set_parameters $config_file_script
     source $params(utils)/BinTools.tcl
@@ -539,10 +553,9 @@ proc polarDensityBin { config_file_script } {
         if {$sel_num == 0} {
             error "No lipid of species $species"
         }
-        ;# Center's system (weak hack)
+
         if {$params(center_and_align) == 1} {
-            center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)"
-            center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)"
+            ;# wraps and centers system at origin
             center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)"
             ;# aligns protein
             Align "occupancy $params(helixlist) and $params(backbone_selstr)"
