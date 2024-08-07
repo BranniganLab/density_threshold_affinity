@@ -252,27 +252,20 @@ proc leaflet_sorter_1 {atsel_in frame_i} {
 }
 
 ;#originally by Jahmal Ennis, designed for cholesterol 
-proc leaflet_sorter_2 {atsel_in frame_i} {
+;# modified by Jesse Sandberg to be more flexible
+proc leaflet_sorter_2 {atsel_in refsel_in frame_i} {    
+    set lipidsel [atomselect top "$atsel_in" frame $frame_i]
+    set refsel [atomselect top "$refsel_in" frame $frame_i]
+    set refsel_com_z [lindex [measure center $refsel weight mass] 2]
+    set chol_com_z [lindex [measure center $lipidsel weight mass] 2]
+    if {$chol_com_z < $refsel_com_z} {
+        $sel_resid set user2 -1
+        return -1
+    } else {
+        $sel_resid set user2 1
+        return 1
+    }
 
-    #puts "Sorting into leaflets using leaflet_sorter_2"
-    set sel_resid [atomselect top "$atsel_in" frame $frame_i]
-    set ind 1
-    if { [string range [lsort -unique [$sel_resid get resname]] end-1 end] == "PA" } {
-        set ind 0
-    }
-    if { [lsort -unique [$sel_resid get resname]] == "CHOL" } {
-        set ind 2
-    }
-    if { $ind == 2 } {
-        set chol_com_z [lindex [measure center $sel_resid weight mass] end]
-        if {$chol_com_z < 0} {
-            $sel_resid set user2 -1
-            return -1
-        } else {
-            $sel_resid set user2 1
-            return 1
-        }
-    }
 }
 
 
@@ -287,7 +280,7 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
     } elseif { $leaflet_sorting_algorithm == 1 } {
         leaflet_sorter_1 $atsel_in $frame_i
     } elseif { $leaflet_sorting_algorithm == 2 } {
-        leaflet_sorter_2 $atsel_in $frame_i
+        leaflet_sorter_2 $atsel_in $params(leaflet_sorter_2_reference_sel) $frame_i
     } else { 
         puts "Option $leaflet_sorting_algorithm not recognized as a leaflet sorting option.  Defaulting to option 1." 
     }
