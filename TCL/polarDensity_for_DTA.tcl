@@ -253,19 +253,22 @@ proc leaflet_sorter_1 {atsel_in frame_i} {
 
 ;#originally by Jahmal Ennis, designed for cholesterol 
 ;# modified by Jesse Sandberg to be more flexible
-proc leaflet_sorter_2 {atsel_in refsel_in frame_i} {    
+proc leaflet_sorter_2 {atsel_in refsel_in frame_i} { 
     set lipidsel [atomselect top "$atsel_in" frame $frame_i]
     set refsel [atomselect top "$refsel_in" frame $frame_i]
     set refsel_com_z [lindex [measure center $refsel weight mass] 2]
-    set chol_com_z [lindex [measure center $lipidsel weight mass] 2]
-    if {$chol_com_z < $refsel_com_z} {
-        $sel_resid set user2 -1
+    set lipid_com_z [lindex [measure center $lipidsel weight mass] 2]
+    if {$lipid_com_z < $refsel_com_z} {
+        $lipidsel set user2 -1
+        $lipidsel delete
+        $refsel delete
         return -1
     } else {
-        $sel_resid set user2 1
+        $lipidsel set user2 1
+        $lipidsel delete
+        $refsel delete
         return 1
     }
-
 }
 
 
@@ -275,6 +278,7 @@ proc leaflet_sorter_2 {atsel_in refsel_in frame_i} {
 ;# 1: originally by Liam Sharp; procedure that was used in JCP 2021 for nAChR; similar to leaflet_sorter_0 but autoselects head and tail beads; more appropriate for situations with many species
 ;# 2: originally by Jahmal Ennis, determines whether the auto-determined headbead is above or below the center of mass (of what? the system?); more appropriate for rigid lipids like cholesterol that frequently invert or lie at parallel to the membrane
 proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
+    global params
     if {$leaflet_sorting_algorithm == 0} {
         leaflet_sorter_0 $atsel_in $head $tail $frame_i
     } elseif { $leaflet_sorting_algorithm == 1 } {
@@ -308,6 +312,7 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
         set leaflet_list [$sel get user2] 
         for {set interim_frame [expr $frame_i + 1]} {$interim_frame < [expr $frame_f]} {incr interim_frame} {
             $sel frame $interim_frame
+            $sel update
             $sel set user2 $leaflet_list
         }
         #count the number of lipids and the number of beads in each leaflet
@@ -474,6 +479,7 @@ proc set_parameters { config_file_script } {
     global params
     array set params {
         leaflet_sorting_algorithm 1
+        leaflet_sorter_2_reference_sel "none"
         center_and_align 0
         use_qwrap 0
         utils ./helpers 
