@@ -21,6 +21,7 @@ proc assign_all_frames {species {stride 1}} {
 	set nframes [molinfo top get numframes]
 	set all_lipids [atomselect top "resname $species"]
 	set resids [lsort -integer -unique [$all_lipids get resid]]
+	$all_lipids delete
 	foreach resid $resids {
 		if {[expr $resid%100] == 0} { puts "on resid $resid at [clock seconds]" }
 		set sel_resid [atomselect top "resname $species and resid $resid"]
@@ -37,7 +38,6 @@ proc assign_all_frames {species {stride 1}} {
 		}
 		$sel_resid delete
 	}
-	$all_lipids delete
 }
 
 
