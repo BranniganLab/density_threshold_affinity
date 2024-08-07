@@ -28,13 +28,7 @@ proc assign_all_frames {species {stride 1}} {
 		for {set frm 0} {$frm < $nframes} {incr frm $stride} {
 			$sel_resid frame $frm
 			$sel_resid update
-			set ind 1
-			set sel_Z [${sel_resid} get z] 
-			if {[lindex ${sel_Z} $ind] < [lindex ${sel_Z} end] } { 
-				$sel_resid set user2 -1
-			} else { 
-				$sel_resid set user2 1
-			}
+			leaflet_sorter_1 $sel_resid $frm
 		}
 		$sel_resid delete
 	}
