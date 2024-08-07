@@ -23,7 +23,7 @@ proc assign_all_frames {species {stride 1}} {
 	set resids [lsort -integer -unique [$all_lipids get resid]]
 	foreach resid $resids {
 		if {[expr $resid%100] == 0} { puts "on resid $resid at [clock seconds]" }
-		set sel_resid [atomselect top "resname $species"]
+		set sel_resid [atomselect top "resname $species and resid $resid"]
 		for {set frm 0} {$frm < $nframes} {incr frm $stride} {
 			$sel_resid frame $frm
 			$sel_resid update
