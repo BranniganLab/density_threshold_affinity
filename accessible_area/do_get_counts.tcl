@@ -21,30 +21,20 @@ proc assign_all_frames {species {stride 1}} {
 	set nframes [molinfo top get numframes]
 	set all_lipids [atomselect top "resname $species"]
 	set resids [lsort -integer -unique [$all_lipids get resid]]
+	$all_lipids delete
 	foreach resid $resids {
 		if {[expr $resid%100] == 0} { puts "on resid $resid at [clock seconds]" }
-		set sel_resid [atomselect top "resname $species"]
 		for {set frm 0} {$frm < $nframes} {incr frm $stride} {
-			$sel_resid frame $frm
-			$sel_resid update
-			set ind 1
-			set sel_Z [${sel_resid} get z] 
-			if {[lindex ${sel_Z} $ind] < [lindex ${sel_Z} end] } { 
-				$sel_resid set user2 -1
-			} else { 
-				$sel_resid set user2 1
-			}
+			leaflet_sorter_1 "resname $species and resid $resid" $frm
 		}
-		$sel_resid delete
 	}
-	$all_lipids delete
 }
 
 
 set ASSIGN_LEAFLETS 1
 set GET_COUNTS 0
-set spp "CHOL POPC"
-set area 125
+set spp [list "DPPC"]
+set area 78
 set stride 10
 set fieldid "user2"
 
@@ -65,8 +55,8 @@ if {$ASSIGN_LEAFLETS == 1} {
 	set fieldid "user2"
 	foreach species $spp {
 		puts "assigning leaflets of $species"
-		use_old_sorter $species $stride
-		#assign_all_frames $species $stride
+		#use_old_sorter $species $stride
+		assign_all_frames $species $stride
 	}
 }
 
@@ -82,7 +72,7 @@ if {$GET_COUNTS == 1} {
 			set ymin $YMIN
 			while {$ymin < $YMAX} {
 				puts "Running at $xmin $ymin leaflet $field"
-				set data [get_count_with_area $area $xmin $ymin "resname DPPC and $fieldid $field" top 0 -1 $stride]
+				set data [get_count_with_area $area $xmin $ymin "resname $spp and $fieldid $field" top 0 -1 $stride]
 				puts $outfile $data
 
 				set ymin [expr $ymin + $step]
