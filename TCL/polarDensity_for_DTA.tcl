@@ -261,18 +261,16 @@ proc leaflet_sorter_2 {atsel_in refsel_in frame_i} {
     } else {
         set refsel [atomselect top "$refsel_in" frame $frame_i]
         set refsel_com_z [lindex [measure center $refsel weight mass] 2]
+        $refsel delete
     }
     set lipidsel [atomselect top "$atsel_in" frame $frame_i]
     set lipid_com_z [lindex [measure center $lipidsel weight mass] 2]
+    $lipidsel delete
     if {$lipid_com_z < $refsel_com_z} {
         $lipidsel set user2 -1
-        $lipidsel delete
-        $refsel delete
         return -1
     } else {
         $lipidsel set user2 1
-        $lipidsel delete
-        $refsel delete
         return 1
     }
 }
