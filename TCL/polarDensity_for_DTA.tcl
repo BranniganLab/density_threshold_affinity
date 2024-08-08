@@ -254,9 +254,15 @@ proc leaflet_sorter_1 {atsel_in frame_i} {
 ;#originally by Jahmal Ennis, designed for cholesterol 
 ;# modified by Jesse Sandberg to be more flexible
 proc leaflet_sorter_2 {atsel_in refsel_in frame_i} { 
+    if {$refsel_in eq "none"} {
+        puts "No reference selection provided for leaflet sorter 2."
+        puts "Defaulting to z=0 as the reference height to sort by."
+        set refsel_com_z 0
+    } else {
+        set refsel [atomselect top "$refsel_in" frame $frame_i]
+        set refsel_com_z [lindex [measure center $refsel weight mass] 2]
+    }
     set lipidsel [atomselect top "$atsel_in" frame $frame_i]
-    set refsel [atomselect top "$refsel_in" frame $frame_i]
-    set refsel_com_z [lindex [measure center $refsel weight mass] 2]
     set lipid_com_z [lindex [measure center $lipidsel weight mass] 2]
     if {$lipid_com_z < $refsel_com_z} {
         $lipidsel set user2 -1
