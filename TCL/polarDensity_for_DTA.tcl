@@ -308,7 +308,7 @@ proc local_midplane {atsel_in frame_i} {
 ;# 0: determines leaflet based on relative height of specified head and tail beads
 ;# 1: originally by Liam Sharp; procedure that was used in JCP 2021 for nAChR; similar to leaflet_sorter_0 but autoselects head and tail beads; more appropriate for situations with many species
 ;# 2: originally by Jahmal Ennis and Jesse Sandberg, determines whether the auto-determined headbead is above or below the center of mass of some reference selection; more appropriate for rigid lipids like cholesterol that frequently invert or lie at parallel to the membrane
-;# 3: local_midplane selects a circular region around the lipid, measures the COM of all PO4/GL1/GL2 beads within that region, assumes that COM to be the midplane, and sorts lipids based on whether their COM is above or below the midplane.
+;# 3: local_midplane selects all PO4/GL1/GL2 beads within a circular region around the lipid, measures the COM, assumes that COM to be the midplane, and sorts lipids based on whether their COM is above or below the midplane.
 proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
     global params
     if {$leaflet_sorting_algorithm == 0} {
