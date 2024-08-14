@@ -293,7 +293,7 @@ proc local_midplane {atsel_in frame_i} {
     $local_surfaces delete
 
     if {$lipid_z < $local_midplane} {
-        $lipidsel set users -1
+        $lipidsel set user2 -1
         $lipidsel delete
         return -1
     } else {
