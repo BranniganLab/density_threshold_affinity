@@ -303,7 +303,6 @@ proc local_midplane {atsel_in frame_i} {
     }
 }
 
-
 ;# Determines if the lipid is in the outer or inner leaflet and sets the user2 value accordingly
 ;# Algorithm is determined by user: 
 ;# 0: determines leaflet based on relative height of specified head and tail beads
