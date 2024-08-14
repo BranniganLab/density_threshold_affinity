@@ -290,6 +290,7 @@ proc local_midplane {atsel_in frame_i} {
     
     set local_surfaces [atomselect top "name PO4 GL1 GL2 and (x-$lipid_x)*(x-$lipid_x)+(y-$lipid_y)*(y-$lipid_y)<100" frame $frame_i]
     set local_midplane [lindex [measure center $local_surfaces weight mass] 2]
+    $local_surfaces delete
 
     if {$lipid_z < $local_midplane} {
         $lipidsel set users -1
