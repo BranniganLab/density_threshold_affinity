@@ -265,12 +265,14 @@ proc leaflet_sorter_2 {atsel_in refsel_in frame_i} {
     }
     set lipidsel [atomselect top "$atsel_in" frame $frame_i]
     set lipid_com_z [lindex [measure center $lipidsel weight mass] 2]
-    $lipidsel delete
+
     if {$lipid_com_z < $refsel_com_z} {
         $lipidsel set user2 -1
+        $lipidsel delete
         return -1
     } else {
         $lipidsel set user2 1
+        $lipidsel delete
         return 1
     }
 }
@@ -280,7 +282,8 @@ proc leaflet_sorter_2 {atsel_in refsel_in frame_i} {
 ;# Algorithm is determined by user: 
 ;# 0: determines leaflet based on relative height of specified head and tail beads
 ;# 1: originally by Liam Sharp; procedure that was used in JCP 2021 for nAChR; similar to leaflet_sorter_0 but autoselects head and tail beads; more appropriate for situations with many species
-;# 2: originally by Jahmal Ennis, determines whether the auto-determined headbead is above or below the center of mass (of what? the system?); more appropriate for rigid lipids like cholesterol that frequently invert or lie at parallel to the membrane
+;# 2: originally by Jahmal Ennis and Jesse Sandberg, determines whether the auto-determined headbead is above or below the center of mass of some reference selection; more appropriate for rigid lipids like cholesterol that frequently invert or lie at parallel to the membrane
+;# 3: local_midplane selects a circular region around the lipid, measures the COM of all beads within that region, assumes that COM to be the midplane, and sorts lipids based on whether their COM is above or below the midplane.
 proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
     global params
     if {$leaflet_sorting_algorithm == 0} {
@@ -289,6 +292,8 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
         leaflet_sorter_1 $atsel_in $frame_i
     } elseif { $leaflet_sorting_algorithm == 2 } {
         leaflet_sorter_2 $atsel_in $params(leaflet_sorter_2_reference_sel) $frame_i
+    } elseif { $leaflet_sorting_algorithm == 4 } {
+        local_midplane $atsel_in $frame_i
     } else { 
         puts "Option $leaflet_sorting_algorithm not recognized as a leaflet sorting option.  Defaulting to option 1." 
     }
