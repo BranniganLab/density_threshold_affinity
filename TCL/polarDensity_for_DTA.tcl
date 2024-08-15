@@ -277,8 +277,8 @@ proc leaflet_sorter_2 {atsel_in refsel_in frame_i} {
     }
 }
 
-;# Selects all PO4/GL1/GL2 within ~1.4 nm of lipid's COM x,y coordinate.
-;# Interprets COM of PO4/GL1/GL2 selection z component to be the "local midplane."
+;# Selects all PO4/GL1/GL2/AM1/AM2 within ~1.4 nm of lipid's COM x,y coordinate.
+;# Interprets COM of PO4/GL1/GL2/AM1/AM2 selection z component to be the "local midplane."
 ;# Compares lipid's COM z component to local midplane and sorts accordingly.
 ;# modified by Jesse Sandberg
 proc local_midplane {atsel_in frame_i} {
