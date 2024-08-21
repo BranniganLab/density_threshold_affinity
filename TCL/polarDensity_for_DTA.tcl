@@ -317,7 +317,7 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
     } elseif { $leaflet_sorting_algorithm == 2 } {
         leaflet_sorter_2 $atsel_in $params(leaflet_sorter_2_reference_sel) $frame_i
     } elseif { $leaflet_sorting_algorithm == 3 } {
-        local_midplane $atsel_in $frame_i
+        leaflet_sorter_3 $atsel_in $frame_i
     } else { 
         puts "Option $leaflet_sorting_algorithm not recognized as a leaflet sorting option.  Defaulting to option 1." 
     }
