@@ -252,7 +252,6 @@ proc leaflet_sorter_1 {atsel_in frame_i} {
 }
 
 ;#originally by Jahmal Ennis, designed for cholesterol 
-;# modified by Jesse Sandberg to be more flexible
 proc leaflet_sorter_2 {atsel_in refsel_in frame_i} { 
     if {$refsel_in eq "none"} {
         puts "No reference selection provided for leaflet sorter 2."
@@ -265,22 +264,50 @@ proc leaflet_sorter_2 {atsel_in refsel_in frame_i} {
     }
     set lipidsel [atomselect top "$atsel_in" frame $frame_i]
     set lipid_com_z [lindex [measure center $lipidsel weight mass] 2]
-    $lipidsel delete
+
     if {$lipid_com_z < $refsel_com_z} {
         $lipidsel set user2 -1
+        $lipidsel delete
         return -1
     } else {
         $lipidsel set user2 1
+        $lipidsel delete
         return 1
     }
 }
 
+;# originally by Grace Brannigan, named local_midplane2
+;# Selects all PO4/GL1/GL2/AM1/AM2 within ~1.4 nm of lipid's COM x,y coordinate.
+;# Interprets COM of PO4/GL1/GL2/AM1/AM2 selection z component to be the "local midplane."
+;# Compares lipid's COM z component to local midplane and sorts accordingly.
+proc leaflet_sorter_3 {atsel_in frame_i} {
+    set lipidsel [atomselect top $atsel_in frame $frame_i]
+    set lipid_com [measure center $lipidsel weight mass]
+    set lipid_x [lindex $lipid_com 0]
+    set lipid_y [lindex $lipid_com 1]
+    set lipid_z [lindex $lipid_com 2]
+    
+    set local_surfaces [atomselect top "name PO4 GL1 GL2 AM1 AM2 and (x-$lipid_x)*(x-$lipid_x)+(y-$lipid_y)*(y-$lipid_y)<200" frame $frame_i]
+    set local_midplane [lindex [measure center $local_surfaces weight mass] 2]
+    $local_surfaces delete
+
+    if {$lipid_z < $local_midplane} {
+        $lipidsel set user2 -1
+        $lipidsel delete
+        return -1
+    } else {
+        $lipidsel set user2 1
+        $lipidsel delete
+        return 1
+    }
+}
 
 ;# Determines if the lipid is in the outer or inner leaflet and sets the user2 value accordingly
 ;# Algorithm is determined by user: 
 ;# 0: determines leaflet based on relative height of specified head and tail beads
 ;# 1: originally by Liam Sharp; procedure that was used in JCP 2021 for nAChR; similar to leaflet_sorter_0 but autoselects head and tail beads; more appropriate for situations with many species
-;# 2: originally by Jahmal Ennis, determines whether the auto-determined headbead is above or below the center of mass (of what? the system?); more appropriate for rigid lipids like cholesterol that frequently invert or lie at parallel to the membrane
+;# 2: originally by Jahmal Ennis; determines whether the auto-determined headbead is above or below the center of mass of some reference selection; more appropriate for rigid lipids like cholesterol that frequently invert or lie at parallel to the membrane
+;# 3: originally by Grace Brannigan and called local_midplane2; selects all PO4/GL1/GL2 beads within a circular region around the lipid, measures the COM, assumes that COM to be the midplane, and sorts lipids based on whether their COM is above or below the midplane.
 proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
     global params
     if {$leaflet_sorting_algorithm == 0} {
@@ -289,6 +316,8 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
         leaflet_sorter_1 $atsel_in $frame_i
     } elseif { $leaflet_sorting_algorithm == 2 } {
         leaflet_sorter_2 $atsel_in $params(leaflet_sorter_2_reference_sel) $frame_i
+    } elseif { $leaflet_sorting_algorithm == 3 } {
+        leaflet_sorter_3 $atsel_in $frame_i
     } else { 
         puts "Option $leaflet_sorting_algorithm not recognized as a leaflet sorting option.  Defaulting to option 1." 
     }
