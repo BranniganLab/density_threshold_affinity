@@ -12,7 +12,7 @@ proc use_old_sorter {species {stride 1}} {
 		if {[expr $resid%100] == 0} { puts "on resid $resid at [clock seconds]" }
 		set seltext "resname $species and resid $resid"
 		for {set frm 0} {$frm < $nframes} {incr frm $stride} {
-			local_mid_plane $seltext $frm
+			leaflet_sorter_3 $seltext $frm
 		}
 	}
 }
