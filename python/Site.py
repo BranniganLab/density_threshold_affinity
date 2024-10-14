@@ -173,7 +173,9 @@ class Site:
 
         Parameters
         ----------
-        None.
+        membrane_obj : nougat Membrane
+            A nougat Membrane class object that contains the counts for the \
+            given ligand and leaflet.
 
         Returns
         -------
@@ -182,8 +184,10 @@ class Site:
         """
         count = np.zeros(membrane_obj.grid_dims['Nframes'])
         for bin_tuple in self.bin_coords:
-            count += fetch_bin_count(bin_tuple)
-        self._counts_hist = count
+            count += fetch_bin_count(bin_tuple, membrane_obj)
+        hist, edges = np.histogram(count, bins=np.arange(0, np.max(count)))
+        assert edges == np.arange(0, np.max(count)), "Something went wrong with the histogramming"
+        self._counts_hist = hist
 
     def calculate_geometric_area(self, membrane_obj):
         """
