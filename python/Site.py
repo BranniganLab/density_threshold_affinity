@@ -11,8 +11,6 @@ import warnings
 import math
 from pathlib import Path
 from scipy import constants
-from utils import fetch_bin_area
-from nougat import Membrane
 
 
 class Site:
@@ -59,7 +57,7 @@ class Site:
     n_peak : int
         The mode of the bulk histogram. Indicates the cut-off for P_unocc.
     dG : float
-        The binding affinity of the lipid for the Site.
+        The binding affinity of the lipid for the Site, in kcal/mol.
     """
 
     def __init__(self, name, ligand, leaflet, temp):
@@ -189,7 +187,38 @@ class Site:
 
     @property
     def dG(self):
-        return calculate_dG(bulk=False) - calculate_dG(bulk=True)
+        """
+        Calculate the binding affinity of the lipid for this Site, including \
+        the bulk correction factor dG_ref.
+
+        Returns
+        -------
+        float
+            The total binding affinity, in kcal/mol.
+
+        """
+        return self.calculate_dG(bulk=False) - self.calculate_dG(bulk=True)
+
+    def calculate_dG(self, bulk=False):
+        """
+        Calculate the delta G. If bulk is True, this value is dG_ref. If bulk \
+        is False, this value is dG_site.
+
+        Parameters
+        ----------
+        bulk : boolean
+            Is this the bulk patch? The default is False.
+
+        Returns
+        -------
+        delta_G : float
+            The binding affinity for the site or bulk, in kcal/mol.
+
+        """
+        minus_RT = -1.0 * self.temp * constants.R / 4184.  # kcal/mol
+        P_unnoc = self.calculate_P_unnoc(bulk=bulk)
+        delta_G = minus_RT * np.log((1 - P_unnoc) / P_unnoc)
+        return delta_G
 
     def calculate_hist_mode(self, bulk=False, nonzero=False):
         """
@@ -220,6 +249,32 @@ class Site:
                 warnings.append(f"Warning: found an experimental mode of 0 for site '{self.name}', using second highest peak")
                 mode = np.argmax(hist[1:]) + 1
         return mode
+
+    def calculate_hist_mean(self, bulk=False):
+        """
+        xtz.
+
+        Parameters
+        ----------
+        bulk : TYPE, optional
+            DESCRIPTION. The default is False.
+
+        Returns
+        -------
+        mean : TYPE
+            DESCRIPTION.
+
+        """
+        if bulk:
+            hist = self.bulk_counts_histogram
+        else:
+            hist = self.site_counts_histogram
+        total_N = np.sum(hist)
+        sum_i = 0
+        for i in range(len(hist)):
+            sum_i += i * hist[i]
+        mean = sum_i / total_N
+        return mean
 
     def update_counts_histogram(self, filepath, bulk=False):
         """
@@ -292,15 +347,16 @@ class Site:
         """
         return counts
 
-    def calculate_geometric_area(self, membrane_obj):
+    def calculate_geometric_area(self, dr, dtheta):
         """
         Calculate the geometric area of the site.
 
         Parameters
         ----------
-        membrane_obj : nougat Membrane
-            A nougat Membrane class object that contains the counts for the \
-            given ligand and leaflet.
+        dr : float
+            The bin length in the radial dimension.
+        dtheta : float
+            The bin length in the azimuthal dimension.
 
         Returns
         -------
@@ -308,11 +364,28 @@ class Site:
             The geometric area of the site.
 
         """
-        grid_dims_dict = membrane_obj.grid_dims
-        dr = grid_dims_dict['d1']
-        dtheta = grid_dims_dict['d2']
         area = 0
         for bin_tuple in self.bin_coords:
             bin_radial_midpoint = (bin_tuple[0] * dr) + (0.5 * dr)
             area += dr * dtheta * bin_radial_midpoint
         return area
+
+    def predict_accessible_area(self, bulk_area):
+        """
+        
+
+        Parameters
+        ----------
+        bulk_area : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        predicted_accessible_area : TYPE
+            DESCRIPTION.
+
+        """
+        site_mean = self.calculate_hist_mean(bulk=False)
+        bulk_mean = self.calculate_hist_mean(bulk=True)
+        predicted_accessible_area = bulk_area * (site_mean / bulk_mean)
+        return predicted_accessible_area
