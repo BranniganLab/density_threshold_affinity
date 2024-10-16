@@ -8,7 +8,10 @@ Created on Wed Sep 18 13:44:55 2024.
 
 import numpy as np
 import warnings
-from utils import fetch_bin_count, fetch_bin_area
+import math
+from pathlib import Path
+from scipy import constants
+from utils import fetch_bin_area
 from nougat import Membrane
 
 
@@ -26,26 +29,40 @@ class Site:
         something else descriptive.
     ligand : str
         The name of the ligand that putatively binds this Site.
+    leaflet : int
+        If 1, outer leaflet. If 2, inner leaflet.
+    temp : float
+        The temperature of your system in K.
+
+    Settable Properties
+    -------------------
     bin_coords : list of tuples
         The bins that belong to this site in (r, theta) format. e.g. \
         [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
         13th theta bins (starting at theta=0) in the 3rd radial bin from the \
         origin. Bin coordinates are zero-indexed by convention.
-    counts_hist : numpy ndarray
+
+    Calculated Properties
+    ---------------------
+    site_counts_histogram : numpy ndarray
         One-dimensional ndarray where the histogrammed ligand bead counts are \
         stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having \
         zero beads in the Site, 5 frames having one bead in the Site, 0 frames \
         having 2, 3, or 5 beads in the site, and 1 frame having 4 beads in the \
         Site.
+    bulk_counts_histogram : numpy ndarray
+        One-dimensional ndarray where the histogrammed ligand bead counts are \
+        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having \
+        zero beads in the bulk patch, 5 frames having one bead in the patch, 0 \
+        frames having 2, 3, or 5 beads in the patch, and 1 frame having 4 beads\
+        in the patch.
     n_peak : int
         The mode of the bulk histogram. Indicates the cut-off for P_unocc.
-    P_unocc : float
-        The probability that the Site is unoccupied by ligand.
     dG : float
-        The binding affinity of ligand for this Site, in kcal/mol.
+        The binding affinity of the lipid for the Site.
     """
 
-    def __init__(self, name, ligand, leaflet):
+    def __init__(self, name, ligand, leaflet, temp):
         """
         Create a Site object.
 
@@ -58,14 +75,19 @@ class Site:
             The name of the ligand that putatively binds this Site.
         leaflet : int
             If 1, outer leaflet. If 2, inner leaflet.
+        temp : float
+            The temperature of your system in K.
         """
         self.name = name
         self.ligand = ligand
         assert leaflet in [1, 2], "leaflet must be 1 or 2 (1 for outer leaflet or 2 for inner leaflet)"
         self.leaflet = leaflet
+        self.temp = temp
         self._bin_coords = None
-        self._counts_hist = None
+        self._site_counts_histogram = None
+        self._bulk_counts_histogram = None
         self._n_peak = None
+        self._dG = None
         return self
 
     @property
@@ -85,7 +107,7 @@ class Site:
         return self._bin_coords
 
     @bin_coords.setter
-    def bin_coords(self, bin_coords, membrane_obj):
+    def bin_coords(self, bin_coords, filepath=None):
         """
         Set bin_coords and in the process recalculate the counts histogram.
 
@@ -96,9 +118,10 @@ class Site:
             [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
             13th theta bins (starting at theta=0) in the 3rd radial bin from \
             the origin. Bin coordinates are zero-indexed by convention.
-        membrane_obj : Membrane
-            A nougat Membrane class object that contains the counts for the \
-            given ligand and leaflet.
+        filepath : str or Path or None
+            The path to the .dat file output by PolarDensity_for_DTA.tcl. If \
+            provided, the site counts histogram will automatically update. \
+            Default value is None.
 
         Returns
         -------
@@ -107,12 +130,48 @@ class Site:
         """
         assert isinstance(bin_coords, list), "bin_coords must be provided as a list"
         assert len(self.bin_coords) > 0, "bin_coords must have at least one bin"
-        assert isinstance(bin_coords[0], tuple), "bin_coords must be provided as a list of 2-tuples"
         for bin_pair in bin_coords:
+            assert isinstance(bin_pair, tuple), "bin_coords must be provided as a list of 2-tuples"
             assert len(bin_pair) == 2, f"bin_coords contains an invalid coordinate pair: {bin_pair}"
-        assert isinstance(membrane_obj, Membrane), "membrane_obj must be a valid nougat Membrane object"
         self._bin_coords = bin_coords
-        self._counts_hist = self.update_counts_hist(membrane_obj)
+        if filepath is not None:
+            if isinstance(filepath, str):
+                filepath = Path(filepath)
+            self._site_counts_histogram = self.update_counts_histogram(filepath, bulk=False)
+
+    @property
+    def site_counts_histogram(self):
+        """
+        Tell me the current counts, in histogram form, for the Site.
+
+        Returns
+        -------
+        site_counts_histogram : numpy ndarray
+            One-dimensional ndarray where the histogrammed ligand bead counts \
+            are stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames \
+            having zero beads in the Site, 5 frames having one bead in the \
+            Site, 0 frames having 2, 3, or 5 beads in the site, and 1 frame \
+            having 4 beads in the Site.
+
+        """
+        return self._site_counts_histogram
+
+    @property
+    def bulk_counts_histogram(self):
+        """
+        Tell me the current counts, in histogram form, for the Site.
+
+        Returns
+        -------
+        bulk_counts_histogram : numpy ndarray
+            One-dimensional ndarray where the histogrammed ligand bead counts \
+            are stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames \
+            having zero beads in the bulk patch, 5 frames having one bead in \
+            the patch, 0 frames having 2, 3, or 5 beads in the patch, and 1 \
+            frame having 4 beads in the patch.
+
+        """
+        return self._bulk_counts_histogram
 
     @property
     def n_peak(self):
@@ -126,68 +185,112 @@ class Site:
             equal accessible area to the site.
 
         """
-        return self._n_peak
-
-    @n_peak.setter
-    def n_peak(self, n_peak):
-        """
-        Set n_peak and in the process recalculate the P_unnoc and dG.
-
-        Parameters
-        ----------
-        n_peak : int
-            The mode of the bulk distribution in a patch of membrane that has \
-            equal accessible area to the site.
-
-        Returns
-        -------
-        None.
-
-        """
-        if n_peak is not None:
-            assert isinstance(n_peak, int), "Non-integer n_peak is not supported."
-            # assert self._bin_coords is not None, "Please define the site (bin) coordinates before adding n_peak."
-        self._n_peak = n_peak
+        return self.calculate_hist_mode(bulk=True, nonzero=False)
 
     @property
-    def site_mode(self):
-        """
-        Calculate the mode of the distribution. If the mode is zero, use the\
-        next-closest value.
+    def dG(self):
+        return calculate_dG(bulk=False) - calculate_dG(bulk=True)
 
-        Returns
-        -------
-        site_mode : int
-            The non-zero mode of the site distribution.
-
+    def calculate_hist_mode(self, bulk=False, nonzero=False):
         """
-        site_mode = np.argmax(self._counts_hist)
-        if site_mode == 0:
-            warnings.append(f"Warning: found an experimental mode of 0 for site '{self.name}', using second highest peak")
-            site_mode = np.argmax(self._counts_hist[1:]) + 1
-        return site_mode
-
-    def update_counts_hist(self, membrane_obj):
-        """
-        Assign ligand bead counts to Site attribute "counts_hist".
+        Calculate the mode of the counts histogram.
 
         Parameters
         ----------
-        membrane_obj : nougat Membrane
-            A nougat Membrane class object that contains the counts for the \
-            given ligand and leaflet.
+        nonzero : boolean
+            If True, in the case of mode=0, use the second highest peak instead.\
+            This is necessary when estimating the predicted accessible area.
+
+        Returns
+        -------
+        mode : int
+            The mode of the distribution.
+
+        """
+        if bulk:
+            hist = self.bulk_counts_histogram
+        else:
+            hist = self.site_counts_histogram
+        mode = np.argmax(hist)
+        if len(np.shape(mode)) != 0:
+            warnings.append(f"Warning: More than one peak identified ({mode}), using first peak ({mode[0]})")
+            mode = mode[0]
+        if mode == 0:
+            if nonzero:
+                warnings.append(f"Warning: found an experimental mode of 0 for site '{self.name}', using second highest peak")
+                mode = np.argmax(hist[1:]) + 1
+        return mode
+
+    def update_counts_histogram(self, filepath, bulk=False):
+        """
+        Assign ligand bead counts to Site attribute "counts_histogram".
+
+        Parameters
+        ----------
+        filepath : Path
+            The path to the .dat file to be parsed.
+        bulk : boolean
+            If True, update the counts histogram for the bulk patch. If False,\
+            update the counts histogram for the site. Default is False.
 
         Returns
         -------
         None.
 
         """
-        count = np.zeros(membrane_obj.grid_dims['Nframes'])
-        for bin_tuple in self.bin_coords:
-            count += fetch_bin_count(bin_tuple, membrane_obj)
-        hist, edges = np.histogram(count, bins=np.arange(0, np.max(count)))
-        assert edges == np.arange(0, np.max(count)), "Something went wrong with the histogramming"
-        self._counts_hist = hist
+        if bulk:
+            counts = np.loadtxt(filepath).astype(int).flatten()
+            hist = np.bincount(counts)
+            self._bulk_counts_histogram = hist
+        else:
+            counts = self.fetch_site_counts(filepath)
+            hist = np.bincount(counts)
+            self._site_counts_histogram = hist
+
+    def calculate_P_unnoc(self, bulk=False):
+        """
+        Calculate the probability that the site is unoccupied by ligand. This \
+        is defined by the portion of the histogram <= n_peak divided by the \
+        total histogram.
+
+        Parameters
+        ----------
+        bulk : boolean
+            If True, calculate P_unnoc,bulk. Else, calculate P_unnoc,site.
+
+        Returns
+        -------
+        P_unnoc : float
+            The probability that the site is unoccupied by ligand.
+
+        """
+        if bulk:
+            counts = self.bulk_counts_histogram
+        else:
+            counts = self.site_counts_histogram
+        total_N = np.sum(counts)
+        P_unnoc = counts[:self.n_peak + 1] / total_N
+        P_occ = counts[self.n_peak + 1:] / total_N
+        assert math.isclose(P_occ + P_unnoc, 1, abs_tol=0.01), f"Probabilities do not sum to one. Current sum: {P_unnoc + P_occ}"
+        return P_unnoc
+
+
+    def fetch_site_counts(self, filepath):
+        """
+        
+
+        Parameters
+        ----------
+        filepath : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        counts : TYPE
+            DESCRIPTION.
+
+        """
+        return counts
 
     def calculate_geometric_area(self, membrane_obj):
         """
