@@ -377,14 +377,14 @@ class Site:
         Parameters
         ----------
         dr : float
-            The bin length in the radial dimension.
+            The bin length in the radial dimension (Angstroms).
         dtheta : float
-            The bin length in the azimuthal dimension.
+            The bin length in the azimuthal dimension (degrees).
 
         Returns
         -------
         float
-            The geometric area of the site.
+            The geometric area of the site in square Angstroms.
 
         """
         area = 0
@@ -402,7 +402,7 @@ class Site:
         Parameters
         ----------
         bulk_area : float
-            The area of the bulk patch previously analyzed.
+            The area of the bulk patch previously analyzed in square Angstroms.
         mode : boolean
             If True, use the site and bulk modes rather than the means. Default\
             is False (use means).
@@ -411,7 +411,7 @@ class Site:
         -------
         predicted_accessible_area : float
             The area of the bulk patch you should analyze next to try and more\
-            closely match the site distribution.
+            closely match the site distribution. Units are square Angstroms.
 
         """
         if self.ligand != "DPPC":
