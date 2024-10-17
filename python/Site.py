@@ -40,8 +40,8 @@ class Site:
     bin_coords : list of tuples
         The bins that belong to this site in (r, theta) format. e.g. \
         [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
-        13th theta bins (starting at theta=0) in the 3rd radial bin from the \
-        origin. Bin coordinates are zero-indexed by convention.
+        13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
+        are zero-indexed by convention.
 
     Calculated Properties
     ---------------------
@@ -108,7 +108,7 @@ class Site:
         return self._bin_coords
 
     @bin_coords.setter
-    def bin_coords(self, bin_coords, filepath=None):
+    def bin_coords(self, bin_coords):
         """
         Set bin_coords and in the process recalculate the counts histogram.
 
@@ -119,10 +119,6 @@ class Site:
             [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
             13th theta bins (starting at theta=0) in the 3rd radial bin from \
             the origin. Bin coordinates are zero-indexed by convention.
-        filepath : str or Path or None
-            The path to the .dat file output by PolarDensity_for_DTA.tcl. If \
-            provided, the site counts histogram will automatically update. \
-            Default value is None.
 
         Returns
         -------
@@ -135,10 +131,6 @@ class Site:
             assert isinstance(bin_pair, tuple), "bin_coords must be provided as a list of 2-tuples"
             assert len(bin_pair) == 2, f"bin_coords contains an invalid coordinate pair: {bin_pair}"
         self._bin_coords = bin_coords
-        if filepath is not None:
-            if isinstance(filepath, str):
-                filepath = Path(filepath)
-            self._site_counts_histogram = self.update_counts_histogram(filepath, bulk=False)
 
     @property
     def site_counts_histogram(self):
@@ -186,6 +178,8 @@ class Site:
             equal accessible area to the site.
 
         """
+        if self._bulk_counts_histogram is None:
+            raise Exception("You need to update the bulk counts histogram first.")
         return self._calculate_hist_mode(bulk=True, nonzero=False)
 
     @property
@@ -200,6 +194,11 @@ class Site:
             The total binding affinity, in kcal/mol.
 
         """
+        if self._site_counts_histogram is None:
+            raise Exception("You need to update the site counts histogram first.")
+        if self._bulk_counts_histogram is None:
+            warnings.append("Warning: bulk counts have not been added. Calculating dG_site only without bulk correction term.")
+            return self._calculate_dG(bulk=False)
         return self._calculate_dG(bulk=False) - self._calculate_dG(bulk=True)
 
     def _calculate_dG(self, bulk=False):
@@ -218,7 +217,7 @@ class Site:
             The binding affinity for the site or bulk, in kcal/mol.
 
         """
-        minus_RT = -1.0 * self.temp * constants.R / 4184.  # kcal/mol
+        minus_RT = -1.0 * self.temp * constants.R / 4184.  # 4184 converts J to kcal
         P_unnoc = self._calculate_P_unnoc(bulk=bulk)
         delta_G = minus_RT * np.log((1 - P_unnoc) / P_unnoc)
         return delta_G
