@@ -416,29 +416,6 @@ class Site:
         return predicted_accessible_area
 
 
-def calculate_nframes(r_values):
-    """
-    Calculate how many frames are in a trajectory from the first column of the \
-    .dat file produced by the TCL script.
-
-    Parameters
-    ----------
-    r_values : ndarray
-        The beginning r values for each bin in your system.
-
-    Returns
-    -------
-    nframes : int
-        The number of frames in your trajectory.
-
-    """
-    match_value = r_values[0]
-    for i in range(len(r_values)):
-        if r_values[i] != match_value:
-            return i
-    return len(r_values)
-
-
 def parse_tcl_dat_file(filepath, bulk):
     """
     Extract bin counts and bin dimensions from a TCL output .dat file.
@@ -470,7 +447,7 @@ def parse_tcl_dat_file(filepath, bulk):
     """
     if isinstance(filepath, str):
         filepath = Path(filepath)
-    elif not isinstance(data, Path):
+    elif not isinstance(filepath, Path):
         raise Exception("Must provide the path to the .dat file.")
     assert filepath.exists(), f"Could not find {filepath}"
     assert filepath.is_file(), f"This is not recognized as a file {filepath}"
@@ -484,7 +461,7 @@ def parse_tcl_dat_file(filepath, bulk):
         # calculate polar lattice dimensions, nframes
         dr = unrolled_data[0, 1] - unrolled_data[0, 0]
         dtheta = unrolled_data[0, 2]
-        nframes = calculate_nframes(unrolled_data[:, 0])
+        nframes = _calculate_nframes(unrolled_data[:, 0])
         Ntheta = int(round(360 / dtheta))
         assert Ntheta == unrolled_data.shape[1] - 3, f"Something went wrong with the theta dimensions parser. dtheta={dtheta}, Ntheta={Ntheta}"
         Nr = len(unrolled_data[:, 0]) / nframes
@@ -499,30 +476,6 @@ def parse_tcl_dat_file(filepath, bulk):
             sideways_counts[i, :, :] = unrolled_counts[(nframes * i):(nframes * (i + 1)), :]
         counts = np.swapaxes(sideways_counts, 0, 1)
         return counts, grid_dims, system_info
-
-
-def _calculate_bin_area(r_bin, dr, dtheta):
-    """
-    Calculate the area of the polar bin.
-
-    Parameters
-    ----------
-    r_bin : int
-        Which radial bin is this? Zero-indexed.
-    dr : float
-        The radial bin length in Angstroms.
-    dtheta : float
-        The azimuthal bin length in degrees.
-
-    Returns
-    -------
-    area : float
-        The bin area in square Angstroms.
-
-    """
-    bin_radial_midpoint = (r_bin * dr) + (0.5 * dr)
-    area = dr * dtheta * bin_radial_midpoint
-    return area
 
 
 def calculate_density(avg_counts, grid_dims):
@@ -569,3 +522,50 @@ def _calculate_lattice_areas(grid_dims):
     for radial_ring in range(grid_dims.Nr):
         areas[radial_ring, :] = _calculate_bin_area(radial_ring, grid_dims.dr, grid_dims.dtheta)
     return areas
+
+
+def _calculate_bin_area(r_bin, dr, dtheta):
+    """
+    Calculate the area of the polar bin.
+
+    Parameters
+    ----------
+    r_bin : int
+        Which radial bin is this? Zero-indexed.
+    dr : float
+        The radial bin length in Angstroms.
+    dtheta : float
+        The azimuthal bin length in degrees.
+
+    Returns
+    -------
+    area : float
+        The bin area in square Angstroms.
+
+    """
+    bin_radial_midpoint = (r_bin * dr) + (0.5 * dr)
+    area = dr * dtheta * bin_radial_midpoint
+    return area
+
+
+def _calculate_nframes(r_values):
+    """
+    Calculate how many frames are in a trajectory from the first column of the \
+    .dat file produced by the TCL script.
+
+    Parameters
+    ----------
+    r_values : ndarray
+        The beginning r values for each bin in your system.
+
+    Returns
+    -------
+    nframes : int
+        The number of frames in your trajectory.
+
+    """
+    match_value = r_values[0]
+    for i in range(len(r_values)):
+        if r_values[i] != match_value:
+            return i
+    return len(r_values)
