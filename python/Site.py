@@ -389,8 +389,7 @@ class Site:
         """
         area = 0
         for bin_tuple in self.bin_coords:
-            bin_radial_midpoint = (bin_tuple[0] * dr) + (0.5 * dr)
-            area += dr * dtheta * bin_radial_midpoint
+            area += calculate_bin_area(bin_tuple[0], dr, dtheta)
         return area
 
     def predict_accessible_area(self, bulk_area, mode=False):
@@ -498,3 +497,27 @@ def parse_tcl_dat_trajectory(filepath, bulk):
             sideways_counts[i, :, :] = unrolled_counts[(nframes * i):(nframes * (i + 1)), :]
         counts = np.swapaxes(sideways_counts, 0, 1)
         return counts, grid_dims
+
+
+def calculate_bin_area(r_bin, dr, dtheta):
+    """
+    Calculate the area of the polar bin.
+
+    Parameters
+    ----------
+    r_bin : int
+        Which radial bin is this? Zero-indexed.
+    dr : float
+        The radial bin length in Angstroms.
+    dtheta : float
+        The azimuthal bin length in degrees.
+
+    Returns
+    -------
+    area : float
+        The bin area in square Angstroms.
+
+    """
+    bin_radial_midpoint = (r_bin * dr) + (0.5 * dr)
+    area = dr * dtheta * bin_radial_midpoint
+    return area
