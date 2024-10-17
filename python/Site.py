@@ -254,17 +254,18 @@ class Site:
 
     def _calculate_hist_mean(self, bulk=False):
         """
-        xtz.
+        Calculate the mean of the counts histogram.
 
         Parameters
         ----------
-        bulk : TYPE, optional
-            DESCRIPTION. The default is False.
+        bulk : boolean, optional
+            If True, calculate the mean of the bulk distribution. Otherwise, \
+            calculate the site mean. The default is False.
 
         Returns
         -------
-        mean : TYPE
-            DESCRIPTION.
+        mean : float
+            The mean of the counts histogram.
 
         """
         if bulk:
