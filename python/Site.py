@@ -288,32 +288,22 @@ class Site:
         bulk : boolean
             If True, update the counts histogram for the bulk patch. If False,\
             update the counts histogram for the site.
-        data : ndarray or str or Path
-            If bulk=True, provide the path (str or Path) to the .dat file from \
-            do_get_counts.tcl. If bulk=False, provide the 3D ndarray containing\
-            binned counts information.
+        data : ndarray
+            If bulk=True, provide 1D nddarray containing bulk counts. \
+            If bulk=False, provide the 3D ndarray containing binned counts.
 
         Returns
         -------
         None.
 
         """
+        assert isinstance(data, np.ndarray), "ndarray not supplied"
         if bulk:
-            if isinstance(data, str):
-                filepath = Path(data)
-            elif isinstance(data, Path):
-                filepath = data
-            else:
-                raise Exception("Must provide the path to the bulk counts.")
-            assert filepath.exists(), f"Could not find {filepath}"
-            assert filepath.is_file(), f"This is not recognized as a file {filepath}"
-            assert filepath.suffixes[1] == '.dat', "You must provide the .dat file output from do_get_counts.tcl in VMD."
-            bulk_counts = np.loadtxt(filepath).astype(int).flatten()
-            bulk_hist = np.bincount(bulk_counts)
+            assert len(data.shape) == 1, "Bulk counts data is not in the right format: {data}"
+            bulk_hist = np.bincount(data)
             self._bulk_counts_histogram = bulk_hist
         else:
-            assert isinstance(data, np.ndarray), "ndarray not supplied"
-            assert len(data.shape) == 3, "This ndarray is not 3 dimensional"
+            assert len(data.shape) == 3, "Counts data is not in the right format: {data}"
             site_counts = self._fetch_site_counts(data)
             site_hist = np.bincount(site_counts)
             self._site_counts_histogram = site_hist
@@ -449,7 +439,7 @@ def calculate_nframes(r_values):
     return len(r_values)
 
 
-def parse_tcl_dat_trajectory(filepath, bulk):
+def parse_tcl_dat_file(filepath, bulk):
     """
     Extract bin counts and bin dimensions from a TCL output .dat file.
 
@@ -464,24 +454,28 @@ def parse_tcl_dat_trajectory(filepath, bulk):
     Returns
     -------
     counts : ndarray
-        If bulk is True, return a 1D ndarray. If bulk is False, return a 3D \
-        ndarray of integer counts. Dimension 0 is time, dimension 1 is r and \
-        dimension 2 is theta. IE the count for the 4th radial bin and 12th \
-        theta bin on the 33rd frame of the trajectory would be counts[32, 3, 11].
+        If bulk is True, return a 1D ndarray. If bulk is False and avg is False,\
+        return a 3D ndarray of integer counts. Dimension 0 is time, dimension 1\
+        is r and dimension 2 is theta. IE the count for the 4th radial bin and \
+        12th theta bin on the 33rd frame of the trajectory would be \
+        counts[32, 3, 11].
     dimensions : namedtuple or None
         If bulk is True, return None. If bulk is False, return the bin \
         dimensions in r and theta as well as the number of frames inside a \
         namedtuple.
-    system_info : ndarray
-        The information taken from the header row of the .dat file specified in\
-        filepath. If bulk is True, returns None.
 
     """
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
+    elif not isinstance(data, Path):
+        raise Exception("Must provide the path to the .dat file.")
+    assert filepath.exists(), f"Could not find {filepath}"
+    assert filepath.is_file(), f"This is not recognized as a file {filepath}"
+    assert filepath.suffixes[1] == '.dat', "You must provide the .dat file output from VMD."
     if bulk:
-        return np.loadtxt(filepath).astype(int).flatten(), None, None
+        return np.loadtxt(filepath).astype(int).flatten(), None
     else:
         unrolled_data = np.loadtxt(filepath, skiprows=1, delimiter=' ')
-        system_info = np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',')
 
         # calculate polar lattice dimensions, nframes
         dr = unrolled_data[0, 1] - unrolled_data[0, 0]
@@ -500,7 +494,7 @@ def parse_tcl_dat_trajectory(filepath, bulk):
         for i in range(Nr):
             sideways_counts[i, :, :] = unrolled_counts[(nframes * i):(nframes * (i + 1)), :]
         counts = np.swapaxes(sideways_counts, 0, 1)
-        return counts, grid_dims, system_info
+        return counts, grid_dims
 
 
 def calculate_bin_area(r_bin, dr, dtheta):
@@ -525,3 +519,6 @@ def calculate_bin_area(r_bin, dr, dtheta):
     bin_radial_midpoint = (r_bin * dr) + (0.5 * dr)
     area = dr * dtheta * bin_radial_midpoint
     return area
+
+
+def calculate_density(counts_array,)
