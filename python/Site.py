@@ -472,12 +472,16 @@ def parse_tcl_dat_trajectory(filepath, bulk):
         If bulk is True, return None. If bulk is False, return the bin \
         dimensions in r and theta as well as the number of frames inside a \
         namedtuple.
+    system_info : ndarray
+        The information taken from the header row of the .dat file specified in\
+        filepath. If bulk is True, returns None.
 
     """
     if bulk:
-        return np.loadtxt(filepath).astype(int).flatten(), None
+        return np.loadtxt(filepath).astype(int).flatten(), None, None
     else:
         unrolled_data = np.loadtxt(filepath, skiprows=1, delimiter=' ')
+        system_info = np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',')
 
         # calculate polar lattice dimensions, nframes
         dr = unrolled_data[0, 1] - unrolled_data[0, 0]
@@ -496,7 +500,7 @@ def parse_tcl_dat_trajectory(filepath, bulk):
         for i in range(Nr):
             sideways_counts[i, :, :] = unrolled_counts[(nframes * i):(nframes * (i + 1)), :]
         counts = np.swapaxes(sideways_counts, 0, 1)
-        return counts, grid_dims
+        return counts, grid_dims, system_info
 
 
 def calculate_bin_area(r_bin, dr, dtheta):
