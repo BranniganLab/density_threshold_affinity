@@ -379,7 +379,7 @@ class Site:
         """
         area = 0
         for bin_tuple in self.bin_coords:
-            area += calculate_bin_area(bin_tuple[0], dr, dtheta)
+            area += _calculate_bin_area(bin_tuple[0], dr, dtheta)
         return area
 
     def predict_accessible_area(self, bulk_area, mode=False):
@@ -463,6 +463,9 @@ def parse_tcl_dat_file(filepath, bulk):
         If bulk is True, return None. If bulk is False, return the bin \
         dimensions in r and theta as well as the number of frames inside a \
         namedtuple.
+    system_info : ndarray or None
+        The information taken from the header row of the .dat file specified in\
+        filepath. If bulk is True, returns None.
 
     """
     if isinstance(filepath, str):
@@ -473,9 +476,10 @@ def parse_tcl_dat_file(filepath, bulk):
     assert filepath.is_file(), f"This is not recognized as a file {filepath}"
     assert filepath.suffixes[1] == '.dat', "You must provide the .dat file output from VMD."
     if bulk:
-        return np.loadtxt(filepath).astype(int).flatten(), None
+        return np.loadtxt(filepath).astype(int).flatten(), None, None
     else:
         unrolled_data = np.loadtxt(filepath, skiprows=1, delimiter=' ')
+        system_info = np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',')
 
         # calculate polar lattice dimensions, nframes
         dr = unrolled_data[0, 1] - unrolled_data[0, 0]
@@ -494,10 +498,10 @@ def parse_tcl_dat_file(filepath, bulk):
         for i in range(Nr):
             sideways_counts[i, :, :] = unrolled_counts[(nframes * i):(nframes * (i + 1)), :]
         counts = np.swapaxes(sideways_counts, 0, 1)
-        return counts, grid_dims
+        return counts, grid_dims, system_info
 
 
-def calculate_bin_area(r_bin, dr, dtheta):
+def _calculate_bin_area(r_bin, dr, dtheta):
     """
     Calculate the area of the polar bin.
 
@@ -521,4 +525,47 @@ def calculate_bin_area(r_bin, dr, dtheta):
     return area
 
 
-def calculate_density(counts_array,)
+def calculate_density(avg_counts, grid_dims):
+    """
+    Calculate the average bead density in each bin.
+
+    Parameters
+    ----------
+    avg_counts : ndarray
+        2D array of average bead counts per bin in simulation. [r,theta] format.
+    grid_dims : namedtuple
+        The Dimensions object corresponding to this system.
+
+    Returns
+    -------
+    density : ndarray
+        The average bead density in each bin.
+
+    """
+    assert isinstance(grid_dims, namedtuple), "grid_dims must be a Dimensions namedtuple."
+    assert isinstance(avg_counts, np.ndarray), "avg_counts must be an ndarray"
+    assert len(avg_counts) == 2, "avg_counts must be a 2D array."
+    area = _calculate_lattice_areas(grid_dims)
+    density = avg_counts / area
+    return density
+
+
+def _calculate_lattice_areas(grid_dims):
+    """
+    Calculate the area of each bin in a polar lattice.
+
+    Parameters
+    ----------
+    grid_dims : namedtuple
+        Dimensions namedtuple that corresponds to your system.
+
+    Returns
+    -------
+    areas : ndarray
+        2D array of bin areas in [r, theta] format.
+
+    """
+    areas = np.zeros((grid_dims.Nr, grid_dims.Ntheta))
+    for radial_ring in range(grid_dims.Nr):
+        areas[radial_ring, :] = _calculate_bin_area(radial_ring, grid_dims.dr, grid_dims.dtheta)
+    return areas
