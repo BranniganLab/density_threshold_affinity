@@ -451,26 +451,26 @@ def parse_tcl_dat_file(filepath, bulk):
         raise Exception("Must provide the path to the .dat file.")
     assert filepath.exists(), f"Could not find {filepath}"
     assert filepath.is_file(), f"This is not recognized as a file {filepath}"
-    assert filepath.suffixes[1] == '.dat', "You must provide the .dat file output from VMD."
+    assert filepath.suffixes[-1] == '.dat', "You must provide the .dat file output from VMD."
     if bulk:
         return np.loadtxt(filepath).astype(int).flatten(), None, None
     else:
-        unrolled_data = np.loadtxt(filepath, skiprows=1, delimiter=' ')
-        system_info = np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',')
+        unrolled_data = np.loadtxt(filepath, skiprows=1)
+        system_info = np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str)
 
         # calculate polar lattice dimensions, nframes
         dr = unrolled_data[0, 1] - unrolled_data[0, 0]
         dtheta = unrolled_data[0, 2]
         nframes = _calculate_nframes(unrolled_data[:, 0])
         Ntheta = int(round(360 / dtheta))
-        assert Ntheta == unrolled_data.shape[1] - 3, f"Something went wrong with the theta dimensions parser. dtheta={dtheta}, Ntheta={Ntheta}"
+        assert Ntheta == unrolled_data.shape[1] - 4, f"Something went wrong with the theta dimensions parser. dtheta={dtheta}, Ntheta={Ntheta}"
         Nr = len(unrolled_data[:, 0]) / nframes
         assert Nr - int(Nr) == 0, f"Something went wrong with the r dimensions parser. dr={dr}, Nr={Nr}"
         Nr = int(Nr)
         grid_dims = Dimensions(dr, Nr, dtheta, Ntheta, nframes)
 
         # package bin counts into 3d ndarray in [time, r, theta] format
-        unrolled_counts = unrolled_data[:, 3:].astype(int)
+        unrolled_counts = unrolled_data[:, 3:-1].astype(int)
         sideways_counts = np.zeros((Nr, nframes, Ntheta))
         for i in range(Nr):
             sideways_counts[i, :, :] = unrolled_counts[(nframes * i):(nframes * (i + 1)), :]
