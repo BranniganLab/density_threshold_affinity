@@ -13,7 +13,7 @@ from pathlib import Path
 from scipy import constants
 from collections import namedtuple
 
-dimensions = namedtuple('dimensions', ['dr', 'Nr', 'dtheta', 'Ntheta', 'Nframes'])
+Dimensions = namedtuple('Dimensions', ['dr', 'Nr', 'dtheta', 'Ntheta', 'Nframes'])
 
 
 class Site:
@@ -479,6 +479,8 @@ def parse_tcl_dat_trajectory(filepath, bulk):
         return np.loadtxt(filepath).astype(int).flatten(), None
     else:
         unrolled_data = np.loadtxt(filepath, skiprows=1, delimiter=' ')
+
+        # calculate polar lattice dimensions, nframes
         dr = unrolled_data[0, 1] - unrolled_data[0, 0]
         dtheta = unrolled_data[0, 2]
         nframes = calculate_nframes(unrolled_data[:, 0])
@@ -487,7 +489,9 @@ def parse_tcl_dat_trajectory(filepath, bulk):
         Nr = len(unrolled_data[:, 0]) / nframes
         assert Nr - int(Nr) == 0, f"Something went wrong with the r dimensions parser. dr={dr}, Nr={Nr}"
         Nr = int(Nr)
-        grid_dims = dimensions(dr, Nr, dtheta, Ntheta, nframes)
+        grid_dims = Dimensions(dr, Nr, dtheta, Ntheta, nframes)
+
+        # package bin counts into 3d ndarray in [time, r, theta] format
         unrolled_counts = unrolled_data[:, 3:].astype(int)
         sideways_counts = np.zeros((Nr, nframes, Ntheta))
         for i in range(Nr):
