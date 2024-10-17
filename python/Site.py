@@ -447,7 +447,7 @@ def calculate_nframes(r_values):
     for i in range(len(r_values)):
         if r_values[i] != match_value:
             return i
-    return None
+    return len(r_values)
 
 
 def parse_tcl_dat_trajectory(filepath, bulk):
