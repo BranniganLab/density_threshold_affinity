@@ -458,24 +458,8 @@ def parse_tcl_dat_file(filepath, bulk):
     else:
         unrolled_data = np.loadtxt(filepath, skiprows=1)
         system_info = _parse_system_info(np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str))
-
-        # calculate polar lattice dimensions, nframes
-        dr = unrolled_data[0, 1] - unrolled_data[0, 0]
-        dtheta = unrolled_data[0, 2]
-        nframes = _calculate_nframes(unrolled_data[:, 0])
-        Ntheta = int(round(360 / dtheta))
-        assert Ntheta == unrolled_data.shape[1] - 4, f"Something went wrong with the theta dimensions parser. dtheta={dtheta}, Ntheta={Ntheta}"
-        Nr = len(unrolled_data[:, 0]) / nframes
-        assert Nr - int(Nr) == 0, f"Something went wrong with the r dimensions parser. dr={dr}, Nr={Nr}"
-        Nr = int(Nr)
-        grid_dims = Dimensions(dr, Nr, dtheta, Ntheta, nframes)
-
-        # package bin counts into 3d ndarray in [time, r, theta] format
-        unrolled_counts = unrolled_data[:, 3:-1].astype(int)
-        sideways_counts = np.zeros((Nr, nframes, Ntheta))
-        for i in range(Nr):
-            sideways_counts[i, :, :] = unrolled_counts[(nframes * i):(nframes * (i + 1)), :]
-        counts = np.swapaxes(sideways_counts, 0, 1)
+        grid_dims = _calculate_grid_dimensions(unrolled_data)
+        counts = _package_counts(unrolled_data)
         return counts, grid_dims, system_info
 
 
@@ -502,6 +486,68 @@ def calculate_density(avg_counts, grid_dims):
     area = _calculate_lattice_areas(grid_dims)
     density = avg_counts / area
     return density
+
+
+def _calculate_grid_dimensions(unrolled_data):
+    """
+    Return the length and number of bins in each dimension, as well as the \
+    number of frames in the .dat file.
+
+    Parameters
+    ----------
+    unrolled_data : ndarray
+        The data, as it is read in directly from the .dat file output by \
+        polarDensityBin.
+
+    Returns
+    -------
+    grid_dims : namedtuple
+        Contains dr, number of r bins, dtheta, number of theta bins, and number\
+        of frames contained in file.
+
+    """
+    dr = unrolled_data[0, 1] - unrolled_data[0, 0]
+    dtheta = unrolled_data[0, 2]
+    nframes = _calculate_nframes(unrolled_data[:, 0])
+    Ntheta = int(round(360 / dtheta))
+    assert Ntheta == unrolled_data.shape[1] - 4, f"Something went wrong with the theta dimensions parser. dtheta={dtheta}, Ntheta={Ntheta}"
+    Nr = len(unrolled_data[:, 0]) / nframes
+    assert Nr - int(Nr) == 0, f"Something went wrong with the r dimensions parser. dr={dr}, Nr={Nr}"
+    Nr = int(Nr)
+    grid_dims = Dimensions(dr, Nr, dtheta, Ntheta, nframes)
+    return grid_dims
+
+
+def _package_counts(unrolled_data, grid_dims):
+    """
+    Package the unrolled data into a 3d array in [time, r, theta] format.
+
+    Parameters
+    ----------
+    unrolled_data : ndarray
+        2d array output from polarDensityBin.
+    grid_dims : namedtuple
+        Contains bin dimensions and number of frames.
+
+    Returns
+    -------
+    counts : ndarray
+        3d array of counts in [time, r, theta] format.
+
+    """
+    nframes = grid_dims.nframes
+
+    # chop off the first few columns
+    unrolled_counts = unrolled_data[:, 3:-1].astype(int)
+
+    # 'sideways' because it is in [r, time, theta] format at first
+    sideways_counts = np.zeros((grid_dims.Nr, nframes, grid_dims.Ntheta))
+    for i in range(grid_dims.Nr):
+        sideways_counts[i, :, :] = unrolled_counts[(nframes * i):(nframes * (i + 1)), :]
+
+    # swap axes to put it in [time, r, theta] format
+    counts = np.swapaxes(sideways_counts, 0, 1)
+    return counts
 
 
 def _calculate_lattice_areas(grid_dims):
