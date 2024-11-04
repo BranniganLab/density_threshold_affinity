@@ -14,6 +14,7 @@ from scipy import constants
 from collections import namedtuple
 
 Dimensions = namedtuple('Dimensions', ['dr', 'Nr', 'dtheta', 'Ntheta', 'Nframes'])
+SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'NBperTail', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
 
 
 class NewSite:
@@ -456,7 +457,7 @@ def parse_tcl_dat_file(filepath, bulk):
         return np.loadtxt(filepath).astype(int).flatten(), None, None
     else:
         unrolled_data = np.loadtxt(filepath, skiprows=1)
-        system_info = np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str)
+        system_info = _parse_system_info(np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str))
 
         # calculate polar lattice dimensions, nframes
         dr = unrolled_data[0, 1] - unrolled_data[0, 0]
@@ -569,3 +570,55 @@ def _calculate_nframes(r_values):
         if r_values[i] != match_value:
             return i
     return len(r_values)
+
+
+def _parse_system_info(dat_file_header):
+    """
+    Turn the list of strings from the .dat file header into a namedtuple with \
+    useable float values.
+
+    Parameters
+    ----------
+    dat_file_header : list
+        The header line of the .dat file output by polarDensityBin, saved as a \
+        list of strings.
+
+    Returns
+    -------
+    sysInfo : namedtuple
+        Namedtuple containing system information output by polarDensityBin.
+
+    """
+    NL, NB, BoxArea, ExpBeadDensity, NBperTail, DrDtheta = dat_file_header
+    NL = _isolate_number_from_header_string(NL)
+    NB = _isolate_number_from_header_string(NB)
+    BoxArea = _isolate_number_from_header_string(BoxArea)
+    ExpBeadDensity = _isolate_number_from_header_string(ExpBeadDensity)
+    NBperTail = _isolate_number_from_header_string(NBperTail)
+    DrDtheta = _isolate_number_from_header_string(DrDtheta)
+    sysInfo = SysInfo(NL, NB, NBperTail, BoxArea, ExpBeadDensity, DrDtheta)
+    return sysInfo
+
+
+def _isolate_number_from_header_string(string):
+    """
+    Return the number following the colon in the input string. \
+    Example: 'sample header info : 185.72 sample units' should return 185.72.
+
+    Parameters
+    ----------
+    string : str
+        A string from the header of the .dat file output by polarDensityBin.
+
+    Returns
+    -------
+    float
+        The number following the colon in the input string.
+
+    """
+    right_side = string.split(':')[1].strip()
+    if "/" in right_side:
+        # Expected bead density has a division symbol in it
+        return float(right_side.split('/')[0])
+    else:
+        return float(right_side.split()[0])
