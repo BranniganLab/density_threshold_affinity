@@ -441,7 +441,7 @@ def parse_tcl_dat_file(filepath, bulk):
         If bulk is True, return None. If bulk is False, return the bin \
         dimensions in r and theta as well as the number of frames inside a \
         namedtuple.
-    system_info : ndarray or None
+    system_info : namedtuple or None
         The information taken from the header row of the .dat file specified in\
         filepath. If bulk is True, returns None.
 
