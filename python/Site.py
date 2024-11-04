@@ -110,7 +110,7 @@ class Site:
     @bin_coords.setter
     def bin_coords(self, bin_coords):
         """
-        Set bin_coords and in the process recalculate the counts histogram.
+        Set bin_coords for this Site.
 
         Parameters
         ----------
