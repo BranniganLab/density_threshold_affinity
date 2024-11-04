@@ -17,6 +17,23 @@ Dimensions = namedtuple('Dimensions', ['dr', 'Nr', 'dtheta', 'Ntheta', 'Nframes'
 SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'NBperTail', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
 
 
+class Symmetric_Site:
+    def __init__(self, symmetry, base_site, data):
+        assert isinstance(symmetry, int), "symmetry must be an int."
+        assert isinstance(base_site, NewSite), "base_site must be a Site."
+        assert isinstance(data, np.ndarray), "data must be a numpy array."
+        assert len(data.shape) == 3, "data must be 3d array."
+        self.symmetry = symmetry
+        self.site_list = self._make_symmetric_sites(self, base_site, data)
+        assert len(self.site_list) == symmetry, "Number of Sites does not match symmetry."
+        self._bin_coords = _aggregate_bin_coords(self.site_list)
+        self._site_counts_histogram = _aggregate_site_counts_histograms(self.site_list)
+        self._bulk_counts_histogram = base_site.bulk_counts_histogram
+        self._n_peak = base_site.n_peak
+        self._dG = None
+        return self
+
+
 class NewSite:
     """
     The basic class for a binding site on/in a protein/inclusion. User defines \
@@ -199,29 +216,8 @@ class NewSite:
             raise Exception("You need to update the site counts histogram first.")
         if self._bulk_counts_histogram is None:
             warnings.append("Warning: bulk counts have not been added. Calculating dG_site only without bulk correction term.")
-            return self._calculate_dG(bulk=False)
-        return self._calculate_dG(bulk=False) - self._calculate_dG(bulk=True)
-
-    def _calculate_dG(self, bulk=False):
-        """
-        Calculate the delta G. If bulk is True, this value is dG_ref. If bulk \
-        is False, this value is dG_site.
-
-        Parameters
-        ----------
-        bulk : boolean
-            Is this the bulk patch? The default is False.
-
-        Returns
-        -------
-        delta_G : float
-            The binding affinity for the site or bulk, in kcal/mol.
-
-        """
-        minus_RT = -1.0 * self.temp * constants.R / 4184.  # 4184 converts J to kcal
-        P_unnoc = self._calculate_P_unnoc(bulk=bulk)
-        delta_G = minus_RT * np.log((1 - P_unnoc) / P_unnoc)
-        return delta_G
+            return _calculate_dG(self.bulk_counts_histogram, self.n_peak, self.temp)
+        return _calculate_dG(self.site_counts_histogram, self.n_peak, self.temp) - _calculate_dG(self.bulk_counts_histogram, self.n_peak, self.temp)
 
     def _calculate_hist_mode(self, bulk=False, nonzero=False):
         """
@@ -333,33 +329,6 @@ class NewSite:
             stack = np.vstack((stack, binned_counts[:, r_bin, theta_bin]))
         site_counts = np.sum(stack, axis=0)
         return site_counts
-
-    def _calculate_P_unnoc(self, bulk=False):
-        """
-        Calculate the probability that the site is unoccupied by ligand. This \
-        is defined by the portion of the histogram <= n_peak divided by the \
-        total histogram.
-
-        Parameters
-        ----------
-        bulk : boolean
-            If True, calculate P_unnoc,bulk. Else, calculate P_unnoc,site.
-
-        Returns
-        -------
-        P_unnoc : float
-            The probability that the site is unoccupied by ligand.
-
-        """
-        if bulk:
-            counts = self.bulk_counts_histogram
-        else:
-            counts = self.site_counts_histogram
-        total_N = np.sum(counts)
-        P_unnoc = counts[:self.n_peak + 1] / total_N
-        P_occ = counts[self.n_peak + 1:] / total_N
-        assert math.isclose(P_occ + P_unnoc, 1, abs_tol=0.01), f"Probabilities do not sum to one. Current sum: {P_unnoc + P_occ}"
-        return P_unnoc
 
     def calculate_geometric_area(self, dr, dtheta):
         """
@@ -668,3 +637,59 @@ def _isolate_number_from_header_string(string):
         return float(right_side.split('/')[0])
     else:
         return float(right_side.split()[0])
+
+
+def _calculate_dG(counts_histogram, n_peak, temp):
+    """
+    Calculate the delta G for bulk or site.
+
+    Parameters
+    ----------
+    counts_histogram : np.ndarray
+        The site or bulk counts histogram attribute of a Site.
+    n_peak : int
+        The mode of the bulk counts histogram.
+    temp : float
+        The temperature of your system in K.
+
+    Returns
+    -------
+    delta_G : float
+        The binding affinity for the site or bulk, in kcal/mol.
+
+    """
+    minus_RT = -1.0 * temp * constants.R / 4184.  # 4184 converts J to kcal
+    P_unnoc = _calculate_P_unnoc(counts_histogram, n_peak)
+    delta_G = minus_RT * np.log((1 - P_unnoc) / P_unnoc)
+    return delta_G
+
+
+def _calculate_P_unnoc(counts_histogram, n_peak):
+    """
+    Calculate the probability that the site is unoccupied by ligand. This \
+    is defined by the portion of the histogram <= n_peak divided by the \
+    total histogram.
+
+    Parameters
+    ----------
+    counts_histogram : np.ndarray
+        The site or bulk counts histogram attribute of a Site.
+    n_peak : int
+        The mode of the bulk counts histogram.
+
+    Returns
+    -------
+    P_unnoc : float
+        The probability that the site is unoccupied by ligand.
+
+    """
+    total_N = np.sum(counts_histogram)
+    P_unnoc = counts_histogram[:n_peak + 1] / total_N
+    P_occ = counts_histogram[n_peak + 1:] / total_N
+    assert math.isclose(P_occ + P_unnoc, 1, abs_tol=0.01), f"Probabilities do not sum to one. Current sum: {P_unnoc + P_occ}"
+    return P_unnoc
+
+
+def _aggregate_site_counts_histograms(site_list):
+    
+    for site in site_list:
