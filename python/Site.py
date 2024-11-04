@@ -16,7 +16,7 @@ from collections import namedtuple
 Dimensions = namedtuple('Dimensions', ['dr', 'Nr', 'dtheta', 'Ntheta', 'Nframes'])
 
 
-class Site:
+class NewSite:
     """
     The basic class for a binding site on/in a protein/inclusion. User defines \
     Site with bin coordinates. Multiple symmetric Sites can be combined with \
@@ -495,9 +495,9 @@ def calculate_density(avg_counts, grid_dims):
         The average bead density in each bin.
 
     """
-    assert isinstance(grid_dims, namedtuple), "grid_dims must be a Dimensions namedtuple."
+    assert isinstance(grid_dims, tuple), "grid_dims must be a Dimensions namedtuple."
     assert isinstance(avg_counts, np.ndarray), "avg_counts must be an ndarray"
-    assert len(avg_counts) == 2, "avg_counts must be a 2D array."
+    assert len(avg_counts.shape) == 2, "avg_counts must be a 2D array."
     area = _calculate_lattice_areas(grid_dims)
     density = avg_counts / area
     return density
