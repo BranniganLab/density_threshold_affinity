@@ -12,6 +12,9 @@ import math
 from pathlib import Path
 from scipy import constants
 from collections import namedtuple
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, Normalize
+import matplotlib.gridspec as gridspec
 
 Dimensions = namedtuple('Dimensions', ['dr', 'Nr', 'dtheta', 'Ntheta', 'Nframes'])
 SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'NBperTail', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
@@ -616,7 +619,7 @@ def parse_tcl_dat_file(filepath, bulk):
         unrolled_data = np.loadtxt(filepath, skiprows=1)
         system_info = _parse_system_info(np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str))
         grid_dims = _calculate_grid_dimensions(unrolled_data)
-        counts = _package_counts(unrolled_data)
+        counts = _package_counts(unrolled_data, grid_dims)
         return counts, grid_dims, system_info
 
 
@@ -692,7 +695,7 @@ def _package_counts(unrolled_data, grid_dims):
         3d array of counts in [time, r, theta] format.
 
     """
-    nframes = grid_dims.nframes
+    nframes = grid_dims.Nframes
 
     # chop off the first few columns
     unrolled_counts = unrolled_data[:, 3:-1].astype(int)
@@ -1019,3 +1022,54 @@ def outline_bin(ax, bin_coords, grid_dims):
     theta_range = np.linspace(start_theta, end_theta, 100)
     ax.fill_between(theta_range, inner_r, outer_r, facecolor=(0, 0, 0, 0), edgecolor='k')
     return ax
+
+
+def make_custom_colormap():
+    """
+    Make a custom colormap for plotting.
+
+    Returns
+    -------
+    my_cmap : matplotlib colormap
+        The colormap to use when plotting.
+
+    """
+    depleted = plt.colormaps['RdGy_r']
+    enriched = plt.colormaps['bwr']
+    newcolors = np.concatenate([depleted(np.linspace(0.35, 0.5, 128)), enriched(np.linspace(0.5, 1, 128))])
+    my_cmap = ListedColormap(newcolors)
+    return my_cmap
+
+
+def create_figure(numlipids, cmap, vmin, vmid, vmax, figwidth=20, figheight=20):
+    fig = plt.figure(figsize=(figwidth, figheight))
+    gs = gridspec.GridSpec(numlipids, 2, figure=fig, wspace=0.15, hspace=0.15)
+    for gridbox in range(numlipids * 2):
+        ax = plt.subplot(gs[gridbox], projection='polar')
+    fig.subplots_adjust(right=0.8)
+    cbar_ax = fig.add_axes([0.21, 1, 0.5, 0.02])
+    sm = plt.colormaps.ScalarMappable(cmap=cmap)
+    cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
+    cbar.set_ticks(np.linspace(0, 1, 5))
+    cbar.ax.set_xticklabels([vmin, (vmin + vmid) / 2, vmid, (vmid + vmax) / 2, vmax])
+    return fig, fig.axes
+
+
+# This class comes from Liam Sharp and could potentially be rewritten to be
+# more clear.
+class MidpointNormalize(Normalize):
+    """
+    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value).
+
+    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
+    """
+
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
