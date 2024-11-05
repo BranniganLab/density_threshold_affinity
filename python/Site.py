@@ -1041,7 +1041,36 @@ def make_custom_colormap():
     return my_cmap
 
 
-def create_figure(numlipids, cmap, vmin, vmid, vmax, figwidth=20, figheight=20):
+def create_heatmap_figure_and_axes(numlipids, cmap, vmin, vmid, vmax, figwidth=20, figheight=20):
+    """
+    Create the heatmap figure and enough axes to accommodate all the lipids and\
+    leaflets.
+
+    Parameters
+    ----------
+    numlipids : int
+        The number of lipids you intend to plot.
+    cmap : matplotlib ListedColormap
+        A custom colormap.
+    vmin : float
+        The colorbar minimum.
+    vmid : float
+        The colorbar midpoint.
+    vmax : float
+        The colorbar maximum.
+    figwidth : int, optional
+        Figure width. The default is 20.
+    figheight : int, optional
+        Figure height. The default is 20.
+
+    Returns
+    -------
+    fig : matplotlib Fig object
+        The figure you just created.
+    matplotlib Axes objects
+        The polar projection axes that were created.
+
+    """
     fig = plt.figure(figsize=(figwidth, figheight))
     gs = gridspec.GridSpec(numlipids, 2, figure=fig, wspace=0.15, hspace=0.15)
     for gridbox in range(numlipids * 2):
