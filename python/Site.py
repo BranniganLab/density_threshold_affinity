@@ -668,15 +668,20 @@ def _calculate_grid_dimensions(unrolled_data):
 
     """
     dr = unrolled_data[0, 1] - unrolled_data[0, 0]
-    dtheta = unrolled_data[0, 2]
+    dthetadeg = unrolled_data[0, 2]
+    dtheta = deg2rad(dthetadeg)
     nframes = _calculate_nframes(unrolled_data[:, 0])
-    Ntheta = int(round(360 / dtheta))
+    Ntheta = int(round(360 / dthetadeg))
     assert Ntheta == unrolled_data.shape[1] - 4, f"Something went wrong with the theta dimensions parser. dtheta={dtheta}, Ntheta={Ntheta}"
     Nr = len(unrolled_data[:, 0]) / nframes
     assert Nr - int(Nr) == 0, f"Something went wrong with the r dimensions parser. dr={dr}, Nr={Nr}"
     Nr = int(Nr)
     grid_dims = Dimensions(dr, Nr, dtheta, Ntheta, nframes)
     return grid_dims
+
+
+def deg2rad(deg):
+    return deg * (np.pi / 180.0)
 
 
 def _package_counts(unrolled_data, grid_dims):
