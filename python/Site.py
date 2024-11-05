@@ -956,3 +956,66 @@ def _check_bulk_counts_histogram(site_list):
     for site in site_list:
         assert bulk.all() == site.bulk_counts_histogram.all(), "One or more sites have different bulk histograms. This shouldn't be possible."
     return bulk
+
+
+def outline_site(ax, site, grid_dims):
+    """
+    Draw an outline around each bin in this Site.
+
+    Parameters
+    ----------
+    ax : matplotlib.pyplot Axes object
+        The Axes object you want to draw this on.
+    site : Site or Symmetric_Site
+        The site you want to outline.
+    grid_dims : namedtuple
+        Contains dr, number of r bins, dtheta, number of theta bins, and number\
+        of frames contained in file.
+
+    Returns
+    -------
+    ax : matplotlib.pyplot Axes object
+        The Axes object you want to draw this on.
+
+    """
+    if isinstance(site, Symmetric_Site):
+        for each_bin in site.bin_coords:
+            ax = outline_bin(ax, each_bin, grid_dims)
+    elif isinstance(site, Site):
+        for each_site in site.site_list:
+            for each_bin in each_site.bin_coords:
+                ax = outline_bin(ax, each_bin, grid_dims)
+    else:
+        Exception("site must be a Site or Symmetric_Site.")
+    return ax
+
+
+def outline_bin(ax, bin_coords, grid_dims):
+    """
+    Draw an outline around this bin.
+
+    Parameters
+    ----------
+    ax : matplotlib.pyplot Axes object
+        The Axes object you want to draw this on.
+    bin_coords : tuple
+        The tuple of bin coordinates stored in (r_bin, theta_bin) format.
+    grid_dims : namedtuple
+        Contains dr, number of r bins, dtheta, number of theta bins, and number\
+        of frames contained in file.
+
+    Returns
+    -------
+    ax : matplotlib.pyplot Axes object
+        The Axes object you want to draw this on.
+
+    """
+    assert isinstance(bin_coords, tuple), "bin_coords must be a tuple of bin coordinates."
+    dr, _, dtheta, _, _ = grid_dims
+    start_theta = bin_coords[1]
+    end_theta = start_theta + dtheta
+    inner_r = bin_coords[0]
+    outer_r = inner_r + dr
+    theta_range = np.linspace(start_theta, end_theta, 100)
+    ax.fill_between(theta_range, inner_r, outer_r, facecolor=(0, 0, 0, 0), edgecolor='k')
+    return ax
