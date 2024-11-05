@@ -18,23 +18,199 @@ SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'NBperTail', 'BoxArea', 'ExpBeadDen
 
 
 class Symmetric_Site:
-    def __init__(self, symmetry, base_site, data):
-        assert isinstance(symmetry, int), "symmetry must be an int."
-        assert isinstance(base_site, NewSite), "base_site must be a Site."
-        assert isinstance(data, np.ndarray), "data must be a numpy array."
-        assert len(data.shape) == 3, "data must be 3d array."
-        self.symmetry = symmetry
-        self.site_list = self._make_symmetric_sites(self, base_site, data)
+    """
+    An aggregation of multiple binding sites on/in a protein/inclusion. User \
+    defines the base_site Site object and then provides it to the \
+    Symmetric_Site constructor.
+
+    Attributes
+    ----------
+    temp : float
+        The temperature of your system in K.
+
+    Calculated Properties
+    ---------------------
+    symmetry : int
+        The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
+    site_list : list
+        The list of constituent Site objects that make up this Symmetric_Site.
+    site_counts_histogram : numpy ndarray
+        One-dimensional ndarray where the histogrammed ligand bead counts are \
+        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having \
+        zero beads in the Site, 5 frames having one bead in the Site, 0 frames \
+        having 2, 3, or 5 beads in the site, and 1 frame having 4 beads in the \
+        Site.
+    bulk_counts_histogram : numpy ndarray
+        One-dimensional ndarray where the histogrammed ligand bead counts are \
+        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having \
+        zero beads in the bulk patch, 5 frames having one bead in the patch, 0 \
+        frames having 2, 3, or 5 beads in the patch, and 1 frame having 4 beads\
+        in the patch.
+    n_peak : int
+        The mode of the bulk histogram. Indicates the cut-off for P_unocc.
+    dG : float
+        The binding affinity of the lipid for the Site, in kcal/mol.
+    """
+
+    def __init__(self, symmetry, base_site, counts_data):
+        """
+        Create a Symmetric_Site by creating clones of the base_site and \
+        rotating them symmetrically around the origin.
+
+        Parameters
+        ----------
+        symmetry : int
+            The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
+        base_site : Site
+            The original Site object that should be cloned and rotated.
+        counts_data : ndarray
+            The output from polarDensityBin, after having been read in and \
+            processed by parse_tcl_data.
+
+        Returns
+        -------
+        Symmetric_Site
+            The Symmetric_Site you just created.
+        list
+            A list of the constituent Site objects that make up this \
+            Symmetric_Site.
+
+        """
+        assert isinstance(symmetry, int), "symmetry must be an integer."
+        assert isinstance(counts_data, np.ndarray), "counts_data must be a numpy ndarray."
+        assert len(counts_data.shape) == 3, "counts_data must be a 3d array."
+        Ntheta = counts_data.shape[2]
+        assert Ntheta % symmetry == 0, f"The symmetry you specified does not \
+            evenly distribute across the lattice you provided. Rerun with a \
+            lattice that has theta bins divisible by {symmetry}. Current # of \
+            theta bins is {Ntheta}."
+        assert isinstance(base_site, Site), "base_site must be a Site."
+        assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a Symmetric_Site."
+        self._symmetry = symmetry
+        self._site_list = self._make_symmetric_sites(self, base_site, counts_data)
         assert len(self.site_list) == symmetry, "Number of Sites does not match symmetry."
-        self._bin_coords = _aggregate_bin_coords(self.site_list)
-        self._site_counts_histogram = _aggregate_site_counts_histograms(self.site_list)
-        self._bulk_counts_histogram = base_site.bulk_counts_histogram
-        self._n_peak = base_site.n_peak
-        self._dG = None
-        return self
+        self.temp = base_site.temp
+        return self, self.site_list
+
+    @property
+    def symmetry(self):
+        """
+        Tell me the symmetry, but don't let me change the symmetry.
+
+        Returns
+        -------
+        int
+            The N-fold symmetry of the Symmetric_Site.
+
+        """
+        return self._symmetry
+
+    @property
+    def site_list(self):
+        """
+        Tell me the site_list, but don't let me change the site_list.
+
+        Returns
+        -------
+        list
+            List of constituent Site objects that comprise this Symmetric_Site.
+
+        """
+        return self._site_list
+
+    @property
+    def site_counts_histogram(self):
+        """
+        Tell me the current counts, in histogram form, for the Symmetric_Site.
+
+        Returns
+        -------
+        site_counts_histogram : numpy ndarray
+            One-dimensional ndarray where the histogrammed ligand bead counts \
+            are stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames \
+            having zero beads in the Site, 5 frames having one bead in the \
+            Site, 0 frames having 2, 3, or 5 beads in the site, and 1 frame \
+            having 4 beads in the Site.
+
+        """
+        return _aggregate_site_counts_histograms(self.site_list)
+
+    @property
+    def bulk_counts_histogram(self):
+        """
+        Tell me the current counts, in histogram form, for the Symmetric_Site. \
+        In practice, this is just the bulk_counts_histogram for the base_site.
+
+        Returns
+        -------
+        bulk_counts_histogram : numpy ndarray
+            One-dimensional ndarray where the histogrammed ligand bead counts \
+            are stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames \
+            having zero beads in the bulk patch, 5 frames having one bead in \
+            the patch, 0 frames having 2, 3, or 5 beads in the patch, and 1 \
+            frame having 4 beads in the patch.
+
+        """
+        return _check_bulk_counts_histogram(self.site_list)
+
+    @property
+    def n_peak(self):
+        """
+        Tell me what the n_peak is.
+
+        Returns
+        -------
+        int
+            The mode of the bulk distribution in a patch of membrane that has \
+            equal accessible area to the site.
+
+        """
+        return calculate_hist_mode(self.bulk_counts_histogram)
+
+    @property
+    def dG(self):
+        """
+        Calculate the binding affinity of the lipid for this Symmetric_Site, \
+        including the bulk correction factor dG_ref.
+
+        Returns
+        -------
+        float
+            The total binding affinity, in kcal/mol.
+
+        """
+        n_peak = self.n_peak
+        dG_site = _calculate_dG(self.site_counts_histogram, n_peak, self.temp)
+        dG_ref = _calculate_dG(self.bulk_counts_histogram, n_peak, self.temp)
+        return dG_site - dG_ref
+
+    def _make_symmetric_sites(self, base_site, counts_data):
+        site_list = [base_site]
+        Ntheta = counts_data.shape[2]
+        base_site.name = base_site.name + '_1'
+        bulk_counts_data = base_site.bulk_counts_histogram
+        for site_number in range(1, self.symmetry):
+            site_name = base_site.name + '_' + str(site_number + 1)
+            new_site = Site(site_name, base_site.ligand, base_site.leaflet, base_site.temp)
+            new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, Ntheta, site_number)
+            new_site.update_counts_histogram(False, counts_data)
+            new_site.update_counts_histogram(True, bulk_counts_data)
+            site_list.append(new_site)
+        return site_list
+
+    def _rotate_bin_coords(self, bin_coords, Ntheta, site_number):
+        rotated_bin_coords = []
+        for each_bin in bin_coords:
+            r_bin, theta_bin = each_bin
+            shift = Ntheta // self.symmetry
+            rotated_theta_bin = theta_bin + shift * site_number
+            if rotated_theta_bin >= Ntheta:
+                rotated_theta_bin -= Ntheta
+            rotated_bin_coords.append((r_bin, rotated_theta_bin))
+        return rotated_bin_coords
 
 
-class NewSite:
+class Site:
     """
     The basic class for a binding site on/in a protein/inclusion. User defines \
     Site with bin coordinates. Multiple symmetric Sites can be combined with \
@@ -105,8 +281,6 @@ class NewSite:
         self._bin_coords = None
         self._site_counts_histogram = None
         self._bulk_counts_histogram = None
-        self._n_peak = None
-        self._dG = None
         return self
 
     @property
@@ -198,7 +372,7 @@ class NewSite:
         """
         if self._bulk_counts_histogram is None:
             raise Exception("You need to update the bulk counts histogram first.")
-        return self._calculate_hist_mode(bulk=True, nonzero=False)
+        return calculate_hist_mode(self.bulk_counts_histogram)
 
     @property
     def dG(self):
@@ -212,42 +386,15 @@ class NewSite:
             The total binding affinity, in kcal/mol.
 
         """
-        if self._site_counts_histogram is None:
-            raise Exception("You need to update the site counts histogram first.")
-        if self._bulk_counts_histogram is None:
-            warnings.append("Warning: bulk counts have not been added. Calculating dG_site only without bulk correction term.")
-            return _calculate_dG(self.bulk_counts_histogram, self.n_peak, self.temp)
-        return _calculate_dG(self.site_counts_histogram, self.n_peak, self.temp) - _calculate_dG(self.bulk_counts_histogram, self.n_peak, self.temp)
-
-    def _calculate_hist_mode(self, bulk=False, nonzero=False):
-        """
-        Calculate the mode of the counts histogram.
-
-        Parameters
-        ----------
-        nonzero : boolean
-            If True, in the case of mode=0, use the second highest peak instead.\
-            This may be necessary when estimating the predicted accessible area.
-
-        Returns
-        -------
-        mode : int
-            The mode of the distribution.
-
-        """
-        if bulk:
-            hist = self.bulk_counts_histogram
-        else:
-            hist = self.site_counts_histogram
-        mode = np.argmax(hist)
-        if len(np.shape(mode)) != 0:
-            warnings.append(f"Warning: More than one peak identified ({mode}), using first peak ({mode[0]})")
-            mode = mode[0]
-        if mode == 0:
-            if nonzero:
-                warnings.append(f"Warning: found an experimental mode of 0 for site '{self.name}', using second highest peak")
-                mode = np.argmax(hist[1:]) + 1
-        return mode
+        assert self.site_counts_histogram is not None, "You need to update the\
+            site counts histogram first."
+        assert self.bulk_counts_histogram is not None, "You need to add bulk \
+            counts via update_counts_histogram(bulk=True, counts_data)."
+        n_peak = self.n_peak
+        assert n_peak is not None, "n_peak is missing."
+        dG_site = _calculate_dG(self.site_counts_histogram, n_peak, self.temp)
+        dG_ref = _calculate_dG(self.bulk_counts_histogram, n_peak, self.temp)
+        return dG_site - dG_ref
 
     def _calculate_hist_mean(self, bulk=False):
         """
@@ -276,7 +423,7 @@ class NewSite:
         mean = sum_i / total_N
         return mean
 
-    def update_counts_histogram(self, bulk, data):
+    def update_counts_histogram(self, bulk, counts_data):
         """
         Assign ligand bead counts to Site attribute "counts_histogram".
 
@@ -285,7 +432,7 @@ class NewSite:
         bulk : boolean
             If True, update the counts histogram for the bulk patch. If False,\
             update the counts histogram for the site.
-        data : ndarray
+        counts_data : ndarray
             If bulk=True, provide 1D nddarray containing bulk counts. \
             If bulk=False, provide the 3D ndarray containing binned counts.
 
@@ -294,14 +441,15 @@ class NewSite:
         None.
 
         """
-        assert isinstance(data, np.ndarray), "ndarray not supplied"
+        assert isinstance(counts_data, np.ndarray), "ndarray not supplied"
         if bulk:
-            assert len(data.shape) == 1, "Bulk counts data is not in the right format: {data}"
-            bulk_hist = np.bincount(data)
+            assert len(counts_data.shape) == 1, "Bulk counts data is not in the right format: {data}"
+            bulk_hist = np.bincount(counts_data)
             self._bulk_counts_histogram = bulk_hist
+            self._n_peak = calculate_hist_mode(self._bulk_counts_histogram)
         else:
-            assert len(data.shape) == 3, "Counts data is not in the right format: {data}"
-            site_counts = self._fetch_site_counts(data)
+            assert len(counts_data.shape) == 3, "Counts data is not in the right format: {data}"
+            site_counts = self._fetch_site_counts(counts_data)
             site_hist = np.bincount(site_counts)
             self._site_counts_histogram = site_hist
 
@@ -377,8 +525,8 @@ class NewSite:
         if self.ligand != "DPPC":
             warnings.append("Warning: This feature was originally built for use in a 100% DPPC test system. Proceed with caution.")
         if mode:
-            site = self._calculate_hist_mode(bulk=False)
-            bulk = self._calculate_hist_mode(bulk=True)
+            site = calculate_hist_mode(self.site_counts_histogram)
+            bulk = calculate_hist_mode(self.bulk_counts_histogram)
         else:
             site = self._calculate_hist_mean(bulk=False)
             bulk = self._calculate_hist_mean(bulk=True)
@@ -690,6 +838,81 @@ def _calculate_P_unnoc(counts_histogram, n_peak):
     return P_unnoc
 
 
+def calculate_hist_mode(histogram, nonzero=False):
+    """
+    Calculate the mode of the counts histogram.
+
+    Parameters
+    ----------
+    histogram : ndarray
+        The histogram whose mode you wish to calculate.
+    nonzero : boolean
+        If True, in the case of mode=0, use the second highest peak instead.\
+        This may be necessary when estimating the predicted accessible area.
+
+    Returns
+    -------
+    mode : int
+        The mode of the distribution.
+
+    """
+    mode = np.argmax(histogram)
+    if len(np.shape(mode)) != 0:
+        warnings.append(f"Warning: More than one peak identified ({mode}), using first peak ({mode[0]})")
+        mode = mode[0]
+    if mode == 0:
+        if nonzero:
+            warnings.append("Warning: found an experimental mode of 0 for site, using second highest peak")
+            mode = np.argmax(histogram[1:]) + 1
+    return mode
+
+
 def _aggregate_site_counts_histograms(site_list):
-    
+    """
+    Cycle through all the sites and add their counts histograms together.
+
+    Parameters
+    ----------
+    site_list : list
+        List of Sites.
+
+    Returns
+    -------
+    counts : ndarray
+        1D numpy array of histogrammed bead counts.
+
+    """
+    first_site = site_list.pop(0)
+    counts = first_site.site_counts_histogram
     for site in site_list:
+        counts_to_add = site.site_counts_histogram
+        # make sure the two ndarrays have same shape; resize the smaller one if not
+        if counts.shape[0] > counts_to_add.shape[0]:
+            counts_to_add = counts_to_add.resize(counts.shape)
+        elif counts.shape[0] < counts_to_add.shape[0]:
+            counts = counts.resize(counts_to_add.shape)
+        counts += counts_to_add
+    return counts
+
+
+def _check_bulk_counts_histogram(site_list):
+    """
+    Cycle through each Site and make sure the bulk_counts_histograms all match.\
+    Return one of them.
+
+    Parameters
+    ----------
+    site_list : list
+        List of Sites.
+
+    Returns
+    -------
+    bulk : ndarray
+        1D numpy array of histogrammed bead counts from the bulk distribution.
+
+    """
+    first_site = site_list.pop(0)
+    bulk = first_site.bulk_counts_histogram
+    for site in site_list:
+        assert bulk.all() == site.bulk_counts_histogram.all(), "One or more sites have different bulk histograms. This shouldn't be possible."
+    return bulk
