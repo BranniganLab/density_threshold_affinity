@@ -12,6 +12,7 @@ import math
 from pathlib import Path
 from scipy import constants
 from collections import namedtuple
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, Normalize
 import matplotlib.gridspec as gridspec
@@ -698,7 +699,7 @@ def _package_counts(unrolled_data, grid_dims):
     nframes = grid_dims.Nframes
 
     # chop off the first few columns
-    unrolled_counts = unrolled_data[:, 3:-1].astype(int)
+    unrolled_counts = unrolled_data[:, 3:-1]
 
     # 'sideways' because it is in [r, time, theta] format at first
     sideways_counts = np.zeros((grid_dims.Nr, nframes, grid_dims.Ntheta))
@@ -1041,7 +1042,7 @@ def make_custom_colormap():
     return my_cmap
 
 
-def create_heatmap_figure_and_axes(numlipids, cmap, vmin, vmid, vmax, figwidth=20, figheight=20):
+def create_heatmap_figure_and_axes(numlipids, cmap, v_vals, figwidth=20, figheight=20):
     """
     Create the heatmap figure and enough axes to accommodate all the lipids and\
     leaflets.
@@ -1052,12 +1053,8 @@ def create_heatmap_figure_and_axes(numlipids, cmap, vmin, vmid, vmax, figwidth=2
         The number of lipids you intend to plot.
     cmap : matplotlib ListedColormap
         A custom colormap.
-    vmin : float
-        The colorbar minimum.
-    vmid : float
-        The colorbar midpoint.
-    vmax : float
-        The colorbar maximum.
+    v_vals : tuple
+        The (vmin, vmid, and vmax)
     figwidth : int, optional
         Figure width. The default is 20.
     figheight : int, optional
@@ -1071,17 +1068,51 @@ def create_heatmap_figure_and_axes(numlipids, cmap, vmin, vmid, vmax, figwidth=2
         The polar projection axes that were created.
 
     """
+    vmin, vmid, vmax = v_vals
     fig = plt.figure(figsize=(figwidth, figheight))
     gs = gridspec.GridSpec(numlipids, 2, figure=fig, wspace=0.15, hspace=0.15)
     for gridbox in range(numlipids * 2):
         ax = plt.subplot(gs[gridbox], projection='polar')
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.21, 1, 0.5, 0.02])
-    sm = plt.colormaps.ScalarMappable(cmap=cmap)
+    sm = mpl.cm.ScalarMappable(cmap=cmap)
     cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
     cbar.set_ticks(np.linspace(0, 1, 5))
     cbar.ax.set_xticklabels([vmin, (vmin + vmid) / 2, vmid, (vmid + vmax) / 2, vmax])
     return fig, fig.axes
+
+
+def bin_prep(bin_info):
+    """
+    Configure the arrays needed for plotting polar heatmaps.
+
+    Parameters
+    ----------
+    bin_info : namedtuple
+        Contains Nr, Ntheta, dr, and dtheta information.
+
+    Returns
+    -------
+    list
+        The two numpy ndarrays needed for plotting a heatmap.
+
+    """
+    r_vals = np.linspace(0, bin_info.Nr * bin_info.dr, bin_info.Nr + 1)
+    theta_vals = np.linspace(0, 2 * np.pi, bin_info.Ntheta + 1)
+    r_vals, theta_vals = np.meshgrid(r_vals, theta_vals, indexing='ij')
+    return [r_vals, theta_vals]
+
+
+def plot_heatmap(ax, data, grid, cmap, v_vals):
+    vmin, vmid, vmax = v_vals
+    norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
+    ax.grid(False)
+    plt.axis('off')
+    radius, theta = grid
+    ax.pcolormesh(theta, radius, data, cmap=cmap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    return ax
 
 
 # This class comes from Liam Sharp and could potentially be rewritten to be
