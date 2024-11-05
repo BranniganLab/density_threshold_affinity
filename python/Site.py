@@ -185,6 +185,24 @@ class Symmetric_Site:
         return dG_site - dG_ref
 
     def _make_symmetric_sites(self, base_site, counts_data):
+        """
+        Create identical sites to the base_site, rotated symmetrically around \
+        the origin.
+
+        Parameters
+        ----------
+        base_site : Site
+            The Site object that you want to replicate symmetrically.
+        counts_data : ndarray
+            The output from polarDensityBin, after having been read in and \
+            processed by parse_tcl_data.
+
+        Returns
+        -------
+        site_list : list of Sites
+            The list of all Sites that comprise this Symmetric_Site.
+
+        """
         site_list = [base_site]
         Ntheta = counts_data.shape[2]
         base_site.name = base_site.name + '_1'
@@ -199,6 +217,28 @@ class Symmetric_Site:
         return site_list
 
     def _rotate_bin_coords(self, bin_coords, Ntheta, site_number):
+        """
+        Rotate the provided bin_coords around the circle.
+
+        Parameters
+        ----------
+        bin_coords : list of tuples
+            The bins that belong to this site in (r, theta) format. e.g. \
+            [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
+            13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
+            are zero-indexed by convention.
+        Ntheta : int
+            The number of theta bins in the circle.
+        site_number : int
+            Which constituent site this is.
+
+        Returns
+        -------
+        rotated_bin_coords : list of tuples
+            Should match input bin_coords in length and first tuple component; \
+            second tuple components should all be shifted (rotated).
+
+        """
         rotated_bin_coords = []
         for each_bin in bin_coords:
             r_bin, theta_bin = each_bin
