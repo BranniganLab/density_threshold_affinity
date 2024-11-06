@@ -923,9 +923,9 @@ def _aggregate_site_counts_histograms(site_list):
 
     """
     first_site = site_list.pop(0)
-    counts = first_site.site_counts_histogram
+    counts = first_site.site_counts_histogram.copy()
     for site in site_list:
-        counts_to_add = site.site_counts_histogram
+        counts_to_add = site.site_counts_histogram.copy()
         # make sure the two ndarrays have same shape; resize the smaller one if not
         if counts.shape[0] > counts_to_add.shape[0]:
             counts_to_add = np.resize(counts_to_add, counts.shape)
@@ -952,7 +952,7 @@ def _check_bulk_counts_histogram(site_list):
 
     """
     first_site = site_list.pop(0)
-    bulk = first_site.bulk_counts_histogram
+    bulk = first_site.bulk_counts_histogram.copy()
     for site in site_list:
         assert bulk.all() == site.bulk_counts_histogram.all(), "One or more sites have different bulk histograms. This shouldn't be possible."
     return bulk
