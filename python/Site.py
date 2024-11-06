@@ -197,6 +197,37 @@ class Symmetric_Site:
         for site in self.site_list:
             site.update_counts_histogram(bulk, counts_data)
 
+    def predict_accessible_area(self, bulk_area, mode=False):
+        """
+        Predict the accessible area of the site. A reasonable method is to \
+        multiply the area of the bulk patch you just analyzed by the ratio of\
+        the means (or modes) for the site distribution and the bulk \
+        distribution. This will put you in the ballpark of the bulk patch area.
+
+        Parameters
+        ----------
+        bulk_area : float
+            The area of the bulk patch previously analyzed in square Angstroms.
+        mode : boolean
+            If True, use the site and bulk modes rather than the means. Default\
+            is False (use means).
+
+        Returns
+        -------
+        predicted_accessible_area : float
+            The area of the bulk patch you should analyze next to try and more\
+            closely match the site distribution. Units are square Angstroms.
+
+        """
+        if mode:
+            site = calculate_hist_mode(self.site_counts_histogram)
+            bulk = calculate_hist_mode(self.bulk_counts_histogram)
+        else:
+            site = calculate_hist_mean(self.site_counts_histogram)
+            bulk = calculate_hist_mean(self.bulk_counts_histogram)
+        predicted_accessible_area = bulk_area * (site / bulk)
+        return predicted_accessible_area
+
     def _make_symmetric_sites(self, base_site, Ntheta):
         """
         Create identical sites to the base_site, rotated symmetrically around \
@@ -436,33 +467,6 @@ class Site:
         dG_ref = _calculate_dG(self.bulk_counts_histogram, n_peak, self.temp)
         return dG_site - dG_ref
 
-    def _calculate_hist_mean(self, bulk=False):
-        """
-        Calculate the mean of the counts histogram.
-
-        Parameters
-        ----------
-        bulk : boolean, optional
-            If True, calculate the mean of the bulk distribution. Otherwise, \
-            calculate the site mean. The default is False.
-
-        Returns
-        -------
-        mean : float
-            The mean of the counts histogram.
-
-        """
-        if bulk:
-            hist = self.bulk_counts_histogram
-        else:
-            hist = self.site_counts_histogram
-        total_N = np.sum(hist)
-        sum_i = 0
-        for i in range(len(hist)):
-            sum_i += i * hist[i]
-        mean = sum_i / total_N
-        return mean
-
     def update_counts_histogram(self, bulk, counts_data):
         """
         Assign ligand bead counts to Site attribute "counts_histogram".
@@ -567,8 +571,8 @@ class Site:
             site = calculate_hist_mode(self.site_counts_histogram)
             bulk = calculate_hist_mode(self.bulk_counts_histogram)
         else:
-            site = self._calculate_hist_mean(bulk=False)
-            bulk = self._calculate_hist_mean(bulk=True)
+            site = calculate_hist_mean(self.site_counts_histogram)
+            bulk = calculate_hist_mean(self.bulk_counts_histogram)
         predicted_accessible_area = bulk_area * (site / bulk)
         return predicted_accessible_area
 
@@ -750,6 +754,29 @@ def _calculate_bin_area(r_bin, dr, dtheta):
     bin_radial_midpoint = (r_bin * dr) + (0.5 * dr)
     area = dr * dtheta * bin_radial_midpoint
     return area
+
+
+def calculate_hist_mean(counts_data):
+    """
+    Calculate the mean of the counts histogram.
+
+    Parameters
+    ----------
+    counts_data : ndarray
+        The histogram whose mode you wish to calculate.
+
+    Returns
+    -------
+    mean : float
+        The mean of the counts histogram.
+
+    """
+    total_N = np.sum(counts_data)
+    sum_i = 0
+    for i in range(len(counts_data)):
+        sum_i += i * counts_data[i]
+    mean = sum_i / total_N
+    return mean
 
 
 def _calculate_nframes(r_values):
