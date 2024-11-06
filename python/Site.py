@@ -56,7 +56,7 @@ class Symmetric_Site:
         The binding affinity of the lipid for the Site, in kcal/mol.
     """
 
-    def __init__(self, symmetry, base_site, counts_data):
+    def __init__(self, symmetry, base_site, Ntheta):
         """
         Create a Symmetric_Site by creating clones of the base_site and \
         rotating them symmetrically around the origin.
@@ -67,31 +67,15 @@ class Symmetric_Site:
             The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
         base_site : Site
             The original Site object that should be cloned and rotated.
-        counts_data : ndarray
-            The output from polarDensityBin, after having been read in and \
-            processed by parse_tcl_data.
-
-        Returns
-        -------
-        Symmetric_Site
-            The Symmetric_Site you just created.
-        list
-            A list of the constituent Site objects that make up this \
-            Symmetric_Site.
 
         """
         assert isinstance(symmetry, int), "symmetry must be an integer."
-        assert isinstance(counts_data, np.ndarray), "counts_data must be a numpy ndarray."
-        assert len(counts_data.shape) == 3, "counts_data must be a 3d array."
-        Ntheta = counts_data.shape[2]
-        assert Ntheta % symmetry == 0, f"The symmetry you specified does not \
-            evenly distribute across the lattice you provided. Rerun with a \
-            lattice that has theta bins divisible by {symmetry}. Current # of \
-            theta bins is {Ntheta}."
+        assert Ntheta % symmetry == 0, "This symmetry does not evenly divide \
+            across the number of theta bins."
         assert isinstance(base_site, Site), "base_site must be a Site."
         assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a Symmetric_Site."
         self._symmetry = symmetry
-        self._site_list = self._make_symmetric_sites(self, base_site, counts_data)
+        self._site_list = self._make_symmetric_sites(base_site, Ntheta)
         assert len(self.site_list) == symmetry, "Number of Sites does not match symmetry."
         self.temp = base_site.temp
 
@@ -187,7 +171,7 @@ class Symmetric_Site:
         dG_ref = _calculate_dG(self.bulk_counts_histogram, n_peak, self.temp)
         return dG_site - dG_ref
 
-    def _make_symmetric_sites(self, base_site, counts_data):
+    def _make_symmetric_sites(self, base_site, Ntheta):
         """
         Create identical sites to the base_site, rotated symmetrically around \
         the origin.
@@ -196,9 +180,6 @@ class Symmetric_Site:
         ----------
         base_site : Site
             The Site object that you want to replicate symmetrically.
-        counts_data : ndarray
-            The output from polarDensityBin, after having been read in and \
-            processed by parse_tcl_data.
 
         Returns
         -------
@@ -207,15 +188,11 @@ class Symmetric_Site:
 
         """
         site_list = [base_site]
-        Ntheta = counts_data.shape[2]
         base_site.name = base_site.name + '_1'
-        bulk_counts_data = base_site.bulk_counts_histogram
         for site_number in range(1, self.symmetry):
             site_name = base_site.name + '_' + str(site_number + 1)
             new_site = Site(site_name, base_site.ligand, base_site.leaflet, base_site.temp)
             new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, Ntheta, site_number)
-            new_site.update_counts_histogram(False, counts_data)
-            new_site.update_counts_histogram(True, bulk_counts_data)
             site_list.append(new_site)
         return site_list
 
