@@ -928,9 +928,9 @@ def _aggregate_site_counts_histograms(site_list):
         counts_to_add = site.site_counts_histogram
         # make sure the two ndarrays have same shape; resize the smaller one if not
         if counts.shape[0] > counts_to_add.shape[0]:
-            counts_to_add = counts_to_add.resize(counts.shape)
+            counts_to_add = np.resize(counts_to_add, counts.shape)
         elif counts.shape[0] < counts_to_add.shape[0]:
-            counts = counts.resize(counts_to_add.shape)
+            counts = np.resize(counts, counts_to_add.shape)
         counts += counts_to_add
     return counts
 
