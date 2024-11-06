@@ -79,6 +79,11 @@ class Symmetric_Site:
         assert len(self.site_list) == symmetry, "Number of Sites does not match symmetry."
         self.temp = base_site.temp
 
+    def __iter__(self):
+        """Iterate through the site_list."""
+        for site in self.site_list:
+            yield site
+
     @property
     def symmetry(self):
         """
@@ -120,7 +125,7 @@ class Symmetric_Site:
             having 4 beads in the Site.
 
         """
-        return _aggregate_site_counts_histograms(self.site_list)
+        return _aggregate_site_counts_histograms(self.site_list.copy())
 
     @property
     def bulk_counts_histogram(self):
@@ -138,7 +143,7 @@ class Symmetric_Site:
             frame having 4 beads in the patch.
 
         """
-        return _check_bulk_counts_histogram(self.site_list)
+        return _check_bulk_counts_histogram(self.site_list.copy())
 
     @property
     def n_peak(self):
@@ -171,6 +176,27 @@ class Symmetric_Site:
         dG_ref = _calculate_dG(self.bulk_counts_histogram, n_peak, self.temp)
         return dG_site - dG_ref
 
+    def update_counts_histogram(self, bulk, counts_data):
+        """
+        Update the counts histograms for all constituent Sites.
+
+        Parameters
+        ----------
+        bulk : boolean
+            If True, update the counts histogram for the bulk patch. If False,\
+            update the counts histogram for the site.
+        counts_data : ndarray
+            If bulk=True, provide 1D nddarray containing bulk counts. \
+            If bulk=False, provide the 3D ndarray containing binned counts.
+
+        Returns
+        -------
+        None.
+
+        """
+        for site in self.site_list:
+            site.update_counts_histogram(bulk, counts_data)
+
     def _make_symmetric_sites(self, base_site, Ntheta):
         """
         Create identical sites to the base_site, rotated symmetrically around \
@@ -191,7 +217,7 @@ class Symmetric_Site:
         base_site.name = base_site.name + '_1'
         for site_number in range(1, self.symmetry):
             site_name = base_site.name + '_' + str(site_number + 1)
-            new_site = Site(site_name, base_site.ligand, base_site.leaflet, base_site.temp)
+            new_site = Site(site_name, base_site.leaflet, base_site.temp)
             new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, Ntheta, site_number)
             site_list.append(new_site)
         return site_list
@@ -242,8 +268,6 @@ class Site:
     name : str
         The name of this Site. e.g. "Binding site 1," "Left anterior cleft," or \
         something else descriptive.
-    ligand : str
-        The name of the ligand that putatively binds this Site.
     leaflet : int
         If 1, outer leaflet. If 2, inner leaflet.
     temp : float
@@ -277,7 +301,7 @@ class Site:
         The binding affinity of the lipid for the Site, in kcal/mol.
     """
 
-    def __init__(self, name, ligand, leaflet, temp):
+    def __init__(self, name, leaflet, temp):
         """
         Create a Site object.
 
@@ -286,15 +310,12 @@ class Site:
         name : str
             The name of this Site. e.g. "Binding site 1," \
             "Left anterior cleft," or something else descriptive.
-        ligand : str
-            The name of the ligand that putatively binds this Site.
         leaflet : int
             If 1, outer leaflet. If 2, inner leaflet.
         temp : float
             The temperature of your system in K.
         """
         self.name = name
-        self.ligand = ligand
         assert leaflet in [1, 2], "leaflet must be 1 or 2 (1 for outer leaflet or 2 for inner leaflet)"
         self.leaflet = leaflet
         self.temp = temp
@@ -468,6 +489,7 @@ class Site:
             self._n_peak = calculate_hist_mode(self._bulk_counts_histogram)
         else:
             assert len(counts_data.shape) == 3, "Counts data is not in the right format: {data}"
+            counts_data = counts_data.astype(int)
             site_counts = self._fetch_site_counts(counts_data)
             site_hist = np.bincount(site_counts)
             self._site_counts_histogram = site_hist
@@ -495,7 +517,7 @@ class Site:
             r_bin, theta_bin = bin_tuple
             stack = np.vstack((stack, binned_counts[:, r_bin, theta_bin]))
         site_counts = np.sum(stack, axis=0)
-        return site_counts
+        return site_counts.astype(int)
 
     def calculate_geometric_area(self, dr, dtheta):
         """
@@ -541,8 +563,6 @@ class Site:
             closely match the site distribution. Units are square Angstroms.
 
         """
-        if self.ligand != "DPPC":
-            warnings.append("Warning: This feature was originally built for use in a 100% DPPC test system. Proceed with caution.")
         if mode:
             site = calculate_hist_mode(self.site_counts_histogram)
             bulk = calculate_hist_mode(self.bulk_counts_histogram)
@@ -588,7 +608,7 @@ def parse_tcl_dat_file(filepath, bulk):
         raise Exception("Must provide the path to the .dat file.")
     assert filepath.exists(), f"Could not find {filepath}"
     assert filepath.is_file(), f"This is not recognized as a file {filepath}"
-    assert filepath.suffixes[-1] == '.dat', "You must provide the .dat file output from VMD."
+    assert (filepath.suffixes[-1] == '.dat') or (filepath.suffixes[-1] == '.out'), "You must provide the .dat file output from VMD."
     if bulk:
         return np.loadtxt(filepath).astype(int).flatten(), None, None
     else:
@@ -1088,6 +1108,20 @@ def plot_heatmap(ax, data, grid, cmap, v_vals):
     ax.pcolormesh(theta, radius, data, cmap=cmap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
+    return ax
+
+
+def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False):
+    if plot_probability:
+        data = data / np.sum(data)
+    ax.plot(range(len(data)), data)
+    ax.set_ylabel("Probability")
+    ax.set_xlabel(f"Number of beads in an area about {area} " + r"$\AA^2$")
+    mode = calculate_hist_mode(data)
+    ax.vlines([mode], 0, np.max(data), color='black', linestyles='dashed', label=f"mode={mode}")
+    if bulk_mode != "NULL":
+        ax.vlines([bulk_mode], 0, np.max(data), color='red', linestyles='dashed', label=f"bulk mode={bulk_mode}")
+    ax.legend()
     return ax
 
 
