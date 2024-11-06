@@ -94,7 +94,6 @@ class Symmetric_Site:
         self._site_list = self._make_symmetric_sites(self, base_site, counts_data)
         assert len(self.site_list) == symmetry, "Number of Sites does not match symmetry."
         self.temp = base_site.temp
-        return self, self.site_list
 
     @property
     def symmetry(self):
@@ -325,7 +324,6 @@ class Site:
         self._bin_coords = None
         self._site_counts_histogram = None
         self._bulk_counts_histogram = None
-        return self
 
     @property
     def bin_coords(self):
@@ -362,7 +360,7 @@ class Site:
 
         """
         assert isinstance(bin_coords, list), "bin_coords must be provided as a list"
-        assert len(self.bin_coords) > 0, "bin_coords must have at least one bin"
+        assert len(bin_coords) > 0, "bin_coords must have at least one bin"
         for bin_pair in bin_coords:
             assert isinstance(bin_pair, tuple), "bin_coords must be provided as a list of 2-tuples"
             assert len(bin_pair) == 2, f"bin_coords contains an invalid coordinate pair: {bin_pair}"
@@ -620,7 +618,7 @@ def parse_tcl_dat_file(filepath, bulk):
         unrolled_data = np.loadtxt(filepath, skiprows=1)
         system_info = _parse_system_info(np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str))
         grid_dims = _calculate_grid_dimensions(unrolled_data)
-        counts = _package_counts(unrolled_data, grid_dims)
+        counts = _package_counts(unrolled_data, grid_dims).squeeze()
         return counts, grid_dims, system_info
 
 
@@ -669,7 +667,7 @@ def _calculate_grid_dimensions(unrolled_data):
     """
     dr = unrolled_data[0, 1] - unrolled_data[0, 0]
     dthetadeg = unrolled_data[0, 2]
-    dtheta = deg2rad(dthetadeg)
+    dtheta = dthetadeg * (np.pi / 180.0)
     nframes = _calculate_nframes(unrolled_data[:, 0])
     Ntheta = int(round(360 / dthetadeg))
     assert Ntheta == unrolled_data.shape[1] - 4, f"Something went wrong with the theta dimensions parser. dtheta={dtheta}, Ntheta={Ntheta}"
@@ -678,10 +676,6 @@ def _calculate_grid_dimensions(unrolled_data):
     Nr = int(Nr)
     grid_dims = Dimensions(dr, Nr, dtheta, Ntheta, nframes)
     return grid_dims
-
-
-def deg2rad(deg):
-    return deg * (np.pi / 180.0)
 
 
 def _package_counts(unrolled_data, grid_dims):
@@ -987,10 +981,10 @@ def outline_site(ax, site, grid_dims):
         The Axes object you want to draw this on.
 
     """
-    if isinstance(site, Symmetric_Site):
+    if isinstance(site, Site):
         for each_bin in site.bin_coords:
             ax = outline_bin(ax, each_bin, grid_dims)
-    elif isinstance(site, Site):
+    elif isinstance(site, Symmetric_Site):
         for each_site in site.site_list:
             for each_bin in each_site.bin_coords:
                 ax = outline_bin(ax, each_bin, grid_dims)
@@ -1021,9 +1015,9 @@ def outline_bin(ax, bin_coords, grid_dims):
     """
     assert isinstance(bin_coords, tuple), "bin_coords must be a tuple of bin coordinates."
     dr, _, dtheta, _, _ = grid_dims
-    start_theta = bin_coords[1]
+    start_theta = bin_coords[1] * dtheta
     end_theta = start_theta + dtheta
-    inner_r = bin_coords[0]
+    inner_r = bin_coords[0] * dr
     outer_r = inner_r + dr
     theta_range = np.linspace(start_theta, end_theta, 100)
     ax.fill_between(theta_range, inner_r, outer_r, facecolor=(0, 0, 0, 0), edgecolor='k')
@@ -1047,7 +1041,7 @@ def make_custom_colormap():
     return my_cmap
 
 
-def create_heatmap_figure_and_axes(numlipids, cmap, v_vals, figwidth=20, figheight=20):
+def create_heatmap_figure_and_axes(numlipids, cmap, v_vals, figwidth, figheight):
     """
     Create the heatmap figure and enough axes to accommodate all the lipids and\
     leaflets.
@@ -1061,9 +1055,9 @@ def create_heatmap_figure_and_axes(numlipids, cmap, v_vals, figwidth=20, figheig
     v_vals : tuple
         The (vmin, vmid, and vmax)
     figwidth : int, optional
-        Figure width. The default is 20.
+        Figure width.
     figheight : int, optional
-        Figure height. The default is 20.
+        Figure height.
 
     Returns
     -------
