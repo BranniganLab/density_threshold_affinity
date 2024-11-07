@@ -1224,7 +1224,7 @@ def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False):
 # more clear.
 class MidpointNormalize(Normalize):
     """
-    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value).
+    Normalise the colorbar so that diverging bars work their way either side from a prescribed midpoint value).
 
     e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
     """
