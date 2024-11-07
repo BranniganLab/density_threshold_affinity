@@ -125,7 +125,7 @@ class Symmetric_Site:
             having 4 beads in the Site.
 
         """
-        return _aggregate_site_counts_histograms(self.site_list.copy())
+        return _aggregate_site_counts_histograms(self.site_list)
 
     @property
     def bulk_counts_histogram(self):
@@ -143,7 +143,7 @@ class Symmetric_Site:
             frame having 4 beads in the patch.
 
         """
-        return _check_bulk_counts_histogram(self.site_list.copy())
+        return _check_bulk_counts_histogram(self.site_list)
 
     @property
     def n_peak(self):
@@ -172,8 +172,8 @@ class Symmetric_Site:
 
         """
         n_peak = self.n_peak
-        dG_site = _calculate_dG(self.site_counts_histogram, n_peak, self.temp)
-        dG_ref = _calculate_dG(self.bulk_counts_histogram, n_peak, self.temp)
+        dG_site = calculate_dG(self.site_counts_histogram, n_peak, self.temp)
+        dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temp)
         return dG_site - dG_ref
 
     def update_counts_histogram(self, bulk, counts_data):
@@ -463,8 +463,8 @@ class Site:
             counts via update_counts_histogram(bulk=True, counts_data)."
         n_peak = self.n_peak
         assert n_peak is not None, "n_peak is missing."
-        dG_site = _calculate_dG(self.site_counts_histogram, n_peak, self.temp)
-        dG_ref = _calculate_dG(self.bulk_counts_histogram, n_peak, self.temp)
+        dG_site = calculate_dG(self.site_counts_histogram, n_peak, self.temp)
+        dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temp)
         return dG_site - dG_ref
 
     def update_counts_histogram(self, bulk, counts_data):
@@ -854,7 +854,7 @@ def _isolate_number_from_header_string(string):
         return float(right_side.split()[0])
 
 
-def _calculate_dG(counts_histogram, n_peak, temp):
+def calculate_dG(counts_histogram, n_peak, temp):
     """
     Calculate the delta G for bulk or site.
 
@@ -874,12 +874,12 @@ def _calculate_dG(counts_histogram, n_peak, temp):
 
     """
     minus_RT = -1.0 * temp * constants.R / 4184.  # 4184 converts J to kcal
-    P_unnoc = _calculate_P_unnoc(counts_histogram, n_peak)
+    P_unnoc = calculate_P_unnoc(counts_histogram, n_peak)
     delta_G = minus_RT * np.log((1 - P_unnoc) / P_unnoc)
     return delta_G
 
 
-def _calculate_P_unnoc(counts_histogram, n_peak):
+def calculate_P_unnoc(counts_histogram, n_peak):
     """
     Calculate the probability that the site is unoccupied by ligand. This \
     is defined by the portion of the histogram <= n_peak divided by the \
@@ -899,8 +899,8 @@ def _calculate_P_unnoc(counts_histogram, n_peak):
 
     """
     total_N = np.sum(counts_histogram)
-    P_unnoc = counts_histogram[:n_peak + 1] / total_N
-    P_occ = counts_histogram[n_peak + 1:] / total_N
+    P_unnoc = np.sum(counts_histogram[:n_peak + 1]) / total_N
+    P_occ = np.sum(counts_histogram[n_peak + 1:]) / total_N
     assert math.isclose(P_occ + P_unnoc, 1, abs_tol=0.01), f"Probabilities do not sum to one. Current sum: {P_unnoc + P_occ}"
     return P_unnoc
 
@@ -949,15 +949,17 @@ def _aggregate_site_counts_histograms(site_list):
         1D numpy array of histogrammed bead counts.
 
     """
-    first_site = site_list.pop(0)
-    counts = first_site.site_counts_histogram.copy()
+    hist_lengths = []
+    for site in site_list:
+        hist_length = site.site_counts_histogram.shape[0]
+        hist_lengths.append(hist_length)
+    max_len = max(hist_lengths)
+    counts = np.zeros(max_len)
     for site in site_list:
         counts_to_add = site.site_counts_histogram.copy()
-        # make sure the two ndarrays have same shape; resize the smaller one if not
-        if counts.shape[0] > counts_to_add.shape[0]:
-            counts_to_add = np.resize(counts_to_add, counts.shape)
-        elif counts.shape[0] < counts_to_add.shape[0]:
-            counts = np.resize(counts, counts_to_add.shape)
+        if counts_to_add.shape[0] < max_len:
+            padding = max_len - counts_to_add.shape[0]
+            counts_to_add = np.pad(counts_to_add, (0, padding), mode='constant', constant_values=0)
         counts += counts_to_add
     return counts
 
@@ -978,9 +980,9 @@ def _check_bulk_counts_histogram(site_list):
         1D numpy array of histogrammed bead counts from the bulk distribution.
 
     """
-    first_site = site_list.pop(0)
+    first_site = site_list[0]
     bulk = first_site.bulk_counts_histogram.copy()
-    for site in site_list:
+    for site in site_list[1:]:
         assert bulk.all() == site.bulk_counts_histogram.all(), "One or more sites have different bulk histograms. This shouldn't be possible."
     return bulk
 
