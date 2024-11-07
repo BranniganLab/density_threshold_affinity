@@ -23,8 +23,8 @@ SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'NBperTail', 'BoxArea', 'ExpBeadDen
 class Symmetric_Site:
     """
     An aggregation of multiple binding sites on/in a protein/inclusion. User \
-    defines the base_site Site object and then provides it to the \
-    Symmetric_Site constructor.
+    defines the base_site Site object first (including setting the bin_coords!)\
+    and then provides it to the Symmetric_Site constructor.
 
     Attributes
     ----------
@@ -53,6 +53,9 @@ class Symmetric_Site:
         The mode of the bulk histogram. Indicates the cut-off for P_unocc.
     dG : float
         The binding affinity of the lipid for the Site, in kcal/mol.
+    dG_std : float
+        The standard deviation of the mean binding affinity for the Sites that\
+        comprise this Symmetric_Site.
     """
 
     def __init__(self, symmetry, base_site, Ntheta):
@@ -175,6 +178,23 @@ class Symmetric_Site:
         dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temp)
         return dG_site - dG_ref
 
+    @property
+    def dG_std(self):
+        """
+        Calculate the standard deviation of the delta G values across the \
+        constituent Sites that comprise this Symmetric_Site.
+
+        Returns
+        -------
+        float
+            The standard deviation
+
+        """
+        dGs = []
+        for site in self.site_list:
+            dGs.append(site.dG)
+        return np.std(dGs)
+
     def update_counts_histogram(self, bulk, counts_data):
         """
         Update the counts histograms for all constituent Sites.
@@ -196,7 +216,7 @@ class Symmetric_Site:
         for site in self.site_list:
             site.update_counts_histogram(bulk, counts_data)
 
-    def predict_accessible_area(self, bulk_area, mode=False):
+    def predict_accessible_area(self, bulk_area, mode=True):
         """
         Predict the accessible area of the site. A reasonable method is to \
         multiply the area of the bulk patch you just analyzed by the ratio of\
@@ -209,13 +229,13 @@ class Symmetric_Site:
             The area of the bulk patch previously analyzed in square Angstroms.
         mode : boolean
             If True, use the site and bulk modes rather than the means. Default\
-            is False (use means).
+            is True. If False use means instead of modes (untested feature).
 
         Returns
         -------
         predicted_accessible_area : float
             The area of the bulk patch you should analyze next to try and more\
-            closely match the site distribution. Units are square Angstroms.
+            closely match the site distribution. Units are in square Angstroms.
 
         """
         if mode:
@@ -236,6 +256,8 @@ class Symmetric_Site:
         ----------
         base_site : Site
             The Site object that you want to replicate symmetrically.
+        Ntheta : int
+            The total number of theta bins in the circle.
 
         Returns
         -------
@@ -243,8 +265,8 @@ class Symmetric_Site:
             The list of all Sites that comprise this Symmetric_Site.
 
         """
-        site_list = [base_site]
         base_site.name = base_site.name + '_1'
+        site_list = [base_site]
         for site_number in range(1, self.symmetry):
             site_name = base_site.name + '_' + str(site_number + 1)
             new_site = Site(site_name, base_site.leaflet, base_site.temp)
@@ -501,7 +523,7 @@ class Site:
         """
         Create a 2D array where each row is a different bin within the site \
         and each column is a frame in the trajectory. Then sum over all the \
-        rows to get site counts rather than bin counts.
+        rows to get site counts over time.
 
         Parameters
         ----------
@@ -544,7 +566,7 @@ class Site:
             area += _calculate_bin_area(bin_tuple[0], dr, dtheta)
         return area
 
-    def predict_accessible_area(self, bulk_area, mode=False):
+    def predict_accessible_area(self, bulk_area, mode=True):
         """
         Predict the accessible area of the site. A reasonable method is to \
         multiply the area of the bulk patch you just analyzed by the ratio of\
@@ -557,7 +579,7 @@ class Site:
             The area of the bulk patch previously analyzed in square Angstroms.
         mode : boolean
             If True, use the site and bulk modes rather than the means. Default\
-            is False (use means).
+            is True. If False, use means (untested feature).
 
         Returns
         -------
@@ -762,7 +784,7 @@ def calculate_hist_mean(counts_data):
     Parameters
     ----------
     counts_data : ndarray
-        The histogram whose mode you wish to calculate.
+        The histogram whose mean you wish to calculate.
 
     Returns
     -------
@@ -1128,6 +1150,28 @@ def bin_prep(bin_info):
 
 
 def plot_heatmap(ax, data, grid, cmap, v_vals):
+    """
+    Plot a heatmap on a pre-existing axes object.
+
+    Parameters
+    ----------
+    ax : matplotlib.pyplot axes object
+        The pre-existing axes object you wish to plot a heatmap on.
+    data : ndarray
+        The heatmap heat values (probably density enrichment).
+    grid : 2-tuple of ndarrays
+        Contains the radius and theta values for plotting the polar projection.
+    cmap : colorbar object
+        Custom colorbar.
+    v_vals : 3-tuple
+        (colorbar vmin, vmid, and vmax).
+
+    Returns
+    -------
+    ax : matplotlib.pyplot axes object
+        The axes object, which now contains your heatmap.
+
+    """
     vmin, vmid, vmax = v_vals
     norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
     ax.grid(False)
@@ -1140,6 +1184,29 @@ def plot_heatmap(ax, data, grid, cmap, v_vals):
 
 
 def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False):
+    """
+    Plot a histogram.
+
+    Parameters
+    ----------
+    ax : matplotlib.pyplot axes object
+        The pre-existing axes object you wish to plot a histogram on.
+    data : ndarray or list
+        The histogram counts.
+    area : float
+        The accessible area of the site.
+    bulk_mode : float or "NULL", optional
+        If not "NULL", add a dashed red line showing n_peak. The default is "NULL".
+    plot_probability : boolean, optional
+        If True, turn the y axis into probability percentages, rather than \
+        raw counts. The default is False.
+
+    Returns
+    -------
+    ax : matplotlib.pyplot axes object
+        The axes object, now with your histogram plotted on it.
+
+    """
     if plot_probability:
         data = data / np.sum(data)
     ax.plot(range(len(data)), data)
