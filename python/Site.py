@@ -925,11 +925,11 @@ def calculate_hist_mode(histogram, nonzero=False):
     """
     mode = np.argmax(histogram)
     if len(np.shape(mode)) != 0:
-        warnings.append(f"Warning: More than one peak identified ({mode}), using first peak ({mode[0]})")
+        print(f"Warning: More than one peak identified ({mode}), using first peak ({mode[0]})")
         mode = mode[0]
     if mode == 0:
         if nonzero:
-            warnings.append("Warning: found an experimental mode of 0 for site, using second highest peak")
+            print("Warning: found an experimental mode of 0 for site, using second highest peak")
             mode = np.argmax(histogram[1:]) + 1
     return mode
 
