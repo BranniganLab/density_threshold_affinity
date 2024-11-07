@@ -7,7 +7,6 @@ Created on Wed Sep 18 13:44:55 2024.
 """
 
 import numpy as np
-import warnings
 import math
 from pathlib import Path
 from scipy import constants
