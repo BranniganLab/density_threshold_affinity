@@ -12,7 +12,9 @@ from matplotlib.colors import ListedColormap
 
 def make_custom_colormap():
     """
-    Make a custom colormap for plotting.
+    Make a custom colormap for plotting. The colormap starts at 0.35 to ensure \
+    that there is a visual difference between 0 (no signal) and depleted (near-\
+    zero enrichment).
 
     Returns
     -------
