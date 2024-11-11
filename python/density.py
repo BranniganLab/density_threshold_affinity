@@ -29,11 +29,10 @@ def parse_tcl_dat_file(filepath, bulk):
     Returns
     -------
     counts : ndarray
-        If bulk is True, return a 1D ndarray. If bulk is False and avg is False,\
-        return a 3D ndarray of integer counts. Dimension 0 is time, dimension 1\
-        is r and dimension 2 is theta. IE the count for the 4th radial bin and \
-        12th theta bin on the 33rd frame of the trajectory would be \
-        counts[32, 3, 11].
+        If bulk is True, return a 1D ndarray. If bulk is False, return a 3D \
+        ndarray of integer counts. Dimension 0 is time, dimension 1 is r and \
+        dimension 2 is theta. IE the count for the 4th radial bin and 12th \
+        theta bin on the 33rd frame of the trajectory would be counts[32, 3, 11].
     dimensions : namedtuple or None
         If bulk is True, return None. If bulk is False, return the bin \
         dimensions in r and theta as well as the number of frames inside a \
