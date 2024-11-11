@@ -28,7 +28,7 @@ class Symmetric_Site:
 
     Attributes
     ----------
-    temp : float
+    temperature : float
         The temperature of your system in K.
 
     Calculated Properties
@@ -79,7 +79,7 @@ class Symmetric_Site:
         self._symmetry = symmetry
         self._site_list = self._make_symmetric_sites(base_site, Ntheta)
         assert len(self.site_list) == symmetry, "Number of Sites does not match symmetry."
-        self.temp = base_site.temp
+        self.temperature = base_site.temperature
 
     def __iter__(self):
         """Iterate through the site_list."""
@@ -174,8 +174,8 @@ class Symmetric_Site:
 
         """
         n_peak = self.n_peak
-        dG_site = calculate_dG(self.site_counts_histogram, n_peak, self.temp)
-        dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temp)
+        dG_site = calculate_dG(self.site_counts_histogram, n_peak, self.temperature)
+        dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temperature)
         return dG_site - dG_ref
 
     @property
@@ -269,7 +269,7 @@ class Symmetric_Site:
         site_list = [base_site]
         for site_number in range(1, self.symmetry):
             site_name = base_site.name + '_' + str(site_number + 1)
-            new_site = Site(site_name, base_site.leaflet, base_site.temp)
+            new_site = Site(site_name, base_site.leaflet, base_site.temperature)
             new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, Ntheta, site_number)
             site_list.append(new_site)
         return site_list
@@ -322,7 +322,7 @@ class Site:
         something else descriptive.
     leaflet : int
         If 1, outer leaflet. If 2, inner leaflet.
-    temp : float
+    temperature : float
         The temperature of your system in K.
 
     Settable Properties
@@ -353,7 +353,7 @@ class Site:
         The binding affinity of the lipid for the Site, in kcal/mol.
     """
 
-    def __init__(self, name, leaflet, temp):
+    def __init__(self, name, leaflet, temperature):
         """
         Create a Site object.
 
@@ -364,13 +364,13 @@ class Site:
             "Left anterior cleft," or something else descriptive.
         leaflet : int
             If 1, outer leaflet. If 2, inner leaflet.
-        temp : float
+        temperature : float
             The temperature of your system in K.
         """
         self.name = name
         assert leaflet in [1, 2], "leaflet must be 1 or 2 (1 for outer leaflet or 2 for inner leaflet)"
         self.leaflet = leaflet
-        self.temp = temp
+        self.temperature = temperature
         self._bin_coords = None
         self._site_counts_histogram = None
         self._bulk_counts_histogram = None
@@ -484,8 +484,8 @@ class Site:
             counts via update_counts_histogram(bulk=True, counts_data)."
         n_peak = self.n_peak
         assert n_peak is not None, "n_peak is missing."
-        dG_site = calculate_dG(self.site_counts_histogram, n_peak, self.temp)
-        dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temp)
+        dG_site = calculate_dG(self.site_counts_histogram, n_peak, self.temperature)
+        dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temperature)
         return dG_site - dG_ref
 
     def update_counts_histogram(self, bulk, counts_data):
@@ -875,7 +875,7 @@ def _isolate_number_from_header_string(string):
         return float(right_side.split()[0])
 
 
-def calculate_dG(counts_histogram, n_peak, temp):
+def calculate_dG(counts_histogram, n_peak, temperature):
     """
     Calculate the delta G for bulk or site.
 
@@ -885,7 +885,7 @@ def calculate_dG(counts_histogram, n_peak, temp):
         The site or bulk counts histogram attribute of a Site.
     n_peak : int
         The mode of the bulk counts histogram.
-    temp : float
+    temperature : float
         The temperature of your system in K.
 
     Returns
@@ -894,7 +894,7 @@ def calculate_dG(counts_histogram, n_peak, temp):
         The binding affinity for the site or bulk, in kcal/mol.
 
     """
-    minus_RT = -1.0 * temp * constants.R / 4184.  # 4184 converts J to kcal
+    minus_RT = -1.0 * temperature * constants.R / 4184.  # 4184 converts J to kcal
     P_unnoc = calculate_P_unnoc(counts_histogram, n_peak)
     delta_G = minus_RT * np.log((1 - P_unnoc) / P_unnoc)
     return delta_G
