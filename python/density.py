@@ -21,7 +21,7 @@ def parse_tcl_dat_file(filepath, bulk):
     Parameters
     ----------
     filepath : Path
-        The path to the TCL .dat output file.
+        The path to the TCL .dat or .out output file.
     bulk : boolean
         If True, assume output is from do_get_counts. If False, assume \
         output is from polarDensityBin.
@@ -48,7 +48,7 @@ def parse_tcl_dat_file(filepath, bulk):
         raise Exception("Must provide the path to the .dat file.")
     assert filepath.exists(), f"Could not find {filepath}"
     assert filepath.is_file(), f"This is not recognized as a file {filepath}"
-    assert (filepath.suffixes[-1] == '.dat') or (filepath.suffixes[-1] == '.out'), "You must provide the .dat file output from VMD."
+    assert (filepath.suffixes[-1] == '.dat') or (filepath.suffixes[-1] == '.out'), "You must provide the .dat or .out file output from VMD."
     if bulk:
         return np.loadtxt(filepath).astype(int).flatten(), None, None
     else:
