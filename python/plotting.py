@@ -98,7 +98,7 @@ def outline_bin(ax, bin_coords, grid_dims):
     return ax
 
 
-def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight):
+def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight, helices):
     """
     Create the heatmap figure and enough axes to accommodate all the lipids and\
     leaflets.
@@ -115,6 +115,8 @@ def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight):
         Figure width.
     figheight : int, optional
         Figure height.
+    helices : list
+        The outer and inner helix coordinates, in that order.
 
     Returns
     -------
@@ -126,6 +128,8 @@ def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight):
     """
     assert isinstance(lipids, list), "lipids must be a list of strings"
     assert len(lipids) > 0, "lipids cannot be an empty list"
+    assert isinstance(helices, list), "helices must be a list"
+    assert len(helices) == 2, "helices must contain [outer helices, inner helices]"
     numlipids = len(lipids)
     vmin, vmid, vmax = v_vals
     fig = plt.figure(figsize=(figwidth, figheight))
@@ -141,6 +145,10 @@ def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight):
             ax.set_title("Outer")
         elif gridbox == 1:
             ax.set_title("Inner")
+        if gridbox % 2 == 0:
+            ax = plot_helices(helices[0], False, ax, 50)
+        else:
+            ax = plot_helices(helices[1], False, ax, 50)
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.21, 1, 0.5, 0.02])
     sm = mpl.cm.ScalarMappable(cmap=cmap)
@@ -260,3 +268,32 @@ class MidpointNormalize(Normalize):
         # simple example...
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
+
+
+def plot_helices(helices, colorbychain, ax, markersize=3, sub=["tab:blue", "tab:cyan", "tab:green", "tab:purple", "tab:brown", "tab:olive"]):
+    """
+    Plot helices on a polar plot.
+
+    Parameters
+    ----------
+    - helices (list or array): The helix data to be plotted. Each element in the list represents a set of helices, where each set is a list of angles and radii.
+    - colorbychain (bool): A flag to determine if the helices should be colored by chain.
+    - ax (matplotlib.axes.Axes): The polar subplot axis on which to plot the helices.
+    - markersize (int, optional): The size of the scatter markers. Defaults to 3.
+    - sub (list, optional): The list of colors to use for coloring the helices. Defaults to a predefined list of colors.
+
+    Returns
+    -------
+    - ax (matplotlib.axes.Axes): The modified polar subplot axis with the helices plotted.
+
+    """
+    if len(np.shape(helices)) == 1:
+        helices = np.reshape(helices, (1, len(helices)))
+    for i, pro in enumerate(helices[:]):
+        if colorbychain:
+            colors = sub[i]
+        else:
+            colors = sub[:len(pro[::2])]
+        ax.scatter(np.deg2rad(pro[1::2]), pro[::2], color=colors, linewidth=None,
+                   zorder=1, s=markersize)
+    return ax
