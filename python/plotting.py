@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.gridspec as gridspec
+import matplotlib.transforms as mtransforms
 from matplotlib.colors import ListedColormap, Normalize
 from Site import Site
 # from Symmetric_Site import Symmetric_Site
@@ -34,7 +35,7 @@ def make_custom_colormap():
     return my_cmap
 
 
-def outline_site(ax, site, grid_dims):
+def outline_site_new(ax, site, grid_dims):
     """
     Draw an outline around each bin in this Site.
 
@@ -97,15 +98,15 @@ def outline_bin(ax, bin_coords, grid_dims):
     return ax
 
 
-def create_heatmap_figure_and_axes(numlipids, cmap, v_vals, figwidth, figheight):
+def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight):
     """
     Create the heatmap figure and enough axes to accommodate all the lipids and\
     leaflets.
 
     Parameters
     ----------
-    numlipids : int
-        The number of lipids you intend to plot.
+    lipids : list
+        The names of the lipids you intend to plot.
     cmap : matplotlib ListedColormap
         A custom colormap.
     v_vals : tuple
@@ -123,11 +124,23 @@ def create_heatmap_figure_and_axes(numlipids, cmap, v_vals, figwidth, figheight)
         The polar projection axes that were created.
 
     """
+    assert isinstance(lipids, list), "lipids must be a list of strings"
+    assert len(lipids) > 0, "lipids cannot be an empty list"
+    numlipids = len(lipids)
     vmin, vmid, vmax = v_vals
     fig = plt.figure(figsize=(figwidth, figheight))
     gs = gridspec.GridSpec(numlipids, 2, figure=fig, wspace=0.15, hspace=0.15)
     for gridbox in range(numlipids * 2):
         ax = plt.subplot(gs[gridbox], projection='polar')
+        if gridbox % (numlipids * 2) == 0:
+            # put the lipid name to the left of the axes object
+            trans = mtransforms.ScaledTranslation(-40 / 72, -1.5, fig.dpi_scale_trans)
+            print(gridbox)
+            ax.text(0.0, 1.0, lipids[gridbox // (numlipids * 2)], transform=ax.transAxes + trans, fontsize='medium', va='bottom', fontfamily='serif')
+        if gridbox == 0:
+            ax.set_title("Outer")
+        elif gridbox == 1:
+            ax.set_title("Inner")
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.21, 1, 0.5, 0.02])
     sm = mpl.cm.ScalarMappable(cmap=cmap)
