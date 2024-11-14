@@ -247,4 +247,3 @@ class MidpointNormalize(Normalize):
         # simple example...
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
-
