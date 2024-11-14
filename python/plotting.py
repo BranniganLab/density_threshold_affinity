@@ -149,13 +149,35 @@ def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight, he
             ax = plot_helices(helices[0], False, ax, 50)
         else:
             ax = plot_helices(helices[1], False, ax, 50)
+    return fig, fig.axes
+
+
+def make_colorbar(fig, v_vals, cmap):
+    """
+    Generate the colorbar. Must be done after plot_heatmap.
+
+    Parameters
+    ----------
+    fig : fig
+        The figure object from matplotlib.
+    v_vals : list or tuple
+        min, mid, and max values for the colorbar.
+    cmap : colormap
+        matplotlib colormap object.
+
+    Returns
+    -------
+    fig
+
+    """
+    vmin, vmid, vmax = v_vals
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.21, 1, 0.5, 0.02])
     sm = mpl.cm.ScalarMappable(cmap=cmap)
     cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
     cbar.set_ticks(np.linspace(0, 1, 5))
     cbar.ax.set_xticklabels([vmin, (vmin + vmid) / 2, vmid, (vmid + vmax) / 2, vmax])
-    return fig, fig.axes
+    return fig
 
 
 def bin_prep(bin_info):
