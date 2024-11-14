@@ -12,7 +12,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.transforms as mtransforms
 from matplotlib.colors import ListedColormap, Normalize
 from Site import Site
-# from Symmetric_Site import Symmetric_Site
+from Symmetric_Site import Symmetric_Site
 from utils import calculate_hist_mode
 
 
@@ -58,10 +58,10 @@ def outline_site_new(ax, site, grid_dims):
     if isinstance(site, Site):
         for each_bin in site.bin_coords:
             ax = outline_bin(ax, each_bin, grid_dims)
-    # elif isinstance(site, Symmetric_Site):
-    #     for each_site in site.site_list:
-    #         for each_bin in each_site.bin_coords:
-    #             ax = outline_bin(ax, each_bin, grid_dims)
+    elif isinstance(site, Symmetric_Site):
+        for each_site in site.site_list:
+            for each_bin in each_site.bin_coords:
+                ax = outline_bin(ax, each_bin, grid_dims)
     else:
         Exception("site must be a Site or Symmetric_Site.")
     return ax
