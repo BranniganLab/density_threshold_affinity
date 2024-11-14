@@ -108,6 +108,30 @@ def calculate_density_enrichment(density, expected_density):
     return density / expected_density
 
 
+def calculate_bin_area(r_bin, dr, dtheta):
+    """
+    Calculate the area of the polar bin.
+
+    Parameters
+    ----------
+    r_bin : int
+        Which radial bin is this? Zero-indexed.
+    dr : float
+        The radial bin length in Angstroms.
+    dtheta : float
+        The azimuthal bin length in degrees.
+
+    Returns
+    -------
+    area : float
+        The bin area in square Angstroms.
+
+    """
+    bin_radial_midpoint = (r_bin * dr) + (0.5 * dr)
+    area = dr * dtheta * bin_radial_midpoint
+    return area
+
+
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%  UTIL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
 
 
@@ -267,29 +291,5 @@ def _calculate_lattice_areas(grid_dims):
     """
     areas = np.zeros((grid_dims.Nr, grid_dims.Ntheta))
     for radial_ring in range(grid_dims.Nr):
-        areas[radial_ring, :] = _calculate_bin_area(radial_ring, grid_dims.dr, grid_dims.dtheta)
+        areas[radial_ring, :] = calculate_bin_area(radial_ring, grid_dims.dr, grid_dims.dtheta)
     return areas
-
-
-def _calculate_bin_area(r_bin, dr, dtheta):
-    """
-    Calculate the area of the polar bin.
-
-    Parameters
-    ----------
-    r_bin : int
-        Which radial bin is this? Zero-indexed.
-    dr : float
-        The radial bin length in Angstroms.
-    dtheta : float
-        The azimuthal bin length in degrees.
-
-    Returns
-    -------
-    area : float
-        The bin area in square Angstroms.
-
-    """
-    bin_radial_midpoint = (r_bin * dr) + (0.5 * dr)
-    area = dr * dtheta * bin_radial_midpoint
-    return area
