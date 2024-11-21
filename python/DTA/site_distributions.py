@@ -31,7 +31,7 @@ class Site:
     expPunocc: float=0
     theta_vals: list=None
     dr: float=0
-    dth: float=0
+    dtheta: float=0
 
 def make_simple_site(the_data, inner_r=0, outer_r=0, nth=1, Ntheta=1, dr=1, dth=1, exrho=0, frames=1, the_thetas=None, title="", Npeak=None, accessible_area=None):
     """
