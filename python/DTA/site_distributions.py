@@ -31,6 +31,7 @@ class Site:
     expPunocc: float=0
     theta_vals: list=None
     dr: float=0
+    dtheta: float=0
 
 def make_simple_site(the_data, inner_r=0, outer_r=0, nth=1, Ntheta=1, dr=1, dth=1, exrho=0, frames=1, the_thetas=None, title="", Npeak=None, accessible_area=None):
     """
@@ -74,6 +75,7 @@ def make_simple_site(the_data, inner_r=0, outer_r=0, nth=1, Ntheta=1, dr=1, dth=
 
     the_site.theta_vals = (the_thetas*dth)%(2*np.pi)
     the_site.dr = dr
+    the_site.dtheta = dth
     if Npeak is not None:
         the_site.Npeak = Npeak
     else:
@@ -287,8 +289,7 @@ def outline_site(ax, site):
     - matplotlib.axes.Axes: The modified matplotlib axes object with the binding site outlined.
     """
 
-    sorted_thetas = np.sort(site.theta_vals)
-    dtheta = sorted_thetas[1]-sorted_thetas[0]
+    dtheta = site.dtheta
     the_thetas = site.theta_vals-dtheta/2
     the_thetas = np.append(the_thetas, the_thetas[-1]+dtheta)
     ax.fill_between(the_thetas, site.inner_r, site.outer_r, facecolor=(0,0,0,0), edgecolor='k')
