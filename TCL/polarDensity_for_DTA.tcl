@@ -329,7 +329,8 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
 proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame_i frame_f} {
     global params
-    set sel [ atomselect top "(($species)) and $lipidbeads_selstr"  frame $frame_i]
+    set outer_r2 [expr $params(Rmax)**2]
+    set sel [ atomselect top "(($species)) and $lipidbeads_selstr and ((x*x + y*y < $outer_r2))"  frame $frame_i]
     set sel_num [llength [lsort -unique [$sel get resid] ] ]
     set sel_resid_list [lsort -unique [$sel get resid] ]
     set totals {}
