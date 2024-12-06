@@ -22,7 +22,7 @@ class Site:
     name : str
         The name of this Site. e.g. "Binding site 1," "Left anterior cleft," or \
         something else descriptive.
-    leaflet : int
+    leaflet_id : int
         If 1, outer leaflet. If 2, inner leaflet.
     temperature : float
         The temperature of your system in K.
@@ -55,7 +55,7 @@ class Site:
         The binding affinity of the lipid for the Site, in kcal/mol.
     """
 
-    def __init__(self, name, leaflet, temperature):
+    def __init__(self, name, leaflet_id, temperature):
         """
         Create a Site object.
 
@@ -64,14 +64,14 @@ class Site:
         name : str
             The name of this Site. e.g. "Binding site 1," \
             "Left anterior cleft," or something else descriptive.
-        leaflet : int
+        leaflet_id : int
             If 1, outer leaflet. If 2, inner leaflet.
         temperature : float
             The temperature of your system in K.
         """
         self.name = name
-        assert leaflet in [1, 2], "leaflet must be 1 or 2 (1 for outer leaflet or 2 for inner leaflet)"
-        self.leaflet = leaflet
+        assert leaflet_id in [1, 2], "leaflet_id must be 1 or 2 (1 for outer leaflet or 2 for inner leaflet)"
+        self.leaflet_id = leaflet_id
         self.temperature = temperature
         self._bin_coords = None
         self._site_counts_histogram = None
