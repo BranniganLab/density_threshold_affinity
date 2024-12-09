@@ -574,6 +574,12 @@ proc polarDensityBin { config_file_script } {
     global params
     set_parameters $config_file_script
     source $params(utils)/BinTools.tcl
+
+    ;# check to make sure Rmax is evenly divisible by dr.
+    ;# Cannot ensure that Rmax and dr are both ints, so divisibility_test
+    ;# multiplies both by 10,000 before converting to int as a reasonable
+    ;# precaution. Specifying Rmax and dr to greater than 5 decimal places is
+    ;# a questionable life choice.
     set divisibility_test [expr [expr int([expr $params(Rmax) * 10000])] % [expr int([expr $params(dr) * 10000])]]
     if {$divisibility_test != 0} {
         puts "Rmax must be evenly divisible by dr."
