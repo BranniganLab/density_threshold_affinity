@@ -330,7 +330,7 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
 proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame_i frame_f} {
     global params
     set outer_r2 [expr $params(Rmax)**2]
-    set sel [ atomselect top "(($species)) and $lipidbeads_selstr and ((x*x + y*y < $outer_r2))"  frame $frame_i]
+    set sel [ atomselect top "(($species)) and $lipidbeads_selstr and same resid as ((x*x + y*y < $outer_r2))"  frame $frame_i]
     set sel_num [llength [lsort -unique [$sel get resid] ] ]
     set sel_resid_list [lsort -unique [$sel get resid] ]
     set totals {}
@@ -487,7 +487,7 @@ proc loop_over_frames {shell species headname tailname lipidbeads_selstr start_f
 proc loop_over_shells {species headname tailname lipidbeads_selstr low_f upp_f low_f_avg upp_f_avg} {
     global params
     set delta_frame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
-    for {set ri $params(Rmin)} { $ri<=$params(Rmax)} { set ri [expr $ri + $params(dr)]} {
+    for {set ri $params(Rmin)} { $ri<$params(Rmax)} { set ri [expr $ri + $params(dr)]} {
         #loop over shells
         puts "Now on shell {$ri [expr ${ri}+$params(dr)]}"
         set rf [expr $ri + $params(dr)]
@@ -574,6 +574,12 @@ proc polarDensityBin { config_file_script } {
     global params
     set_parameters $config_file_script
     source $params(utils)/BinTools.tcl
+    set divisibility_test [expr [expr int([expr $params(Rmax) * 10000])] % [expr int([expr $params(dr) * 10000])]]
+    if {$divisibility_test != 0} {
+        puts "Rmax must be evenly divisible by dr."
+        puts "Exiting polarDensityBin early."
+        return
+    }
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
     set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
     set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
