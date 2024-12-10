@@ -335,8 +335,7 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
     } elseif {$restrict_to_Rmax == 0} {
         set sel [ atomselect top "(($species)) and $lipidbeads_selstr"  frame $frame_i]
     } else {
-        puts "restrict_leaflet_sorter_to_Rmax must be 1 or 0."
-        error
+        error "restrict_leaflet_sorter_to_Rmax must be 1 or 0"
     }
     
     set sel_num [llength [lsort -unique [$sel get resid] ] ]
