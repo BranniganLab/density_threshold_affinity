@@ -590,10 +590,9 @@ proc polarDensityBin { config_file_script } {
     ;# a questionable life choice.
     set divisibility_test [expr [expr int([expr $params(Rmax) * 10000])] % [expr int([expr $params(dr) * 10000])]]
     if {$divisibility_test != 0} {
-        puts "Rmax must be evenly divisible by dr."
-        puts "Exiting polarDensityBin early."
-        return
+        error "Rmax must be evenly divisible by dr."
     }
+    
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
     set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
     set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
