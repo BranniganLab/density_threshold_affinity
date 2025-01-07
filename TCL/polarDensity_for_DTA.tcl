@@ -337,12 +337,11 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
     } else {
         error "restrict_leaflet_sorter_to_Rmax must be 1 or 0"
     }
-    
     set sel_num [llength [lsort -unique [$sel get resid] ] ]
     set sel_resid_list [lsort -unique [$sel get resid] ]
     set totals {}
     if {$sel_num < 1} {
-        set totals [[list 0 0] [list 0 0]] 
+        set totals [list "lower 0 0" "upper 0 0"] 
     } else {
         #assign leaflets from $frame_i to user2 field of each bead for this species
         foreach sel_resid $sel_resid_list {
