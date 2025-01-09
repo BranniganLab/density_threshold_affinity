@@ -6,7 +6,7 @@ Created on Thu Nov 14 16:53:18 2024.
 @author: js2746
 """
 from Site import Site
-from Symmetric_Site import Symmetric_Site
+from Symmetric_Site import Symmetric_Site, aggregate_site_counts_histograms, check_bulk_counts_histogram
 import numpy as np
 from utils import calculate_hist_mode, calculate_hist_mean, calculate_dG
 
@@ -25,6 +25,8 @@ class Site_Across_Replicas:
 
     Calculated Properties
     ---------------------
+    name : str
+        The name of the Site. Will be inherited from base_site.
     site_list : list
         The list of constituent Site or Symmetric_Site objects that make up \
         this Site_Across_Replicas.
@@ -66,6 +68,7 @@ class Site_Across_Replicas:
             assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a Site_Across_Replicas."
         elif not isinstance(base_site, Symmetric_Site):
             raise Exception("base_site must be a Site or Symmetric_Site")
+        self.name = base_site.name
         self._site_list = self._make_sites_across_replicas(base_site, replica_list)
         assert len(self.site_list) == len(replica_list), "Number of Sites does not match number of replicas."
         self.temperature = base_site.temperature
@@ -103,7 +106,7 @@ class Site_Across_Replicas:
             having 4 beads in the Site.
 
         """
-        return _aggregate_site_counts_histograms(self.site_list)
+        return aggregate_site_counts_histograms(self.site_list)
 
     @property
     def bulk_counts_histogram(self):
@@ -121,7 +124,7 @@ class Site_Across_Replicas:
             frame having 4 beads in the patch.
 
         """
-        return _check_bulk_counts_histogram(self.site_list)
+        return check_bulk_counts_histogram(self.site_list)
 
     @property
     def n_peak(self):
@@ -240,13 +243,16 @@ class Site_Across_Replicas:
             The list of all Sites that comprise this Symmetric_Site.
 
         """
+        assert isinstance(replica_list, list), "replica_list must be a list"
         name = base_site.name
-        base_site.name = name + '_rep1'
         site_list = [base_site]
-        for site_number in range(1, len(replica_list)):
+        for site_number in range(len(replica_list)):
             site_name = name + '_rep' + str(site_number + 1)
-            new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
-            new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, Ntheta, site_number)
+            if isinstance(base_site, Site):
+                new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
+            elif isinstance(base_site, Symmetric_Site):
+                new_site = Symmetric_Site(base_site.symmetry, base_site.site_list[0], base_site._Ntheta)
+            
             site_list.append(new_site)
         return site_list
 
