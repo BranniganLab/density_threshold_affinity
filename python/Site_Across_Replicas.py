@@ -223,17 +223,16 @@ class Site_Across_Replicas:
         predicted_accessible_area = bulk_area * (site / bulk)
         return predicted_accessible_area
 
-    def _make_symmetric_sites(self, base_site, Ntheta):
+    def _make_sites_across_replicas(self, base_site, replica_list):
         """
-        Create identical sites to the base_site, rotated symmetrically around \
-        the origin.
+        Create identical sites to the base_site, across multiple replicas.
 
         Parameters
         ----------
         base_site : Site
             The Site object that you want to replicate symmetrically.
-        Ntheta : int
-            The total number of theta bins in the circle.
+        replica_list : list
+            The list of additional replicas.
 
         Returns
         -------
@@ -241,10 +240,11 @@ class Site_Across_Replicas:
             The list of all Sites that comprise this Symmetric_Site.
 
         """
-        base_site.name = base_site.name + '_1'
+        name = base_site.name
+        base_site.name = name + '_rep1'
         site_list = [base_site]
-        for site_number in range(1, self.symmetry):
-            site_name = base_site.name + '_' + str(site_number + 1)
+        for site_number in range(1, len(replica_list)):
+            site_name = name + '_rep' + str(site_number + 1)
             new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
             new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, Ntheta, site_number)
             site_list.append(new_site)
