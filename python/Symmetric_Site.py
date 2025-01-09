@@ -23,6 +23,8 @@ class Symmetric_Site:
 
     Calculated Properties
     ---------------------
+    name : str
+        The name of the Site. Will be inherited from base_site.
     symmetry : int
         The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
     site_list : list
@@ -66,6 +68,7 @@ class Symmetric_Site:
             across the number of theta bins."
         assert isinstance(base_site, Site), "base_site must be a Site."
         assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a Symmetric_Site."
+        self.name = base_site.name
         self._symmetry = symmetry
         self._site_list = self._make_symmetric_sites(base_site, Ntheta)
         assert len(self.site_list) == symmetry, "Number of Sites does not match symmetry."
