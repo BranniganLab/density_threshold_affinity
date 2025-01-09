@@ -121,7 +121,7 @@ class Symmetric_Site:
             having 4 beads in the Site.
 
         """
-        return _aggregate_site_counts_histograms(self.site_list)
+        return aggregate_site_counts_histograms(self.site_list)
 
     @property
     def bulk_counts_histogram(self):
@@ -139,7 +139,7 @@ class Symmetric_Site:
             frame having 4 beads in the patch.
 
         """
-        return _check_bulk_counts_histogram(self.site_list)
+        return check_bulk_counts_histogram(self.site_list)
 
     @property
     def n_peak(self):
@@ -303,7 +303,7 @@ class Symmetric_Site:
         return rotated_bin_coords
 
 
-def _aggregate_site_counts_histograms(site_list):
+def aggregate_site_counts_histograms(site_list):
     """
     Cycle through all the sites and add their counts histograms together.
 
@@ -335,7 +335,7 @@ def _aggregate_site_counts_histograms(site_list):
     return counts
 
 
-def _check_bulk_counts_histogram(site_list):
+def check_bulk_counts_histogram(site_list):
     """
     Cycle through each Site and make sure the bulk_counts_histograms all match.\
     Return one of them.
