@@ -210,12 +210,12 @@ class Site:
         """
         assert isinstance(counts_data, np.ndarray), "ndarray not supplied"
         if bulk:
-            assert len(counts_data.shape) == 1, "Bulk counts data is not in the right format: {data}"
+            assert len(counts_data.shape) == 1, f"Bulk counts data is not in the right format: {counts_data}"
             bulk_hist = np.bincount(counts_data)
             self._bulk_counts_histogram = bulk_hist
             self._n_peak = calculate_hist_mode(self._bulk_counts_histogram)
         else:
-            assert len(counts_data.shape) == 3, "Counts data is not in the right format: {data}"
+            assert len(counts_data.shape) == 3, f"Counts data is not in the right format: {counts_data}"
             counts_data = counts_data.astype(int)
             site_counts = self._fetch_site_counts(counts_data)
             site_hist = np.bincount(site_counts)
