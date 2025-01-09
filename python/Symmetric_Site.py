@@ -70,6 +70,7 @@ class Symmetric_Site:
         assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a Symmetric_Site."
         self.name = base_site.name
         self._symmetry = symmetry
+        self._Ntheta = Ntheta
         self._site_list = self._make_symmetric_sites(base_site, Ntheta)
         assert len(self.site_list) == symmetry, "Number of Sites does not match symmetry."
         self.temperature = base_site.temperature
@@ -258,10 +259,11 @@ class Symmetric_Site:
             The list of all Sites that comprise this Symmetric_Site.
 
         """
-        base_site.name = base_site.name + '_1'
+        name = base_site.name
+        base_site.name = name + '_1'
         site_list = [base_site]
         for site_number in range(1, self.symmetry):
-            site_name = base_site.name + '_' + str(site_number + 1)
+            site_name = name + '_' + str(site_number + 1)
             new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
             new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, Ntheta, site_number)
             site_list.append(new_site)
