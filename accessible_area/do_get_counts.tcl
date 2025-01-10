@@ -73,7 +73,7 @@ foreach species $spp {
 				set ymin $YMIN
 				while {$ymin < $YMAX} {
 					puts "Running at $xmin $ymin leaflet $field"
-					set data [get_count_with_area $area $xmin $ymin "resname $species and name PO4 and $fieldid $field" top 0 -1 $stride]
+					set data [get_count_with_area $area $xmin $ymin "resname $species and $fieldid $field" top 0 -1 $stride]
 					puts $outfile $data
 
 					set ymin [expr $ymin + $step]
