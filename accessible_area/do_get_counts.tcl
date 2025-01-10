@@ -32,9 +32,9 @@ proc assign_all_frames {species {stride 1}} {
 
 
 set ASSIGN_LEAFLETS 1
-set GET_COUNTS 0
+set GET_COUNTS 1
 set spp [list "DPPC"]
-set area 78
+set area 52
 set stride 10
 set fieldid "user2"
 
@@ -63,23 +63,25 @@ if {$ASSIGN_LEAFLETS == 1} {
 set box_width [lindex [measure minmax $all] 1 0]
 $all delete
 
-if {$GET_COUNTS == 1} {
-	set outfile [open "counts_${area}.out" w]   
+foreach species $spp {
+	if {$GET_COUNTS == 1} {
+		set outfile [open "${species}_counts_${area}.out" w]   
 
-	foreach field {1 '-1'} {
-		set xmin $XMIN
-		while {$xmin < $XMAX} {
-			set ymin $YMIN
-			while {$ymin < $YMAX} {
-				puts "Running at $xmin $ymin leaflet $field"
-				set data [get_count_with_area $area $xmin $ymin "resname $spp and $fieldid $field" top 0 -1 $stride]
-				puts $outfile $data
+		foreach field {1 '-1'} {
+			set xmin $XMIN
+			while {$xmin < $XMAX} {
+				set ymin $YMIN
+				while {$ymin < $YMAX} {
+					puts "Running at $xmin $ymin leaflet $field"
+					set data [get_count_with_area $area $xmin $ymin "resname $species and name PO4 and $fieldid $field" top 0 -1 $stride]
+					puts $outfile $data
 
-				set ymin [expr $ymin + $step]
+					set ymin [expr $ymin + $step]
+				}
+				set xmin [expr $xmin + $step]
 			}
-			set xmin [expr $xmin + $step]
 		}
-	}
 
-	close $outfile
+		close $outfile
+	}
 }
