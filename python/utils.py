@@ -111,3 +111,23 @@ def calculate_hist_mean(counts_data):
         sum_i += i * counts_data[i]
     mean = sum_i / total_N
     return mean
+
+
+def stack_array_list(list_of_arrays):
+    """
+    Create a new array by stacking a list of arrays on top of one another.
+
+    Parameters
+    ----------
+    list_of_arrays : list
+        List of arrays of same type/shape.
+
+    Returns
+    -------
+    stacked : ndarray
+        A new array with one extra dimension as those in list_of_arrays. Each\
+        level along axis 0 corresponds to one item from list_of_arrays.
+
+    """
+    stacked = np.stack(tuple(list_of_arrays), axis=0)
+    return stacked
