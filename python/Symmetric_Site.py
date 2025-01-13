@@ -362,6 +362,7 @@ class Site_Across_Replicas:
             raise Exception("base_site must be a Site or Symmetric_Site")
         self.name = base_site.name
         self._site_list = self._make_sites_across_replicas(base_site, replica_list)
+        print(self.site_list)
         assert len(self.site_list) == len(replica_list), "Number of Sites does not match number of replicas."
         self.temperature = base_site.temperature
 
@@ -527,7 +528,7 @@ class Site_Across_Replicas:
         base_site : Site
             The Site object that you want to replicate symmetrically.
         replica_list : list
-            The list of additional replicas.
+            The list of replicas.
 
         Returns
         -------
@@ -537,13 +538,15 @@ class Site_Across_Replicas:
         """
         assert isinstance(replica_list, list), "replica_list must be a list"
         name = base_site.name
-        site_list = [base_site]
+        site_list = []
         for site_number in range(len(replica_list)):
             site_name = name + '_rep' + str(site_number + 1)
             if isinstance(base_site, Site):
                 new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
             elif isinstance(base_site, Symmetric_Site):
-                new_site = Symmetric_Site(base_site.symmetry, base_site.site_list[0], base_site._Ntheta)
+                new_single_site = Site(site_name, base_site.site_list[0].leaflet_id, base_site.site_list[0].temperature)
+                new_single_site.bin_coords = base_site.site_list[0].bin_coords
+                new_site = Symmetric_Site(base_site.symmetry, new_single_site, base_site._Ntheta)
             new_site.update_counts_histogram(bulk=False, counts_data=replica_list[site_number])
             site_list.append(new_site)
         return site_list
