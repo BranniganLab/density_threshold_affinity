@@ -543,6 +543,7 @@ class Site_Across_Replicas:
             site_name = name + '_rep' + str(site_number + 1)
             if isinstance(base_site, Site):
                 new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
+                new_site.bin_coords = base_site.bin_coords
             elif isinstance(base_site, Symmetric_Site):
                 new_single_site = Site(site_name, base_site.site_list[0].leaflet_id, base_site.site_list[0].temperature)
                 new_single_site.bin_coords = base_site.site_list[0].bin_coords
