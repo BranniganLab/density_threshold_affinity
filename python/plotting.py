@@ -111,9 +111,9 @@ def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight, he
         A custom colormap.
     v_vals : tuple
         The (vmin, vmid, and vmax)
-    figwidth : int, optional
+    figwidth : int
         Figure width.
-    figheight : int, optional
+    figheight : int
         Figure height.
     helices : list
         The outer and inner helix coordinates, in that order.
@@ -136,10 +136,6 @@ def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight, he
     gs = gridspec.GridSpec(numlipids, 2, figure=fig, wspace=0.15, hspace=0.15)
     for gridbox in range(numlipids * 2):
         ax = plt.subplot(gs[gridbox], projection='polar')
-        if gridbox % (numlipids * 2) == 0:
-            # put the lipid name to the left of the axes object
-            trans = mtransforms.ScaledTranslation(-40 / 72, -1.5, fig.dpi_scale_trans)
-            ax.text(0.0, 1.0, lipids[gridbox // (numlipids * 2)], transform=ax.transAxes + trans, fontsize='medium', va='bottom', fontfamily='serif')
         if gridbox == 0:
             ax.set_title("Outer")
         elif gridbox == 1:
@@ -148,6 +144,9 @@ def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight, he
             ax = plot_helices(helices[0], False, ax, 50)
         else:
             ax = plot_helices(helices[1], False, ax, 50)
+        if gridbox % 2 == 0:
+            # put the lipid name to the left of the axes object
+            ax.text(-0.5, 0.5, lipids[gridbox // 2], transform=ax.transAxes, fontsize='medium', va='center', fontfamily='serif')
     return fig, fig.axes
 
 
