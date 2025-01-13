@@ -200,7 +200,7 @@ def bin_prep(bin_info):
     return [r_vals, theta_vals]
 
 
-def plot_heatmap(ax, data, grid, cmap, v_vals):
+def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
     """
     Plot a heatmap on a pre-existing axes object.
 
@@ -210,8 +210,8 @@ def plot_heatmap(ax, data, grid, cmap, v_vals):
         The pre-existing axes object you wish to plot a heatmap on.
     data : ndarray
         The heatmap heat values (probably density enrichment).
-    grid : 2-tuple of ndarrays
-        Contains the radius and theta values for plotting the polar projection.
+    grid_dims : namedtuple
+        Contains Nr, Ntheta, dr, and dtheta information.
     cmap : colorbar object
         Custom colorbar.
     v_vals : 3-tuple
@@ -223,6 +223,7 @@ def plot_heatmap(ax, data, grid, cmap, v_vals):
         The axes object, which now contains your heatmap.
 
     """
+    grid = bin_prep(grid_dims)
     vmin, vmid, vmax = v_vals
     norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
     ax.grid(False)
