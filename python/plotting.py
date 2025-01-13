@@ -139,7 +139,6 @@ def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight, he
         if gridbox % (numlipids * 2) == 0:
             # put the lipid name to the left of the axes object
             trans = mtransforms.ScaledTranslation(-40 / 72, -1.5, fig.dpi_scale_trans)
-            print(gridbox)
             ax.text(0.0, 1.0, lipids[gridbox // (numlipids * 2)], transform=ax.transAxes + trans, fontsize='medium', va='bottom', fontfamily='serif')
         if gridbox == 0:
             ax.set_title("Outer")

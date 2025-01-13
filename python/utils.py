@@ -8,6 +8,7 @@ Created on Thu Nov 14 13:55:09 2024.
 import numpy as np
 from scipy import constants
 import math
+from pathlib import Path
 
 
 def calculate_dG(counts_histogram, n_peak, temperature):
@@ -131,3 +132,30 @@ def stack_array_list(list_of_arrays):
     """
     stacked = np.stack(tuple(list_of_arrays), axis=0)
     return stacked
+
+
+def load_inclusion_helices(path):
+    """
+    Get helix locations from the given path.
+
+    Parameters
+    ----------
+    path  :  str or Path
+        The path to the directory containing the helix coordinate files.
+
+    Returns
+    -------
+    helix_list  :  list
+        List of upper and lower helix coordinates.
+    """
+    if isinstance(path, str):
+        path = Path(path)
+    try:
+        helices_lwr = np.loadtxt(path.joinpath("Protein_coords_lwr.dat"))
+        helices_upr = np.loadtxt(path.joinpath("Protein_coords_upr.dat"))
+    except FileNotFoundError:
+        helices_lwr = None
+        helices_upr = None
+        print("Protein coordinates not found")
+
+    return [helices_upr, helices_lwr]
