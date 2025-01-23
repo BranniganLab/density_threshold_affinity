@@ -187,7 +187,7 @@ class Symmetric_Site:
         dGs = []
         for site in self.site_list:
             dGs.append(site.dG)
-        return np.std(dGs)
+        return np.std(np.array(dGs))
 
     def update_counts_histogram(self, bulk, counts_data):
         """
@@ -465,7 +465,7 @@ class Site_Across_Replicas:
         dGs = []
         for site in self.site_list:
             dGs.append(site.dG)
-        return np.std(dGs)
+        return np.std(np.array(dGs))
 
     def update_counts_histogram(self, bulk, counts_data):
         """
