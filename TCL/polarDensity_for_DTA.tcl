@@ -394,6 +394,19 @@ proc clean_leaflet_assignments {species lipidbeads_selstr} {
     $sel delete
 }
     
+#test to see if two floats are evenly divisible. Return 1 if evenly divisible.
+#Return 0 if not evenly divisible.
+proc test_if_evenly_divisible {dividend divisor} {
+    set TOLERANCE [expr 10.0**-12]
+    set float_quotient [expr [expr double($dividend)] / [expr double($divisor)]]
+    set int_quotient [expr int($float_quotient)]
+    set diff [expr $float_quotient - $int_quotient]
+    if {$diff <= $TOLERANCE} {
+        return 1
+    } else {
+        return 0
+    }
+}
     
 #write radial and theta bin output to file 
 proc output_bins {fl  ri rf bins} {
@@ -583,9 +596,7 @@ proc polarDensityBin { config_file_script } {
     source $params(utils)/BinTools.tcl
 
     ;# check to make sure Rmax is evenly divisible by dr.
-    set divisibility_test [expr [expr double($params(Rmax))] % [expr double($params(dr))]]
-    set TOLERANCE [expr 10**-12]
-    if {$divisibility_test >= $TOLERANCE} {
+    if {[test_if_evenly_divisible $params(Rmax) $params(dr)] != 1} {
         error "Rmax must be evenly divisible by dr."
     }
     
