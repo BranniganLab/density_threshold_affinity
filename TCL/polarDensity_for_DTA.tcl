@@ -327,14 +327,21 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
 ;# Assigns the leaflet to user2 
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
-proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame_i frame_f} {
+proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame_i frame_f {restrict_to_Rmax 0}} {
     global params
-    set sel [ atomselect top "(($species)) and $lipidbeads_selstr"  frame $frame_i]
+    if {$restrict_to_Rmax == 1} {
+        set outer_r2 [expr $params(Rmax)**2]
+        set sel [ atomselect top "(($species)) and $lipidbeads_selstr and same resid as ((x*x + y*y < $outer_r2))"  frame $frame_i]
+    } elseif {$restrict_to_Rmax == 0} {
+        set sel [ atomselect top "(($species)) and $lipidbeads_selstr"  frame $frame_i]
+    } else {
+        error "restrict_leaflet_sorter_to_Rmax must be 1 or 0"
+    }
     set sel_num [llength [lsort -unique [$sel get resid] ] ]
     set sel_resid_list [lsort -unique [$sel get resid] ]
     set totals {}
     if {$sel_num < 1} {
-        set totals [[list 0 0] [list 0 0]] 
+        set totals [list "lower 0 0" "upper 0 0"] 
     } else {
         #assign leaflets from $frame_i to user2 field of each bead for this species
         foreach sel_resid $sel_resid_list {
@@ -367,7 +374,7 @@ proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr}
     global params
     set num_reassignments 0
     for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame $params(dt)} {
-        frame_leaflet_assignment $species $headname $tailname $lipidbeads_selstr $update_frame [expr $update_frame + $params(dt)] 
+        frame_leaflet_assignment $species $headname $tailname $lipidbeads_selstr $update_frame [expr $update_frame + $params(dt)] $params(restrict_leaflet_sorter_to_Rmax)
         incr num_reassignments
     }
     puts "Checked for leaflet reassignments $num_reassignments times."
@@ -387,6 +394,19 @@ proc clean_leaflet_assignments {species lipidbeads_selstr} {
     $sel delete
 }
     
+#test to see if two floats are evenly divisible. Return 1 if evenly divisible.
+#Return 0 if not evenly divisible.
+proc test_if_evenly_divisible {dividend divisor} {
+    set TOLERANCE [expr 10.0**-12]
+    set float_quotient [expr $dividend / double($divisor)]
+    set int_quotient [expr int($float_quotient)]
+    set diff [expr $float_quotient - $int_quotient]
+    if {$diff <= $TOLERANCE} {
+        return 1
+    } else {
+        return 0
+    }
+}
     
 #write radial and theta bin output to file 
 proc output_bins {fl  ri rf bins} {
@@ -486,7 +506,7 @@ proc loop_over_frames {shell species headname tailname lipidbeads_selstr start_f
 proc loop_over_shells {species headname tailname lipidbeads_selstr low_f upp_f low_f_avg upp_f_avg} {
     global params
     set delta_frame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
-    for {set ri $params(Rmin)} { $ri<=$params(Rmax)} { set ri [expr $ri + $params(dr)]} {
+    for {set ri $params(Rmin)} { $ri<$params(Rmax)} { set ri [expr $ri + $params(dr)]} {
         #loop over shells
         puts "Now on shell {$ri [expr ${ri}+$params(dr)]}"
         set rf [expr $ri + $params(dr)]
@@ -533,7 +553,8 @@ proc set_parameters { config_file_script } {
         Rmax 20.
         Rmin 0.
         dr 5 
-        Ntheta 50        
+        Ntheta 50
+        restrict_leaflet_sorter_to_Rmax 0
     }
     set nframes [molinfo top get numframes] 
     array set params [list end_frame $nframes]
@@ -573,6 +594,12 @@ proc polarDensityBin { config_file_script } {
     global params
     set_parameters $config_file_script
     source $params(utils)/BinTools.tcl
+
+    ;# check to make sure Rmax is evenly divisible by dr.
+    if {[test_if_evenly_divisible $params(Rmax) $params(dr)] != 1} {
+        error "Rmax must be evenly divisible by dr."
+    }
+    
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
     set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
     set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
@@ -612,7 +639,7 @@ proc polarDensityBin { config_file_script } {
         set upp_f [open "${outfile}.upp.dat" w]
         set low_f_avg [open "${outfile}.low.avg.dat" w]
         set upp_f_avg [open "${outfile}.upp.avg.dat" w]
-        set totals [frame_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $params(start_frame) $params(start_frame)]
+        set totals [frame_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $params(end_frame) $params(end_frame)]        
         
         foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
             set leaflet_str [lindex $leaf_total 0]
@@ -624,7 +651,7 @@ proc polarDensityBin { config_file_script } {
                 puts $avgfile "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
         }
         puts "Processing frames, starting at frame $params(start_frame) and ending at frame $params(end_frame)."
-        trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr         
+        trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr   
         ;#the core calculation 
         loop_over_shells $species $headname $tailname $lipidbeads_selstr $low_f $upp_f $low_f_avg $upp_f_avg  
         
