@@ -398,7 +398,7 @@ proc clean_leaflet_assignments {species lipidbeads_selstr} {
 #Return 0 if not evenly divisible.
 proc test_if_evenly_divisible {dividend divisor} {
     set TOLERANCE [expr 10.0**-12]
-    set float_quotient [expr [expr double($dividend)] / [expr double($divisor)]]
+    set float_quotient [expr $dividend / double($divisor)]
     set int_quotient [expr int($float_quotient)]
     set diff [expr $float_quotient - $int_quotient]
     if {$diff <= $TOLERANCE} {
