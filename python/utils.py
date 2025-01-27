@@ -159,3 +159,58 @@ def load_inclusion_helices(path):
         print("Protein coordinates not found")
 
     return [helices_upr, helices_lwr]
+
+
+def aggregate_site_counts_histograms(site_list):
+    """
+    Cycle through all the sites and add their counts histograms together.
+
+    Parameters
+    ----------
+    site_list : list
+        List of Sites.
+
+    Returns
+    -------
+    counts : ndarray
+        1D numpy array of histogrammed bead counts.
+
+    """
+    hist_lengths = []
+    for site in site_list:
+        if site.site_counts_histogram is None:
+            raise Exception("One or more sites do not have counts associated. Please use update_counts_histogram() and try again.")
+        hist_length = site.site_counts_histogram.shape[0]
+        hist_lengths.append(hist_length)
+    max_len = max(hist_lengths)
+    counts = np.zeros(max_len)
+    for site in site_list:
+        counts_to_add = site.site_counts_histogram.copy()
+        if counts_to_add.shape[0] < max_len:
+            padding = max_len - counts_to_add.shape[0]
+            counts_to_add = np.pad(counts_to_add, (0, padding), mode='constant', constant_values=0)
+        counts += counts_to_add
+    return counts
+
+
+def check_bulk_counts_histogram(site_list):
+    """
+    Cycle through each Site and make sure the bulk_counts_histograms all match.\
+    Return one of them.
+
+    Parameters
+    ----------
+    site_list : list
+        List of Sites.
+
+    Returns
+    -------
+    bulk : ndarray
+        1D numpy array of histogrammed bead counts from the bulk distribution.
+
+    """
+    first_site = site_list[0]
+    bulk = first_site.bulk_counts_histogram.copy()
+    for site in site_list[1:]:
+        assert bulk.all() == site.bulk_counts_histogram.all(), "One or more sites have different bulk histograms. This shouldn't be possible."
+    return bulk
