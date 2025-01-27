@@ -27,7 +27,7 @@ class SiteAcrossReplicas:
     ---------------------
     name : str
         The name of the Site. Will be inherited from base_site.
-    site_list : list
+    get_site_list : list
         The list of constituent Site or SymmetricSite objects that make up \
         this Site_Across_Replicas.
     site_counts_histogram : numpy ndarray
@@ -48,7 +48,7 @@ class SiteAcrossReplicas:
         The binding affinity of the lipid for the Site, in kcal/mol.
     dG_std : float
         The standard deviation of the mean binding affinity for the \
-        SymmetricSites and/or Sites that comprise this Site_Across_Replicas.
+        SymmetricSites and/or Sites that comprise this SiteAcrossReplicas.
     """
 
     def __init__(self, replica_list, base_site):
@@ -70,12 +70,12 @@ class SiteAcrossReplicas:
             raise Exception("base_site must be a Site or SymmetricSite")
         self.name = base_site.name
         self._site_list = self._make_sites_across_replicas(base_site, replica_list)
-        assert len(self.site_list) == len(replica_list), "Number of Sites does not match number of replicas."
+        assert len(self.get_site_list) == len(replica_list), "Number of Sites does not match number of replicas."
         self.temperature = base_site.temperature
 
     def __iter__(self):
         """Iterate through the site_list."""
-        for site in self.site_list:
+        for site in self.get_site_list:
             yield site
 
     @property
@@ -106,7 +106,7 @@ class SiteAcrossReplicas:
             having 4 beads in the Site.
 
         """
-        return aggregate_site_counts_histograms(self.site_list)
+        return aggregate_site_counts_histograms(self.get_site_list)
 
     @property
     def bulk_counts_histogram(self):
@@ -124,7 +124,7 @@ class SiteAcrossReplicas:
             frame having 4 beads in the patch.
 
         """
-        return check_bulk_counts_histogram(self.site_list)
+        return check_bulk_counts_histogram(self.get_site_list)
 
     @property
     def n_peak(self):
@@ -170,7 +170,7 @@ class SiteAcrossReplicas:
 
         """
         dGs = []
-        for site in self.site_list:
+        for site in self.get_site_list:
             dGs.append(site.dG)
         return np.std(np.array(dGs))
 
@@ -192,7 +192,7 @@ class SiteAcrossReplicas:
         None.
 
         """
-        for site in self.site_list:
+        for site in self.get_site_list:
             site.update_counts_histogram(bulk, counts_data)
 
     def predict_accessible_area(self, bulk_area, mode=True):
@@ -252,8 +252,8 @@ class SiteAcrossReplicas:
                 new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
                 new_site.bin_coords = base_site.bin_coords
             elif isinstance(base_site, SymmetricSite):
-                new_single_site = Site(site_name, base_site.site_list[0].leaflet_id, base_site.site_list[0].temperature)
-                new_single_site.bin_coords = base_site.site_list[0].bin_coords
+                new_single_site = Site(site_name, base_site.get_site_list[0].leaflet_id, base_site.get_site_list[0].temperature)
+                new_single_site.bin_coords = base_site.get_site_list[0].bin_coords
                 new_site = SymmetricSite(base_site.symmetry, new_single_site, base_site._Ntheta)
             new_site.update_counts_histogram(bulk=False, counts_data=replica_list[site_number])
             site_list.append(new_site)

@@ -27,7 +27,7 @@ class SymmetricSite:
         The name of the Site. Will be inherited from base_site.
     symmetry : int
         The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
-    site_list : list
+    get_site_list : list
         The list of constituent Site objects that make up this SymmetricSite.
     site_counts_histogram : numpy ndarray
         One-dimensional ndarray where the histogrammed ligand bead counts are \
@@ -72,12 +72,12 @@ class SymmetricSite:
         self._symmetry = symmetry
         self._Ntheta = Ntheta
         self._site_list = self._make_symmetric_sites(base_site, Ntheta)
-        assert len(self.site_list) == symmetry, "Number of Sites does not match symmetry."
+        assert len(self.get_site_list) == symmetry, "Number of Sites does not match symmetry."
         self.temperature = base_site.temperature
 
     def __iter__(self):
         """Iterate through the site_list."""
-        for site in self.site_list:
+        for site in self.get_site_list:
             yield site
 
     @property
@@ -121,7 +121,7 @@ class SymmetricSite:
             having 4 beads in the Site.
 
         """
-        return aggregate_site_counts_histograms(self.site_list)
+        return aggregate_site_counts_histograms(self.get_site_list)
 
     @property
     def bulk_counts_histogram(self):
@@ -139,7 +139,7 @@ class SymmetricSite:
             frame having 4 beads in the patch.
 
         """
-        return check_bulk_counts_histogram(self.site_list)
+        return check_bulk_counts_histogram(self.get_site_list)
 
     @property
     def n_peak(self):
@@ -185,7 +185,7 @@ class SymmetricSite:
 
         """
         dGs = []
-        for site in self.site_list:
+        for site in self.get_site_list:
             dGs.append(site.dG)
         return np.std(np.array(dGs))
 
@@ -207,7 +207,7 @@ class SymmetricSite:
         None.
 
         """
-        for site in self.site_list:
+        for site in self.get_site_list:
             site.update_counts_histogram(bulk, counts_data)
 
     def predict_accessible_area(self, bulk_area, mode=True):
