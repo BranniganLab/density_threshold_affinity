@@ -70,7 +70,6 @@ class SiteAcrossReplicas:
             raise Exception("base_site must be a Site or SymmetricSite")
         self.name = base_site.name
         self._site_list = self._make_sites_across_replicas(base_site, replica_list)
-        print(self.site_list)
         assert len(self.site_list) == len(replica_list), "Number of Sites does not match number of replicas."
         self.temperature = base_site.temperature
 
