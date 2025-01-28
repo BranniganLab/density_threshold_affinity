@@ -97,7 +97,6 @@ def isolate_unique_site_edges(bin_coords_list, grid_dims):
                 line_list.pop(index)
             else:
                 line_list.append(edge)
-    print(len(line_list))
     return line_list
 
 
