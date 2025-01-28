@@ -79,7 +79,7 @@ class SiteAcrossReplicas:
             yield site
 
     @property
-    def site_list(self):
+    def get_site_list(self):
         """
         Tell me the site_list, but don't let me change the site_list.
 
