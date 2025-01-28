@@ -127,7 +127,7 @@ def _find_edge_in_list(edge, line_list):
 
 def compile_bin_edges(bin_coords, grid_dims):
     """
-    Draw an outline around this bin.
+    Determine the 4 lines that outline this bin.
 
     Parameters
     ----------
