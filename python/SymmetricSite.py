@@ -27,6 +27,11 @@ class SymmetricSite:
         The name of the Site. Will be inherited from base_site.
     symmetry : int
         The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
+    bin_coords : list of tuples
+        The bins that belong to this site in (r, theta) format. e.g. \
+        [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
+        13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
+        are zero-indexed by convention.
     get_site_list : list
         The list of constituent Site objects that make up this SymmetricSite.
     site_counts_histogram : numpy ndarray
