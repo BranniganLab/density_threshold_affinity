@@ -158,8 +158,7 @@ def aggregate_site_counts_histograms(site_list):
     """
     hist_lengths = []
     for site in site_list:
-        if site.site_counts_histogram is None:
-            raise Exception("One or more sites do not have counts associated. Please use update_counts_histogram() and try again.")
+        assert site.site_counts_histogram is not None, "One or more sites do not have counts associated. Please use update_counts_histogram() and try again."
         hist_length = site.site_counts_histogram.shape[0]
         hist_lengths.append(hist_length)
     max_len = max(hist_lengths)
