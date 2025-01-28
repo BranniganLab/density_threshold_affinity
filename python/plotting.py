@@ -55,6 +55,7 @@ def outline_site(ax, site, grid_dims):
 
     """
     assert isinstance(site, (Site, SymmetricSite)), "site must be a Site or SymmetricSite."
+    assert site.bin_coords is not None, "Site must be fully defined first. Please add bin_coords."
     edges = isolate_unique_site_edges(site.bin_coords, grid_dims)
     for edge_tuple in edges:
         r, theta = edge_tuple
