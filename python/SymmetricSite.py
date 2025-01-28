@@ -7,14 +7,14 @@ Created on Thu Nov 14 16:53:18 2024.
 """
 from Site import Site
 import numpy as np
-from utils import calculate_hist_mode, calculate_hist_mean, calculate_dG
+from utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, aggregate_site_counts_histograms, check_bulk_counts_histogram
 
 
-class Symmetric_Site:
+class SymmetricSite:
     """
     An aggregation of multiple binding sites on/in a protein/inclusion. User \
     defines the base_site Site object first (including setting the bin_coords!)\
-    and then provides it to the Symmetric_Site constructor.
+    and then provides it to the SymmetricSite constructor.
 
     Attributes
     ----------
@@ -23,10 +23,12 @@ class Symmetric_Site:
 
     Calculated Properties
     ---------------------
+    name : str
+        The name of the Site. Will be inherited from base_site.
     symmetry : int
         The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
-    site_list : list
-        The list of constituent Site objects that make up this Symmetric_Site.
+    get_site_list : list
+        The list of constituent Site objects that make up this SymmetricSite.
     site_counts_histogram : numpy ndarray
         One-dimensional ndarray where the histogrammed ligand bead counts are \
         stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having \
@@ -45,12 +47,12 @@ class Symmetric_Site:
         The binding affinity of the lipid for the Site, in kcal/mol.
     dG_std : float
         The standard deviation of the mean binding affinity for the Sites that\
-        comprise this Symmetric_Site.
+        comprise this SymmetricSite.
     """
 
     def __init__(self, symmetry, base_site, Ntheta):
         """
-        Create a Symmetric_Site by creating clones of the base_site and \
+        Create a SymmetricSite by creating clones of the base_site and \
         rotating them symmetrically around the origin.
 
         Parameters
@@ -65,15 +67,17 @@ class Symmetric_Site:
         assert Ntheta % symmetry == 0, "This symmetry does not evenly divide \
             across the number of theta bins."
         assert isinstance(base_site, Site), "base_site must be a Site."
-        assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a Symmetric_Site."
+        assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a SymmetricSite."
+        self.name = base_site.name
         self._symmetry = symmetry
+        self._Ntheta = Ntheta
         self._site_list = self._make_symmetric_sites(base_site, Ntheta)
-        assert len(self.site_list) == symmetry, "Number of Sites does not match symmetry."
+        assert len(self.get_site_list) == symmetry, "Number of Sites does not match symmetry."
         self.temperature = base_site.temperature
 
     def __iter__(self):
         """Iterate through the site_list."""
-        for site in self.site_list:
+        for site in self.get_site_list:
             yield site
 
     @property
@@ -84,20 +88,20 @@ class Symmetric_Site:
         Returns
         -------
         int
-            The N-fold symmetry of the Symmetric_Site.
+            The N-fold symmetry of the SymmetricSite.
 
         """
         return self._symmetry
 
     @property
-    def site_list(self):
+    def get_site_list(self):
         """
         Tell me the site_list, but don't let me change the site_list.
 
         Returns
         -------
         list
-            List of constituent Site objects that comprise this Symmetric_Site.
+            List of constituent Site objects that comprise this SymmetricSite.
 
         """
         return self._site_list
@@ -105,7 +109,7 @@ class Symmetric_Site:
     @property
     def site_counts_histogram(self):
         """
-        Tell me the current counts, in histogram form, for the Symmetric_Site.
+        Tell me the current counts, in histogram form, for the SymmetricSite.
 
         Returns
         -------
@@ -117,12 +121,12 @@ class Symmetric_Site:
             having 4 beads in the Site.
 
         """
-        return _aggregate_site_counts_histograms(self.site_list)
+        return aggregate_site_counts_histograms(self.get_site_list)
 
     @property
     def bulk_counts_histogram(self):
         """
-        Tell me the current counts, in histogram form, for the Symmetric_Site. \
+        Tell me the current counts, in histogram form, for the SymmetricSite. \
         In practice, this is just the bulk_counts_histogram for the base_site.
 
         Returns
@@ -135,7 +139,7 @@ class Symmetric_Site:
             frame having 4 beads in the patch.
 
         """
-        return _check_bulk_counts_histogram(self.site_list)
+        return check_bulk_counts_histogram(self.get_site_list)
 
     @property
     def n_peak(self):
@@ -154,7 +158,7 @@ class Symmetric_Site:
     @property
     def dG(self):
         """
-        Calculate the binding affinity of the lipid for this Symmetric_Site, \
+        Calculate the binding affinity of the lipid for this SymmetricSite, \
         including the bulk correction factor dG_ref.
 
         Returns
@@ -172,7 +176,7 @@ class Symmetric_Site:
     def dG_std(self):
         """
         Calculate the standard deviation of the delta G values across the \
-        constituent Sites that comprise this Symmetric_Site.
+        constituent Sites that comprise this SymmetricSite.
 
         Returns
         -------
@@ -181,9 +185,9 @@ class Symmetric_Site:
 
         """
         dGs = []
-        for site in self.site_list:
+        for site in self.get_site_list:
             dGs.append(site.dG)
-        return np.std(dGs)
+        return np.std(np.array(dGs))
 
     def update_counts_histogram(self, bulk, counts_data):
         """
@@ -203,7 +207,7 @@ class Symmetric_Site:
         None.
 
         """
-        for site in self.site_list:
+        for site in self.get_site_list:
             site.update_counts_histogram(bulk, counts_data)
 
     def predict_accessible_area(self, bulk_area, mode=True):
@@ -252,13 +256,14 @@ class Symmetric_Site:
         Returns
         -------
         site_list : list of Sites
-            The list of all Sites that comprise this Symmetric_Site.
+            The list of all Sites that comprise this SymmetricSite.
 
         """
-        base_site.name = base_site.name + '_1'
+        name = base_site.name
+        base_site.name = name + '_1'
         site_list = [base_site]
         for site_number in range(1, self.symmetry):
-            site_name = base_site.name + '_' + str(site_number + 1)
+            site_name = name + '_' + str(site_number + 1)
             new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
             new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, Ntheta, site_number)
             site_list.append(new_site)
@@ -296,56 +301,3 @@ class Symmetric_Site:
                 rotated_theta_bin -= Ntheta
             rotated_bin_coords.append((r_bin, rotated_theta_bin))
         return rotated_bin_coords
-
-
-def _aggregate_site_counts_histograms(site_list):
-    """
-    Cycle through all the sites and add their counts histograms together.
-
-    Parameters
-    ----------
-    site_list : list
-        List of Sites.
-
-    Returns
-    -------
-    counts : ndarray
-        1D numpy array of histogrammed bead counts.
-
-    """
-    hist_lengths = []
-    for site in site_list:
-        hist_length = site.site_counts_histogram.shape[0]
-        hist_lengths.append(hist_length)
-    max_len = max(hist_lengths)
-    counts = np.zeros(max_len)
-    for site in site_list:
-        counts_to_add = site.site_counts_histogram.copy()
-        if counts_to_add.shape[0] < max_len:
-            padding = max_len - counts_to_add.shape[0]
-            counts_to_add = np.pad(counts_to_add, (0, padding), mode='constant', constant_values=0)
-        counts += counts_to_add
-    return counts
-
-
-def _check_bulk_counts_histogram(site_list):
-    """
-    Cycle through each Site and make sure the bulk_counts_histograms all match.\
-    Return one of them.
-
-    Parameters
-    ----------
-    site_list : list
-        List of Sites.
-
-    Returns
-    -------
-    bulk : ndarray
-        1D numpy array of histogrammed bead counts from the bulk distribution.
-
-    """
-    first_site = site_list[0]
-    bulk = first_site.bulk_counts_histogram.copy()
-    for site in site_list[1:]:
-        assert bulk.all() == site.bulk_counts_histogram.all(), "One or more sites have different bulk histograms. This shouldn't be possible."
-    return bulk

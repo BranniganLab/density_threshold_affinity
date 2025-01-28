@@ -9,11 +9,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.gridspec as gridspec
-import matplotlib.transforms as mtransforms
 from matplotlib.colors import ListedColormap, Normalize
-from Site import Site
-from Symmetric_Site import Symmetric_Site
 from utils import calculate_hist_mode
+from Site import Site
+from SymmetricSite import SymmetricSite
 
 
 def make_custom_colormap():
@@ -58,12 +57,12 @@ def outline_site_new(ax, site, grid_dims):
     if isinstance(site, Site):
         for each_bin in site.bin_coords:
             ax = outline_bin(ax, each_bin, grid_dims)
-    elif isinstance(site, Symmetric_Site):
-        for each_site in site.site_list:
+    elif isinstance(site, SymmetricSite):
+        for each_site in site.get_site_list:
             for each_bin in each_site.bin_coords:
                 ax = outline_bin(ax, each_bin, grid_dims)
     else:
-        Exception("site must be a Site or Symmetric_Site.")
+        Exception("site must be a Site or SymmetricSite.")
     return ax
 
 
@@ -111,9 +110,9 @@ def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight, he
         A custom colormap.
     v_vals : tuple
         The (vmin, vmid, and vmax)
-    figwidth : int, optional
+    figwidth : int
         Figure width.
-    figheight : int, optional
+    figheight : int
         Figure height.
     helices : list
         The outer and inner helix coordinates, in that order.
@@ -136,11 +135,6 @@ def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight, he
     gs = gridspec.GridSpec(numlipids, 2, figure=fig, wspace=0.15, hspace=0.15)
     for gridbox in range(numlipids * 2):
         ax = plt.subplot(gs[gridbox], projection='polar')
-        if gridbox % (numlipids * 2) == 0:
-            # put the lipid name to the left of the axes object
-            trans = mtransforms.ScaledTranslation(-40 / 72, -1.5, fig.dpi_scale_trans)
-            print(gridbox)
-            ax.text(0.0, 1.0, lipids[gridbox // (numlipids * 2)], transform=ax.transAxes + trans, fontsize='medium', va='bottom', fontfamily='serif')
         if gridbox == 0:
             ax.set_title("Outer")
         elif gridbox == 1:
@@ -149,6 +143,9 @@ def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight, he
             ax = plot_helices(helices[0], False, ax, 50)
         else:
             ax = plot_helices(helices[1], False, ax, 50)
+        if gridbox % 2 == 0:
+            # put the lipid name to the left of the axes object
+            ax.text(-0.5, 0.5, lipids[gridbox // 2], transform=ax.transAxes, fontsize='medium', va='center', fontfamily='serif')
     return fig, fig.axes
 
 
@@ -201,7 +198,7 @@ def bin_prep(bin_info):
     return [r_vals, theta_vals]
 
 
-def plot_heatmap(ax, data, grid, cmap, v_vals):
+def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
     """
     Plot a heatmap on a pre-existing axes object.
 
@@ -211,8 +208,8 @@ def plot_heatmap(ax, data, grid, cmap, v_vals):
         The pre-existing axes object you wish to plot a heatmap on.
     data : ndarray
         The heatmap heat values (probably density enrichment).
-    grid : 2-tuple of ndarrays
-        Contains the radius and theta values for plotting the polar projection.
+    grid_dims : namedtuple
+        Contains Nr, Ntheta, dr, and dtheta information.
     cmap : colorbar object
         Custom colorbar.
     v_vals : 3-tuple
@@ -224,6 +221,7 @@ def plot_heatmap(ax, data, grid, cmap, v_vals):
         The axes object, which now contains your heatmap.
 
     """
+    grid = bin_prep(grid_dims)
     vmin, vmid, vmax = v_vals
     norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
     ax.grid(False)
