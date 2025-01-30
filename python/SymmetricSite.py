@@ -27,6 +27,11 @@ class SymmetricSite:
         The name of the Site. Will be inherited from base_site.
     symmetry : int
         The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
+    bin_coords : list of tuples
+        The bins that belong to this site in (r, theta) format. e.g. \
+        [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
+        13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
+        are zero-indexed by convention.
     get_site_list : list
         The list of constituent Site objects that make up this SymmetricSite.
     site_counts_histogram : numpy ndarray
@@ -92,6 +97,28 @@ class SymmetricSite:
 
         """
         return self._symmetry
+
+    @property
+    def bin_coords(self):
+        """
+        Generate one list of bin coordinate tuples corresponding to all the \
+        bins inside this SymmetricSite. Necessary for outline_site.
+
+        Returns
+        -------
+        bin_coords_list : list of tuples
+            The bins that belong to this SymmetricSite in (r, theta) format. \
+            e.g. [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, \
+            12th, and 13th theta bins (starting at theta=0) in the 3rd radial \
+            bin from the origin. Bin coordinates are zero-indexed by convention.
+
+        """
+        bin_coords_list = []
+        for site in self.get_site_list:
+            site_coords = site.bin_coords
+            for each_bin in site_coords:
+                bin_coords_list.append(each_bin)
+        return bin_coords_list
 
     @property
     def get_site_list(self):

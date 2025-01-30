@@ -34,9 +34,9 @@ def make_custom_colormap():
     return my_cmap
 
 
-def outline_site_new(ax, site, grid_dims):
+def outline_site(ax, site, grid_dims):
     """
-    Draw an outline around each bin in this Site.
+    Draw an outline around a Site or around each site in a SymmetricSite.
 
     Parameters
     ----------
@@ -54,26 +54,83 @@ def outline_site_new(ax, site, grid_dims):
         The Axes object you want to draw this on.
 
     """
-    if isinstance(site, Site):
-        for each_bin in site.bin_coords:
-            ax = outline_bin(ax, each_bin, grid_dims)
-    elif isinstance(site, SymmetricSite):
-        for each_site in site.get_site_list:
-            for each_bin in each_site.bin_coords:
-                ax = outline_bin(ax, each_bin, grid_dims)
-    else:
-        Exception("site must be a Site or SymmetricSite.")
+    assert isinstance(site, (Site, SymmetricSite)), "site must be a Site or SymmetricSite."
+    assert site.bin_coords is not None, "Site must be fully defined first. Please add bin_coords."
+    edges = isolate_unique_site_edges(site.bin_coords, grid_dims)
+    for edge_tuple in edges:
+        r, theta = edge_tuple
+        ax.plot(theta, r, color='black', linewidth=1, marker=None)
     return ax
 
 
-def outline_bin(ax, bin_coords, grid_dims):
+def isolate_unique_site_edges(bin_coords_list, grid_dims):
     """
-    Draw an outline around this bin.
+    List all of the edges that need to be drawn in order to enclose the site.\
+    In this lattice space, if edges are repeated it means they are internal \
+    edges and should not be drawn at all.
 
     Parameters
     ----------
-    ax : matplotlib.pyplot Axes object
-        The Axes object you want to draw this on.
+    bin_coords_list : list or tuples
+        The bins that belong to this site in (r, theta) format. e.g. \
+        [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
+        13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
+        are zero-indexed by convention.
+        The list of bin.
+    grid_dims : namedtuple
+        Contains dr, number of r bins, dtheta, number of theta bins, and number\
+        of frames contained in file.
+
+    Returns
+    -------
+    line_list : list of tuples
+        The list of exterior bin edges needed in order to draw the site outline.\
+        Each bin edge is a tuple, with each tuple value being an ndarray.
+
+    """
+    line_list = []
+    for coord_pair in bin_coords_list:
+        edges = compile_bin_edges(coord_pair, grid_dims)
+        for edge in edges:
+            assert isinstance(edge, tuple), "edge must be a tuple"
+            index = _find_edge_in_list(edge, line_list)
+            if index != -1:
+                line_list.pop(index)
+            else:
+                line_list.append(edge)
+    return line_list
+
+
+def _find_edge_in_list(edge, line_list):
+    """
+    Iterate through list and compare elements. Need to do this manually rather\
+    than with 'in' because list contents are numpy ndarrays.
+
+    Parameters
+    ----------
+    edge : tuple of ndarrays
+        The line you are looking for in line_list.
+    line_list : list of tuples of ndarrays
+        The list of all lines to be potentially drawn.
+
+    Returns
+    -------
+    int
+        The index in line_list at which edge is found.
+
+    """
+    for index in range(len(line_list)):
+        if np.allclose(edge, line_list[index]):
+            return index
+    return -1
+
+
+def compile_bin_edges(bin_coords, grid_dims):
+    """
+    Determine the 4 lines that outline this bin.
+
+    Parameters
+    ----------
     bin_coords : tuple
         The tuple of bin coordinates stored in (r_bin, theta_bin) format.
     grid_dims : namedtuple
@@ -82,19 +139,23 @@ def outline_bin(ax, bin_coords, grid_dims):
 
     Returns
     -------
-    ax : matplotlib.pyplot Axes object
-        The Axes object you want to draw this on.
+    tuple of tuples
+        The four lines corresponding to the bin edges. Each tuple contains two\
+        ndarrays of equal lengths.
 
     """
     assert isinstance(bin_coords, tuple), "bin_coords must be a tuple of bin coordinates."
-    dr, _, dtheta, _, _ = grid_dims
-    start_theta = bin_coords[1] * dtheta
-    end_theta = start_theta + dtheta
-    inner_r = bin_coords[0] * dr
-    outer_r = inner_r + dr
+    start_theta = bin_coords[1] * grid_dims.dtheta
+    end_theta = start_theta + grid_dims.dtheta
+    inner_r = bin_coords[0] * grid_dims.dr
+    outer_r = inner_r + grid_dims.dr
     theta_range = np.linspace(start_theta, end_theta, 100)
-    ax.fill_between(theta_range, inner_r, outer_r, facecolor=(0, 0, 0, 0), edgecolor='k')
-    return ax
+    r_range = np.linspace(inner_r, outer_r, 100)
+    line1 = (np.linspace(inner_r, inner_r, 100), theta_range)
+    line2 = (np.linspace(outer_r, outer_r, 100), theta_range)
+    line3 = (r_range, np.linspace(start_theta, start_theta, 100))
+    line4 = (r_range, np.linspace(end_theta, end_theta, 100))
+    return (line1, line2, line3, line4)
 
 
 def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight, helices):
