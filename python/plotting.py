@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 from matplotlib.colors import ListedColormap, Normalize
+from scipy import constants
 from utils import calculate_hist_mode
 from Site import Site
 from SymmetricSite import SymmetricSite
@@ -328,6 +329,59 @@ def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False):
     if bulk_mode != "NULL":
         ax.vlines([bulk_mode], 0, np.max(data), color='red', linestyles='dashed', label=f"bulk mode={bulk_mode}")
     ax.legend()
+    return ax
+
+
+def plot_titration_curve(ax, deltaG, deltaG_std, temperature, plot_error=True, error_type='std', n_replicas=None):
+    """
+    Plot a titration curve on an existing figure.
+
+    Parameters
+    ----------
+    ax : matplotlib Axes object
+        The axis you want this plot to appear on.
+    deltaG : float
+        The deltaG_bind, in kcal/mol.
+    deltaG_std : float
+        The standard deviation of the mean for your deltaG.
+    temperature : float
+        The temperature of your system.
+    plot_error : boolean, optional
+        If True, also plot the error as a shaded region around the titration \
+        curve. If False, do not plot the error; error_type and n_replicas are \
+        ignored with this option. The default is True.
+    error_type : str, optional
+        Use 'std' for standard deviation. This is the default.
+        Use 'ste' for standard error. User must specify n_replicas with this \
+        option.
+        Use 'CI' for a 95% confidence interval. User must specify n_replicas \
+        with this option.
+    n_replicas : int, optional
+        The number of samples/replicas in your deltaG calculation. Used to \
+        calculate the standard error and/or confidence interval. The default is\
+        None.
+
+    Returns
+    -------
+    ax : matplotlib Axes object
+        The axis, now with your plot drawn on it.
+
+    """
+    RT = temperature * constants.R / 4184.  # 4184 converts J to kcal
+    mol_pcts = np.linspace(0, 1, 10000)
+    P_occ = mol_pcts / (np.exp(deltaG / RT) + mol_pcts)
+    ax.plot(mol_pcts, P_occ)
+    if plot_error:
+        assert error_type in ['std', 'ste', 'CI'], "error_type must be std, ste, or CI."
+        error = deltaG_std
+        if error_type in ['ste', 'CI']:
+            assert n_replicas is not None, "Need n_replicas to calculate standard error or confidence interval"
+            error = error / np.sqrt(n_replicas)
+            if error_type == 'CI':
+                error = error * 1.96
+        lwr_bound = mol_pcts / (np.exp((deltaG - error) / RT) + mol_pcts)
+        upr_bound = mol_pcts / (np.exp((deltaG + error) / RT) + mol_pcts)
+        ax.fill_between(mol_pcts, lwr_bound, upr_bound, alpha=0.4)
     return ax
 
 
