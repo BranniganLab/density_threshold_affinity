@@ -154,6 +154,10 @@ def compile_bin_edges(bin_coords, grid_dims):
     r_range = np.linspace(inner_r, outer_r, 100)
     line1 = (np.linspace(inner_r, inner_r, 100), theta_range)
     line2 = (np.linspace(outer_r, outer_r, 100), theta_range)
+    if np.allclose(start_theta, 2 * np.pi):
+        start_theta = 0
+    if np.allclose(end_theta, 2 * np.pi):
+        end_theta = 0
     line3 = (r_range, np.linspace(start_theta, start_theta, 100))
     line4 = (r_range, np.linspace(end_theta, end_theta, 100))
     return (line1, line2, line3, line4)
