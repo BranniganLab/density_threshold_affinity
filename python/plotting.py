@@ -410,7 +410,7 @@ class MidpointNormalize(Normalize):
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
 
-def plot_helices(helices, colorbychain, ax, markersize=3, sub=["tab:blue", "tab:cyan", "tab:green", "tab:purple", "tab:brown", "tab:olive"]):
+def plot_helices(helices, colorbychain, ax, markersize=3, sub=["tab:blue", "tab:cyan", "tab:green", "tab:purple", "tab:brown", "tab:olive", "tab:orange"]):
     """
     Plot helices on a polar plot.
 
