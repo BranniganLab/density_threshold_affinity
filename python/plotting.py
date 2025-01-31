@@ -296,6 +296,7 @@ def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
     ax.pcolormesh(theta, radius, data, cmap=cmap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
+    ax.spines['polar'].set_visible(False)
     return ax
 
 
