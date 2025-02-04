@@ -296,6 +296,7 @@ def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
     ax.pcolormesh(theta, radius, data, cmap=cmap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
+    ax.spines['polar'].set_visible(False)
     return ax
 
 
@@ -409,7 +410,7 @@ class MidpointNormalize(Normalize):
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
 
-def plot_helices(helices, colorbychain, ax, markersize=3, sub=["tab:blue", "tab:cyan", "tab:green", "tab:purple", "tab:brown", "tab:olive"]):
+def plot_helices(helices, colorbychain, ax, markersize=3, sub=["tab:blue", "tab:cyan", "tab:green", "tab:purple", "tab:brown", "tab:olive", "tab:orange"]):
     """
     Plot helices on a polar plot.
 
