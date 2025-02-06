@@ -337,7 +337,7 @@ def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False):
     return ax
 
 
-def plot_titration_curve(ax, deltaG, deltaG_std, temperature, plot_error=True, error_type='std', n_replicas=None):
+def plot_titration_curve(ax, deltaG, deltaG_std, temperature, label, plot_error=True, error_type='std', n_replicas=None):
     """
     Plot a titration curve on an existing figure.
 
@@ -351,6 +351,8 @@ def plot_titration_curve(ax, deltaG, deltaG_std, temperature, plot_error=True, e
         The standard deviation of the mean for your deltaG.
     temperature : float
         The temperature of your system.
+    label : str
+        The label to add to the legend.
     plot_error : boolean, optional
         If True, also plot the error as a shaded region around the titration \
         curve. If False, do not plot the error; error_type and n_replicas are \
@@ -386,7 +388,7 @@ def plot_titration_curve(ax, deltaG, deltaG_std, temperature, plot_error=True, e
                 error = error * 1.96
         lwr_bound = mol_pcts / (np.exp((deltaG - error) / RT) + mol_pcts)
         upr_bound = mol_pcts / (np.exp((deltaG + error) / RT) + mol_pcts)
-        ax.fill_between(mol_pcts, lwr_bound, upr_bound, alpha=0.4)
+        ax.fill_between(mol_pcts, lwr_bound, upr_bound, alpha=0.4, label=label)
     return ax
 
 
