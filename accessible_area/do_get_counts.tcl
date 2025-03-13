@@ -38,7 +38,7 @@ set fieldid "user2"
 if {$ASSIGN_LEAFLETS == 1} {
 	foreach atsel $atsels {
 		puts "assigning leaflets for $atsel with leaflet sorter $leaflet_sorter_option"
-		run_leaflet_sorter $species $leaflet_sorter_option $stride
+		run_leaflet_sorter $atsel $leaflet_sorter_option $stride
 	}
 }
 
@@ -67,7 +67,7 @@ if {$GET_COUNTS == 1} {
 				set ymin $YMIN
 				while {$ymin < $YMAX} {
 					puts "Running at $xmin $ymin leaflet $leaflet_id"
-					set data [get_count_with_area $area $xmin $ymin "(${species}) and $fieldid $leaflet_id" top 0 -1 $stride]
+					set data [get_count_with_area $area $xmin $ymin "(${atsel}) and $fieldid $leaflet_id" top 0 -1 $stride]
 					puts $outfile $data
 					set ymin [expr $ymin + $step]
 				}
