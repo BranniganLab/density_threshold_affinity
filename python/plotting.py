@@ -243,7 +243,7 @@ def make_colorbar(fig, v_vals, cmap):
     sm = mpl.cm.ScalarMappable(cmap=cmap)
     cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
     cbar.set_ticks(np.linspace(0, 1, 3))
-    cbar.ax.set_xticklabels([round(vmin,2), vmid, vmax])
+    cbar.ax.set_xticklabels([round(vmin, 2), vmid, vmax])
     return fig
 
 
@@ -295,12 +295,10 @@ def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
     vmin, vmid, vmax = v_vals
     norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
     ax.grid(False)
-    #plt.axis('off')
     radius, theta = grid
     ax.pcolormesh(theta, radius, data, cmap=cmap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
-    #ax.spines['polar'].set_visible(False)
     return ax
 
 
