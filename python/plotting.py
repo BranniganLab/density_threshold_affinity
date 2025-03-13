@@ -402,7 +402,7 @@ def plot_titration_curve(ax, deltaG, deltaG_std, temperature, label, plot_error=
     return ax
 
 
-def calc_x_50(deltaG, deltaG_std, temperature):
+def calc_x_50(deltaG, error, temperature):
     """
     Calculate an x_50 and error.
 
@@ -410,8 +410,8 @@ def calc_x_50(deltaG, deltaG_std, temperature):
     ----------
     deltaG : float
         The deltaG_bind, in kcal/mol.
-    deltaG_std : float
-        The standard deviation of the mean for your deltaG.
+    error : float
+        The error (can be standard deviation, standard error, etc) for your deltaG.
     temperature : float
         The temperature of your system.
 
@@ -419,14 +419,14 @@ def calc_x_50(deltaG, deltaG_std, temperature):
     -------
     x_50 : float
         The mol % at which you can expect your site to be occupied 50% of the time.
-    err : float
+    err_on_x_50 : float
         The error.
 
     """
     RT = temperature * constants.R / 4184.  # 4184 converts J to kcal
     x_50 = np.exp(deltaG / RT)
-    err = x_50 - np.exp((deltaG - deltaG_std) / RT)
-    return x_50, err
+    err_on_x_50 = x_50 - np.exp((deltaG - error) / RT)
+    return x_50, err_on_x_50
 
 
 # This class comes from Liam Sharp and could potentially be rewritten to be
