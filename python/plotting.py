@@ -371,10 +371,13 @@ def plot_titration_curve(ax, deltaG, deltaG_std, temperature, label, plot_error=
         The number of samples/replicas in your deltaG calculation. Used to \
         calculate the standard error and/or confidence interval. The default is\
         None.
-    color : str
-        A matplotlib-recognizeable color string. Applied to curve.
-    linestyle : str
-        A matplotlib-recognizable linestyle string. Applied to curve.
+    color : str, optional
+        A matplotlib-recognizeable color string. Applied to curve. Default is \
+        None, which results in matplotlib choosing your color from its default\
+        palette.
+    linestyle : str, optional
+        A matplotlib-recognizable linestyle string. Applied to curve. Default is\
+        'solid'.
 
     Returns
     -------
