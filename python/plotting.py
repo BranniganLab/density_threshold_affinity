@@ -48,10 +48,10 @@ def outline_site(ax, site, grid_dims, linewidth=1, color='black'):
     grid_dims : namedtuple
         Contains dr, number of r bins, dtheta, number of theta bins, and number\
         of frames contained in file.
-    linewidth : float
-        The width of the outline.
-    color : str
-        The color you want to outline the site in. Default is black.
+    linewidth : float, optional
+        The width of the outline. Default is 1.
+    color : str, optional
+        The color you want to outline the site in. Default is 'black'.
 
     Returns
     -------
