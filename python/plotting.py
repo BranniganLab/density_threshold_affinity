@@ -35,7 +35,7 @@ def make_custom_colormap():
     return my_cmap
 
 
-def outline_site(ax, site, grid_dims):
+def outline_site(ax, site, grid_dims, linewidth=1, color='black'):
     """
     Draw an outline around a Site or around each site in a SymmetricSite.
 
@@ -48,6 +48,10 @@ def outline_site(ax, site, grid_dims):
     grid_dims : namedtuple
         Contains dr, number of r bins, dtheta, number of theta bins, and number\
         of frames contained in file.
+    linewidth : float
+        The width of the outline.
+    color : str
+        The color you want to outline the site in. Default is black.
 
     Returns
     -------
@@ -60,7 +64,7 @@ def outline_site(ax, site, grid_dims):
     edges = isolate_unique_site_edges(site.bin_coords, grid_dims)
     for edge_tuple in edges:
         r, theta = edge_tuple
-        ax.plot(theta, r, color='black', linewidth=1, marker=None)
+        ax.plot(theta, r, color=color, linewidth=linewidth, marker=None)
     return ax
 
 
@@ -238,8 +242,8 @@ def make_colorbar(fig, v_vals, cmap):
     cbar_ax = fig.add_axes([0.21, 1, 0.5, 0.02])
     sm = mpl.cm.ScalarMappable(cmap=cmap)
     cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
-    cbar.set_ticks(np.linspace(0, 1, 5))
-    cbar.ax.set_xticklabels([vmin, (vmin + vmid) / 2, vmid, (vmid + vmax) / 2, vmax])
+    cbar.set_ticks(np.linspace(0, 1, 3))
+    cbar.ax.set_xticklabels([round(vmin,2), vmid, vmax])
     return fig
 
 
@@ -291,12 +295,12 @@ def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
     vmin, vmid, vmax = v_vals
     norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
     ax.grid(False)
-    plt.axis('off')
+    #plt.axis('off')
     radius, theta = grid
     ax.pcolormesh(theta, radius, data, cmap=cmap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
-    ax.spines['polar'].set_visible(False)
+    #ax.spines['polar'].set_visible(False)
     return ax
 
 
@@ -337,7 +341,7 @@ def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False):
     return ax
 
 
-def plot_titration_curve(ax, deltaG, deltaG_std, temperature, label, plot_error=True, error_type='std', n_replicas=None):
+def plot_titration_curve(ax, deltaG, deltaG_std, temperature, label, plot_error=True, error_type='std', n_replicas=None, color=None, linestyle='solid'):
     """
     Plot a titration curve on an existing figure.
 
@@ -377,7 +381,10 @@ def plot_titration_curve(ax, deltaG, deltaG_std, temperature, label, plot_error=
     RT = temperature * constants.R / 4184.  # 4184 converts J to kcal
     mol_pcts = np.linspace(0, 1, 10000)
     P_occ = mol_pcts / (np.exp(deltaG / RT) + mol_pcts)
-    ax.plot(mol_pcts, P_occ)
+    if color is not None:
+        ax.plot(mol_pcts, P_occ, label=label, linewidth=3, linestyle=linestyle, color=color)
+    else:
+        ax.plot(mol_pcts, P_occ, label=label, linewidth=3, linestyle=linestyle)
     if plot_error:
         assert error_type in ['std', 'ste', 'CI'], "error_type must be std, ste, or CI."
         error = deltaG_std
@@ -388,8 +395,38 @@ def plot_titration_curve(ax, deltaG, deltaG_std, temperature, label, plot_error=
                 error = error * 1.96
         lwr_bound = mol_pcts / (np.exp((deltaG - error) / RT) + mol_pcts)
         upr_bound = mol_pcts / (np.exp((deltaG + error) / RT) + mol_pcts)
-        ax.fill_between(mol_pcts, lwr_bound, upr_bound, alpha=0.4, label=label)
+        if color is not None:
+            ax.fill_between(mol_pcts, lwr_bound, upr_bound, alpha=0.2, color=color)
+        else:
+            ax.fill_between(mol_pcts, lwr_bound, upr_bound, alpha=0.2)
     return ax
+
+
+def calc_x_50(deltaG, deltaG_std, temperature):
+    """
+    Calculate an x_50 and error.
+
+    Parameters
+    ----------
+    deltaG : float
+        The deltaG_bind, in kcal/mol.
+    deltaG_std : float
+        The standard deviation of the mean for your deltaG.
+    temperature : float
+        The temperature of your system.
+
+    Returns
+    -------
+    x_50 : float
+        The mol % at which you can expect your site to be occupied 50% of the time.
+    err : float
+        The error.
+
+    """
+    RT = temperature * constants.R / 4184.  # 4184 converts J to kcal
+    x_50 = np.exp(deltaG / RT)
+    err = x_50 - np.exp((deltaG - deltaG_std) / RT)
+    return x_50, err
 
 
 # This class comes from Liam Sharp and could potentially be rewritten to be
