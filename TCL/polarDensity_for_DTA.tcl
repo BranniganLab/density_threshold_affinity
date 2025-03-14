@@ -372,7 +372,7 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
 proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr} { 
     global params
     set num_reassignments 0
-    if {[lsearch -integer -exact "0 1 2 3" $params(leaflet_sorting_algorithm)] != -1} {
+    if {[lsearch -integer -exact "0 1 2 3" $params(leaflet_sorting_algorithm)] == -1} {
         puts "Option $params(leaflet_sorting_algorithm) not recognized as a leaflet sorting option. Defaulting to option 1."
     } elseif {$params(leaflet_sorting_algorithm) == 2} {
         if {$params(leaflet_sorter_2_reference_sel) eq "none"} {
@@ -606,7 +606,6 @@ proc polarDensityBin { config_file_script } {
     if {[test_if_evenly_divisible $params(Rmax) $params(dr)] != 1} {
         error "Rmax must be evenly divisible by dr."
     }
-    
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
     set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
     set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
