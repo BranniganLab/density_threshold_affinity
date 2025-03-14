@@ -440,7 +440,7 @@ proc theta_histogram {singleFrame_lower singleFrame_upper } {
 
 
 ;#The inner-most loop of the histogramming algorithm: a loop over all lipids occupying one shell in one frame. Each lipid is assigned an angular bin and totals are updated.  
-proc loop_over_lipids {shell species headname tailname lipidbeads_selstr frm} {
+proc loop_over_lipids {shell species frm} {
     global params
     set indexs [$shell get index]
     set theta_high_out [list]
@@ -477,7 +477,7 @@ proc loop_over_frames {shell species headname tailname lipidbeads_selstr start_f
     for {set frm $params(start_frame)} {$frm < ${end_frame}} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
-        set singleFrame_counts [loop_over_lipids $shell $species $headname $tailname $lipidbeads_selstr $frm]
+        set singleFrame_counts [loop_over_lipids $shell $species $frm]
         set singleFrame_upper [lindex $singleFrame_counts 1] 
         set singleFrame_lower [lindex $singleFrame_counts 0]
         set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper]
