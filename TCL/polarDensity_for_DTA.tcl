@@ -460,7 +460,7 @@ proc loop_over_lipids {shell species headname tailname lipidbeads_selstr frm} {
         } elseif {$leaflet < 0} {
             lappend theta_low_out $theta_bin
         } else {
-            puts "WARNING: lipid $resd did not get assigned a leaflet for frame $frm"
+            puts "WARNING: lipid bead $indx did not get assigned a leaflet for frame $frm"
         }
         $thislipid set user [expr $theta_bin + 1]
         $thislipid delete
