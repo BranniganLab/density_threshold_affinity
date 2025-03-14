@@ -313,15 +313,10 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
     } elseif { $leaflet_sorting_algorithm == 1 } {
         leaflet_sorter_1 $atsel_in $frame_i
     } elseif { $leaflet_sorting_algorithm == 2 } {
-        if {$params(leaflet_sorter_2_reference_sel) eq "none"} {
-            puts "No reference selection provided for leaflet sorter 2."
-            puts "Defaulting to z=0 as the reference height to sort by."
-        }
         leaflet_sorter_2 $atsel_in $params(leaflet_sorter_2_reference_sel) $frame_i
     } elseif { $leaflet_sorting_algorithm == 3 } {
         leaflet_sorter_3 $atsel_in $frame_i
     } else { 
-        puts "Option $leaflet_sorting_algorithm not recognized as a leaflet sorting option. Defaulting to option 1."
         leaflet_sorter_1 $atsel_in $frame_i
     }
 }
@@ -376,6 +371,14 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
 proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr} { 
     global params
     set num_reassignments 0
+    if {[lsearch -integer -exact "0 1 2 3" $params(leaflet_sorting_algorithm)] != -1} {
+        puts "Option $leaflet_sorting_algorithm not recognized as a leaflet sorting option. Defaulting to option 1."
+    } elseif {$params(leaflet_sorting_algorithm) == 2} {
+        if {$params(leaflet_sorter_2_reference_sel) eq "none"} {
+                puts "No reference selection provided for leaflet sorter 2."
+                puts "Defaulting to z=0 as the reference height to sort by."
+        }
+    }
     for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame $params(dt)} {
         frame_leaflet_assignment $species $headname $tailname $lipidbeads_selstr $update_frame [expr $update_frame + $params(dt)] $params(restrict_leaflet_sorter_to_Rmax)
         incr num_reassignments
