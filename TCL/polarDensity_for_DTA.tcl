@@ -449,19 +449,18 @@ proc loop_over_lipids {shell species headname tailname lipidbeads_selstr frm} {
     set theta_low_out [list]
     set resd_old 0
     set leaflet 0
-    foreach indx $indexs resd $resids {
+    foreach indx $indexs {
         #loop over lipids in the shell
-        set a "($species and index $indx)"
-        set b "(resid $resd and $species and $lipidbeads_selstr)" 
+        set a "($species) and index $indx"
         set thislipid [atomselect top $a frame $frm]
         set x [$thislipid get x]
         set y [$thislipid get y]
-        set leaflet [$thislipid get user2] ;
+        set leaflet [$thislipid get user2]
         set theta [get_theta $x $y]
         set ti [expr int($theta/$params(dtheta))] 
         if {$leaflet > 0} {
             lappend theta_high_out $ti
-        } elseif {$leaflet <0} {
+        } elseif {$leaflet < 0} {
             lappend theta_low_out $ti
         } else {
             puts "WARNING: lipid $resd did not get assigned a leaflet for frame $frm"
