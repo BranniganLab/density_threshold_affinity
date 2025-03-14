@@ -254,8 +254,6 @@ proc leaflet_sorter_1 {atsel_in frame_i} {
 ;#originally by Jahmal Ennis, designed for cholesterol 
 proc leaflet_sorter_2 {atsel_in refsel_in frame_i} { 
     if {$refsel_in eq "none"} {
-        puts "No reference selection provided for leaflet sorter 2."
-        puts "Defaulting to z=0 as the reference height to sort by."
         set refsel_com_z 0
     } else {
         set refsel [atomselect top "$refsel_in" frame $frame_i]
@@ -315,6 +313,10 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
     } elseif { $leaflet_sorting_algorithm == 1 } {
         leaflet_sorter_1 $atsel_in $frame_i
     } elseif { $leaflet_sorting_algorithm == 2 } {
+        if {$params(leaflet_sorter_2_reference_sel) eq "none"} {
+            puts "No reference selection provided for leaflet sorter 2."
+            puts "Defaulting to z=0 as the reference height to sort by."
+        }
         leaflet_sorter_2 $atsel_in $params(leaflet_sorter_2_reference_sel) $frame_i
     } elseif { $leaflet_sorting_algorithm == 3 } {
         leaflet_sorter_3 $atsel_in $frame_i
