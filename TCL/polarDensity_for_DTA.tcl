@@ -443,11 +443,8 @@ proc theta_histogram {singleFrame_lower singleFrame_upper } {
 proc loop_over_lipids {shell species headname tailname lipidbeads_selstr frm} {
     global params
     set indexs [$shell get index]
-    set resids [$shell get resid]
-    set nShell [$shell num]
     set theta_high_out [list]
     set theta_low_out [list]
-    set resd_old 0
     set leaflet 0
     foreach indx $indexs {
         #loop over lipids in the shell
