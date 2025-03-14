@@ -448,8 +448,8 @@ proc loop_over_lipids {shell species headname tailname lipidbeads_selstr frm} {
     set leaflet 0
     foreach indx $indexs {
         #loop over lipids in the shell
-        set a "($species) and index $indx"
-        set thislipid [atomselect top $a frame $frm]
+        set atsel "($species) and index $indx"
+        set thislipid [atomselect top $atsel frame $frm]
         set x [$thislipid get x]
         set y [$thislipid get y]
         set leaflet [$thislipid get user2]
