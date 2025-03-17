@@ -446,34 +446,30 @@ proc theta_histogram {singleFrame_lower singleFrame_upper } {
 }
 
 
-;#The inner-most loop of the histogramming algorithm: a loop over all lipids occupying one shell in one frame. Each lipid is assigned an angular bin and totals are updated.  
-proc loop_over_lipids {shell species headname tailname lipidbeads_selstr frm} {
+;#The inner-most loop of the histogramming algorithm: a loop over all lipid atoms (or beads) occupying one shell in one frame. Each atom is assigned an angular bin and totals are updated.  
+proc loop_over_atoms {shell species frm} {
     global params
     set indexs [$shell get index]
-    set resids [$shell get resid]
-    set nShell [$shell num]
     set theta_high_out [list]
     set theta_low_out [list]
-    set resd_old 0
     set leaflet 0
-    foreach indx $indexs resd $resids {
-        #loop over lipids in the shell
-        set a "($species and index $indx)"
-        set b "(resid $resd and $species and $lipidbeads_selstr)" 
-        set thislipid [atomselect top $a frame $frm]
+    foreach indx $indexs {
+        #loop over atoms (or beads if CG) in the shell
+        set atsel "($species and index $indx)"
+        set thislipid [atomselect top $atsel frame $frm]
         set x [$thislipid get x]
         set y [$thislipid get y]
-        set leaflet [$thislipid get user2] ;
+        set leaflet [$thislipid get user2]
         set theta [get_theta $x $y]
-        set ti [expr int($theta/$params(dtheta))] 
+        set theta_bin [expr int($theta/$params(dtheta))]
         if {$leaflet > 0} {
-            lappend theta_high_out $ti
-        } elseif {$leaflet <0} {
-            lappend theta_low_out $ti
+            lappend theta_high_out $theta_bin
+        } elseif {$leaflet < 0} {
+            lappend theta_low_out $theta_bin
         } else {
-            puts "WARNING: lipid $resd did not get assigned a leaflet for frame $frm"
+            puts "WARNING: lipid atom $indx did not get assigned a leaflet for frame $frm"
         }
-        $thislipid set user [expr $ti+1]
+        $thislipid set user [expr $theta_bin + 1]
         $thislipid delete
     }
     
@@ -488,7 +484,7 @@ proc loop_over_frames {shell species headname tailname lipidbeads_selstr start_f
     for {set frm $params(start_frame)} {$frm < ${end_frame}} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
-        set singleFrame_counts [loop_over_lipids $shell $species $headname $tailname $lipidbeads_selstr $frm]
+        set singleFrame_counts [loop_over_atoms $shell $species $frm]
         set singleFrame_upper [lindex $singleFrame_counts 1] 
         set singleFrame_lower [lindex $singleFrame_counts 0]
         set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper]
