@@ -37,9 +37,9 @@ set fieldid "user2"
 
 if {$ASSIGN_LEAFLETS == 1} {
 	if {[lsearch -exact "1 3" $params(leaflet_sorting_algorithm)] == -1} {
-        puts "Option $params(leaflet_sorting_algorithm) not recognized as a leaflet sorting option. Defaulting to option 1."
-        set leaflet_sorter_option 1
-    }
+        	puts "Option $params(leaflet_sorting_algorithm) not recognized as a leaflet sorting option. Defaulting to option 1."
+		set leaflet_sorter_option 1
+	}
 	foreach atsel $atsels {
 		puts "assigning leaflets for $atsel with leaflet sorter $leaflet_sorter_option"
 		run_leaflet_sorter $atsel $leaflet_sorter_option $stride
