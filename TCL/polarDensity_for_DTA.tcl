@@ -254,8 +254,6 @@ proc leaflet_sorter_1 {atsel_in frame_i} {
 ;#originally by Jahmal Ennis, designed for cholesterol 
 proc leaflet_sorter_2 {atsel_in refsel_in frame_i} { 
     if {$refsel_in eq "none"} {
-        puts "No reference selection provided for leaflet sorter 2."
-        puts "Defaulting to z=0 as the reference height to sort by."
         set refsel_com_z 0
     } else {
         set refsel [atomselect top "$refsel_in" frame $frame_i]
@@ -319,7 +317,8 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
     } elseif { $leaflet_sorting_algorithm == 3 } {
         leaflet_sorter_3 $atsel_in $frame_i
     } else { 
-        puts "Option $leaflet_sorting_algorithm not recognized as a leaflet sorting option.  Defaulting to option 1." 
+        #default
+        leaflet_sorter_1 $atsel_in $frame_i
     }
 }
 
@@ -373,6 +372,14 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
 proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr} { 
     global params
     set num_reassignments 0
+    if {[lsearch -exact "0 1 2 3" $params(leaflet_sorting_algorithm)] == -1} {
+        puts "Option $params(leaflet_sorting_algorithm) not recognized as a leaflet sorting option. Defaulting to option 1."
+    } elseif {$params(leaflet_sorting_algorithm) == 2} {
+        if {$params(leaflet_sorter_2_reference_sel) eq "none"} {
+                puts "No reference selection provided for leaflet sorter 2."
+                puts "Defaulting to z=0 as the reference height to sort by."
+        }
+    }
     for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame $params(dt)} {
         frame_leaflet_assignment $species $headname $tailname $lipidbeads_selstr $update_frame [expr $update_frame + $params(dt)] $params(restrict_leaflet_sorter_to_Rmax)
         incr num_reassignments
@@ -599,7 +606,6 @@ proc polarDensityBin { config_file_script } {
     if {[test_if_evenly_divisible $params(Rmax) $params(dr)] != 1} {
         error "Rmax must be evenly divisible by dr."
     }
-    
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
     set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
     set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
