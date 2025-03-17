@@ -447,7 +447,7 @@ proc loop_over_atoms {shell species frm} {
     set theta_low_out [list]
     set leaflet 0
     foreach indx $indexs {
-        #loop over atoms in the shell
+        #loop over atoms (or beads if CG) in the shell
         set atsel "($species and index $indx)"
         set thislipid [atomselect top $atsel frame $frm]
         set x [$thislipid get x]
