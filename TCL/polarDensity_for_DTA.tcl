@@ -447,7 +447,7 @@ proc theta_histogram {singleFrame_lower singleFrame_upper } {
 
 
 ;#The inner-most loop of the histogramming algorithm: a loop over all lipid atoms (or beads) occupying one shell in one frame. Each atom is assigned an angular bin and totals are updated.  
-proc loop_over_atoms {shell species frm} {
+proc loop_over_atoms {shell atseltext frm} {
     global params
     set indexs [$shell get index]
     set theta_high_out [list]
@@ -455,7 +455,7 @@ proc loop_over_atoms {shell species frm} {
     set leaflet 0
     foreach indx $indexs {
         #loop over atoms (or beads if CG) in the shell
-        set atsel "($species and index $indx)"
+        set atsel "($atseltext) and index $indx"
         set thislipid [atomselect top $atsel frame $frm]
         set x [$thislipid get x]
         set y [$thislipid get y]
@@ -476,15 +476,15 @@ proc loop_over_atoms {shell species frm} {
     return [list $theta_low_out $theta_high_out] ;#lower before upper is the convention
 }
 
-;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The lipids occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
-proc loop_over_frames {shell species headname tailname lipidbeads_selstr start_frame end_frame ri rf flower fupper} {
+;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
+proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper} {
     global params
     set theta_bin_high [lrepeat [expr $params(Ntheta)+1] 0]
     set theta_bin_low [lrepeat [expr $params(Ntheta)+1] 0]
     for {set frm $params(start_frame)} {$frm < ${end_frame}} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
-        set singleFrame_counts [loop_over_atoms $shell $species $frm]
+        set singleFrame_counts [loop_over_atoms $shell $atseltext $frm]
         set singleFrame_upper [lindex $singleFrame_counts 1] 
         set singleFrame_lower [lindex $singleFrame_counts 0]
         set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper]
@@ -503,10 +503,10 @@ proc loop_over_frames {shell species headname tailname lipidbeads_selstr start_f
 
 
 ;#The outer loop of the 3 nested histogramming loops. 
-;#Unintuitively, the outermost loop is over radial shells, then the middle loop is over frames, and the inner most loop is over lipids in the shell. 
-;#This odd construction improves efficiency: the radial atomselections can be created using "atomselect within", and then updated for each new frame in the middle loop, without a new selection being created or destroyed. There is no equivalent option for an angular "within" so angular histogramming occurs more traditionally via a loop over lipids.  
+;#Unintuitively, the outermost loop is over radial shells, then the middle loop is over frames, and the inner most loop is over atoms/beads in the shell. 
+;#This odd construction improves efficiency: the radial atomselections can be created using "atomselect within", and then updated for each new frame in the middle loop, without a new selection being created or destroyed. There is no equivalent option for an angular "within" so angular histogramming occurs more traditionally via a loop over atoms/beads.  
 
-proc loop_over_shells {species headname tailname lipidbeads_selstr low_f upp_f low_f_avg upp_f_avg} {
+proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
     global params
     set delta_frame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
     for {set ri $params(Rmin)} { $ri<$params(Rmax)} { set ri [expr $ri + $params(dr)]} {
@@ -515,9 +515,8 @@ proc loop_over_shells {species headname tailname lipidbeads_selstr low_f upp_f l
         set rf [expr $ri + $params(dr)]
         set rf2 [expr $rf*$rf]
         set ri2 [expr $ri*$ri]
-        set shell [atomselect top "(resname $species) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2)) and $lipidbeads_selstr"]
-        #puts [$shell num]		
-        set theta_bin [loop_over_frames $shell "resname $species" $headname $tailname $lipidbeads_selstr $params(start_frame) $params(end_frame)  $ri $rf $low_f $upp_f]
+        set shell [atomselect top "($atseltext) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"]
+        set theta_bin [loop_over_frames $shell $atseltext $params(start_frame) $params(end_frame)  $ri $rf $low_f $upp_f]
         set theta_bin_high [lindex $theta_bin 1]
         set theta_bin_low [lindex $theta_bin 0]
         $shell delete	
@@ -544,7 +543,7 @@ proc set_parameters { config_file_script } {
         start_frame 0  
         backbone_selstr "name BB" 
         protein_selstr "name BB SC1 to SC4"
-        lipids {"POPG"}
+        atsels {"POPG"}
         headnames {"PO4"}
         tailnames {"C4"}
         lipidbeads_selstrs {"all"}
@@ -558,6 +557,7 @@ proc set_parameters { config_file_script } {
         dr 5 
         Ntheta 50
         restrict_leaflet_sorter_to_Rmax 0
+        names "none"
     }
     set nframes [molinfo top get numframes] 
     array set params [list end_frame $nframes]
@@ -606,13 +606,13 @@ proc polarDensityBin { config_file_script } {
     set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
     set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
     source $params(helix_assignment_script)
-    foreach species $params(lipids) lipidbeads_selstr $params(lipidbeads_selstrs) acylchain_selstr $params(acylchain_selstrs) headname $params(headnames) tailname $params(tailnames) {
-        set outfile "$species"
-        set sel [atomselect top "resname $species"]
+    foreach atseltext $params(atomsels) name $params(names) acylchain_selstr $params(acylchain_selstrs) headname $params(headnames) tailname $params(tailnames) {
+        ;# make sure the atomselection exists
+        set sel [atomselect top "$atseltext"]
         set sel_num [$sel num]
-        
+        $sel delete
         if {$sel_num == 0} {
-            error "No lipid of species $species"
+            error "No lipid of matching atomselection text $atseltext"
         }
 
         if {$params(center_and_align) == 1} {
@@ -634,28 +634,27 @@ proc polarDensityBin { config_file_script } {
             puts "Warning: specified end frame $params(end_frame) is greater than number of frames; setting end frame to $nframes" 
             set end_frame $nframes
         }
-        $sel delete
 
-        puts "Acyl Chain:\t$species"
-        set low_f [open "${outfile}.low.dat" w]
-        set upp_f [open "${outfile}.upp.dat" w]
-        set low_f_avg [open "${outfile}.low.avg.dat" w]
-        set upp_f_avg [open "${outfile}.upp.avg.dat" w]
-        set totals [frame_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr $params(end_frame) $params(end_frame)]        
+        puts "Atomselection:\t$atseltext"
+        set low_f [open "${name}.low.dat" w]
+        set upp_f [open "${name}.upp.dat" w]
+        set low_f_avg [open "${name}.low.avg.dat" w]
+        set upp_f_avg [open "${name}.upp.avg.dat" w]
+        set totals [frame_leaflet_assignment $atseltext $headname $tailname $params(end_frame) $params(end_frame)]        
         
         foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
             set leaflet_str [lindex $leaf_total 0]
             set expected_beads [lindex $leaf_total 1]
             set expected_lipids [lindex $leaf_total 2]
             set expected_bead_density [expr 1.0 * $expected_beads/$area]
-                puts "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
-                puts $lu "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
-                puts $avgfile "#Lipid species $species in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "resname $species" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
+                puts "#Lipid atsel $name in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "$atseltext" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
+                puts $lu "#Lipid atsel $name in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "$atseltext" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
+                puts $avgfile "#Lipid atsel $name in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "$atseltext" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
         }
         puts "Processing frames, starting at frame $params(start_frame) and ending at frame $params(end_frame)."
-        trajectory_leaflet_assignment "resname $species" $headname $tailname $lipidbeads_selstr   
+        trajectory_leaflet_assignment $atseltext $headname $tailname   
         ;#the core calculation 
-        loop_over_shells $species $headname $tailname $lipidbeads_selstr $low_f $upp_f $low_f_avg $upp_f_avg  
+        loop_over_shells $atseltext $low_f $upp_f $low_f_avg $upp_f_avg  
         
         close $low_f
         close $upp_f
