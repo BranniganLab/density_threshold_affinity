@@ -153,7 +153,7 @@ def _parse_system_info(dat_file_header):
 
     """
     if len(dat_file_header) == 6:
-        NL, NB, BoxArea, ExpBeadDensity, NBperTail, DrDtheta = dat_file_header
+        NL, NB, BoxArea, ExpBeadDensity, _, DrDtheta = dat_file_header
     elif len(dat_file_header) == 5:
         NL, NB, BoxArea, ExpBeadDensity, DrDtheta = dat_file_header
     NL = _isolate_number_from_header_string(NL)
