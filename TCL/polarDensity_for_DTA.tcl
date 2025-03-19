@@ -294,7 +294,7 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
 }
 
 
-;# Calculates the total number of lipids and beads of the given species in each leaflet 
+;# Calculates the total number of lipids and beads of the given selection in each leaflet 
 ;# Assigns the leaflet to user2 
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
 proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {restrict_to_Rmax 0}} {
@@ -313,7 +313,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
     if {$sel_num < 1} {
         set totals [list "lower 0 0" "upper 0 0"] 
     } else {
-        #assign leaflets from $frame_i to user2 field of each bead for this species
+        #assign leaflets from $frame_i to user2 field of each bead for this selection
         foreach sel_resid $sel_resid_list {
             set selstring "(${atseltext}) and (resid $sel_resid)"
             set leaflet [leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)]
@@ -327,7 +327,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
         }
         #count the number of lipids and the number of beads in each leaflet
         foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
-            set leaf_sel [ atomselect top "(${species} and $leaf)"  frame $frame_i]
+            set leaf_sel [ atomselect top "(${atseltext}) and $leaf"  frame $frame_i]
             set num_beads [$leaf_sel num]
             set num_lipids [llength [lsort -unique [$leaf_sel get resid] ]]
             lappend totals [list $txtstr $num_beads $num_lipids]
@@ -338,7 +338,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
     return $totals
 }
 
-;# Calculates the total number of lipids and beads of the given species in each leaflet 
+;# Calculates the total number of lipids and beads of the given selection in each leaflet 
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
 proc trajectory_leaflet_assignment {atseltext headname tailname} { 
     global params
@@ -559,7 +559,7 @@ proc set_parameters { config_file_script } {
 ### polarDensity Function ###
 
 
-;#The main function that initializes, constructs the densities for each lipid species, and outputs to file. 
+;#The main function that initializes, constructs the densities for each lipid selection, and outputs to file. 
 
 proc polarDensityBin { config_file_script } { 
     ;#read parameters
