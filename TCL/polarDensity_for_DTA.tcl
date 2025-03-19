@@ -528,7 +528,7 @@ proc set_parameters { config_file_script } {
         dr 5 
         Ntheta 50
         restrict_leaflet_sorter_to_Rmax 0
-        filenames {"POPG"}
+        filename_stems {"POPG"}
     }
     set nframes [molinfo top get numframes] 
     array set params [list end_frame $nframes]
@@ -577,7 +577,7 @@ proc polarDensityBin { config_file_script } {
     set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
     set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
     source $params(helix_assignment_script)
-    foreach atseltext $params(atomsels) name $params(filenames) headname $params(headnames) tailname $params(tailnames) {
+    foreach atseltext $params(atomsels) stem $params(filename_stems) headname $params(headnames) tailname $params(tailnames) {
         ;# make sure the atomselection exists
         set sel [atomselect top "$atseltext"]
         set sel_num [$sel num]
@@ -607,10 +607,10 @@ proc polarDensityBin { config_file_script } {
         }
 
         puts "Atomselection:\t$atseltext"
-        set low_f [open "${name}.low.dat" w]
-        set upp_f [open "${name}.upp.dat" w]
-        set low_f_avg [open "${name}.low.avg.dat" w]
-        set upp_f_avg [open "${name}.upp.avg.dat" w]
+        set low_f [open "${stem}.low.dat" w]
+        set upp_f [open "${stem}.upp.dat" w]
+        set low_f_avg [open "${stem}.low.avg.dat" w]
+        set upp_f_avg [open "${stem}.upp.avg.dat" w]
         set totals [frame_leaflet_assignment $atseltext $headname $tailname $params(end_frame) $params(end_frame)]        
         
         foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
@@ -618,9 +618,9 @@ proc polarDensityBin { config_file_script } {
             set expected_beads [lindex $leaf_total 1]
             set expected_lipids [lindex $leaf_total 2]
             set expected_bead_density [expr 1.0 * $expected_beads/$area]
-                puts "#Lipid atsel $name in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
-                puts $lu "#Lipid atsel $name in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
-                puts $avgfile "#Lipid atsel $name in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
+                puts "#Lipid selection $stem in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
+                puts $lu "#Lipid selection $stem in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
+                puts $avgfile "#Lipid selection $stem in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
         }
         puts "Processing frames, starting at frame $params(start_frame) and ending at frame $params(end_frame)."
         trajectory_leaflet_assignment $atseltext $headname $tailname   
