@@ -514,7 +514,7 @@ proc set_parameters { config_file_script } {
         start_frame 0  
         backbone_selstr "name BB" 
         protein_selstr "name BB SC1 to SC4"
-        atsels {"POPG"}
+        atomsels {"POPG"}
         headnames {"PO4"}
         tailnames {"C4"}
         lipidbeads_selstrs {"all"}
@@ -528,7 +528,7 @@ proc set_parameters { config_file_script } {
         dr 5 
         Ntheta 50
         restrict_leaflet_sorter_to_Rmax 0
-        filenames "none"
+        filenames {"POPG"}
     }
     set nframes [molinfo top get numframes] 
     array set params [list end_frame $nframes]
