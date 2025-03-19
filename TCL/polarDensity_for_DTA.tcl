@@ -517,8 +517,6 @@ proc set_parameters { config_file_script } {
         atomsels {"POPG"}
         headnames {"PO4"}
         tailnames {"C4"}
-        lipidbeads_selstrs {"all"}
-        acylchain_selstrs {"all"}        
         chainlist {A B C D E}
         helixlist {1 2 3 4}
         helix_assignment_script "assign_helices_ELIC_general.tcl" 
