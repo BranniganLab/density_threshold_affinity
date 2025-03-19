@@ -297,13 +297,13 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
 ;# Assigns the leaflet to user2 
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
-proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame_i frame_f {restrict_to_Rmax 0}} {
+proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {restrict_to_Rmax 0}} {
     global params
     if {$restrict_to_Rmax == 1} {
         set outer_r2 [expr $params(Rmax)**2]
-        set sel [ atomselect top "(($species)) and $lipidbeads_selstr and same resid as ((x*x + y*y < $outer_r2))"  frame $frame_i]
+        set sel [ atomselect top "($atseltext) and same resid as (x*x + y*y < $outer_r2)"  frame $frame_i]
     } elseif {$restrict_to_Rmax == 0} {
-        set sel [ atomselect top "(($species)) and $lipidbeads_selstr"  frame $frame_i]
+        set sel [ atomselect top "$atseltext"  frame $frame_i]
     } else {
         error "restrict_leaflet_sorter_to_Rmax must be 1 or 0"
     }
@@ -315,7 +315,7 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
     } else {
         #assign leaflets from $frame_i to user2 field of each bead for this species
         foreach sel_resid $sel_resid_list {
-            set selstring "${species} and (resid $sel_resid) and $lipidbeads_selstr"
+            set selstring "(${atseltext}) and (resid $sel_resid)"
             set leaflet [leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)]
         }
         #copy leaflet values from $frame_i to all frames between $frame_i and $frame_f
@@ -340,7 +340,7 @@ proc frame_leaflet_assignment {species headname tailname lipidbeads_selstr frame
 
 ;# Calculates the total number of lipids and beads of the given species in each leaflet 
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
-proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr} { 
+proc trajectory_leaflet_assignment {atseltext headname tailname} { 
     global params
     set num_reassignments 0
     if {[lsearch -exact "0 1 2 3" $params(leaflet_sorting_algorithm)] == -1} {
@@ -352,16 +352,16 @@ proc trajectory_leaflet_assignment {species headname tailname lipidbeads_selstr}
         }
     }
     for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame $params(dt)} {
-        frame_leaflet_assignment $species $headname $tailname $lipidbeads_selstr $update_frame [expr $update_frame + $params(dt)] $params(restrict_leaflet_sorter_to_Rmax)
+        frame_leaflet_assignment $atseltext $headname $tailname $update_frame [expr $update_frame + $params(dt)] $params(restrict_leaflet_sorter_to_Rmax)
         incr num_reassignments
     }
     puts "Checked for leaflet reassignments $num_reassignments times."
 }
     
 ;#Reinitializes the user2 value for selected beads in selected frames 
-proc clean_leaflet_assignments {species lipidbeads_selstr} {
+proc clean_leaflet_assignments {atseltext} {
     global params
-    set sel [ atomselect top "$species and $lipidbeads_selstr"]
+    set sel [ atomselect top "$atseltext"]
     set selnum [$sel num]
 
     for {set update_frame $params(start_frame)} {$update_frame < ${ _frame}} {incr update_frame} {
