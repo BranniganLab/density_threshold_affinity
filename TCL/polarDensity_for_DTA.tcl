@@ -128,35 +128,6 @@ proc output_helix_centers {{a ""} } {
     }
 }
 
-;#determines the average acyl chain length for a given species 
-;#usage unclear
-proc avg_acyl_chain_len {species acylchain_selstr} {
-    set acyl_num 0
-    set sel [atomselect top "$species"]
-    set sel_resname [lsort -unique [$sel get resname]]
-    #set sel_num [llength [lsort -unique [$sel get resname]]]
-    $sel delete
-    foreach res $sel_resname {
-        set sel [atomselect top "${species} and (resname $res) and $acylchain_selstr"]
-        set sel_len [llength [lsort -unique [$sel get name]]]
-        # 6 is the longest chain in Martini
-        # If there is a chain longer -> the lipid is
-        # a homoacid, need to add another value to 
-        # divide by
-        if {$sel_len > 6} {
-            lappend sel_resname "${res}"
-        }
-        $sel delete
-        set acyl_num [expr $acyl_num + $sel_len]
-    }
-    set avg_acyl_chain [ expr (1.0 * $acyl_num / [llength $sel_resname]) ]
-    if {$avg_acyl_chain < 1} {
-        return 1
-    }
-    return $avg_acyl_chain
-    
-}
-
 ;# will perform qwrap or pbc wrap, depending on settings and box angles
 proc center_and_wrap_system {inpt} {
     global params
@@ -606,7 +577,7 @@ proc polarDensityBin { config_file_script } {
     set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
     set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
     source $params(helix_assignment_script)
-    foreach atseltext $params(atomsels) name $params(names) acylchain_selstr $params(acylchain_selstrs) headname $params(headnames) tailname $params(tailnames) {
+    foreach atseltext $params(atomsels) name $params(names) headname $params(headnames) tailname $params(tailnames) {
         ;# make sure the atomselection exists
         set sel [atomselect top "$atseltext"]
         set sel_num [$sel num]
@@ -647,9 +618,9 @@ proc polarDensityBin { config_file_script } {
             set expected_beads [lindex $leaf_total 1]
             set expected_lipids [lindex $leaf_total 2]
             set expected_bead_density [expr 1.0 * $expected_beads/$area]
-                puts "#Lipid atsel $name in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "$atseltext" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
-                puts $lu "#Lipid atsel $name in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "$atseltext" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
-                puts $avgfile "#Lipid atsel $name in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, Average Chain : [avg_acyl_chain_len "$atseltext" $acylchain_selstr] beads, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
+                puts "#Lipid atsel $name in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
+                puts $lu "#Lipid atsel $name in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
+                puts $avgfile "#Lipid atsel $name in $leaflet_str leaflet: ${expected_lipids} molecules, Num beads : ${expected_beads} beads,  Average Area : [format {%0.0f} $area] A^2, Expected Bead Density : [format {%0.5f} [expr $expected_bead_density]]/A^2, dr*dtheta : [format {%0.5f} [expr $params(dr)*[DtoR $params(dtheta)]]] "
         }
         puts "Processing frames, starting at frame $params(start_frame) and ending at frame $params(end_frame)."
         trajectory_leaflet_assignment $atseltext $headname $tailname   
