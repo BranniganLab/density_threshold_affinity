@@ -528,7 +528,7 @@ proc set_parameters { config_file_script } {
         dr 5 
         Ntheta 50
         restrict_leaflet_sorter_to_Rmax 0
-        names "none"
+        filenames "none"
     }
     set nframes [molinfo top get numframes] 
     array set params [list end_frame $nframes]
@@ -577,7 +577,7 @@ proc polarDensityBin { config_file_script } {
     set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
     set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
     source $params(helix_assignment_script)
-    foreach atseltext $params(atomsels) name $params(names) headname $params(headnames) tailname $params(tailnames) {
+    foreach atseltext $params(atomsels) name $params(filenames) headname $params(headnames) tailname $params(tailnames) {
         ;# make sure the atomselection exists
         set sel [atomselect top "$atseltext"]
         set sel_num [$sel num]
