@@ -514,7 +514,7 @@ proc set_parameters { config_file_script } {
         start_frame 0  
         backbone_selstr "name BB" 
         protein_selstr "name BB SC1 to SC4"
-        atomsels {"POPG"}
+        atomsels {"resname POPG"}
         headnames {"PO4"}
         tailnames {"C4"}
         chainlist {A B C D E}
