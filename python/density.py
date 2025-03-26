@@ -152,6 +152,7 @@ def _parse_system_info(dat_file_header):
         Namedtuple containing system information output by polarDensityBin.
 
     """
+    # this is done for backwards-compatibility with a discontinued feature
     if len(dat_file_header) == 6:
         NL, NB, BoxArea, ExpBeadDensity, _, DrDtheta = dat_file_header
     elif len(dat_file_header) == 5:
