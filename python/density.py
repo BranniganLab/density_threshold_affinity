@@ -10,7 +10,7 @@ import numpy as np
 from collections import namedtuple
 
 
-SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'NBperTail', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
+SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
 Dimensions = namedtuple('Dimensions', ['dr', 'Nr', 'dtheta', 'Ntheta', 'Nframes'])
 
 
@@ -152,14 +152,17 @@ def _parse_system_info(dat_file_header):
         Namedtuple containing system information output by polarDensityBin.
 
     """
-    NL, NB, BoxArea, ExpBeadDensity, NBperTail, DrDtheta = dat_file_header
+    # this is done for backwards-compatibility with a discontinued feature
+    if len(dat_file_header) == 6:
+        NL, NB, BoxArea, ExpBeadDensity, _, DrDtheta = dat_file_header
+    elif len(dat_file_header) == 5:
+        NL, NB, BoxArea, ExpBeadDensity, DrDtheta = dat_file_header
     NL = _isolate_number_from_header_string(NL)
     NB = _isolate_number_from_header_string(NB)
     BoxArea = _isolate_number_from_header_string(BoxArea)
     ExpBeadDensity = _isolate_number_from_header_string(ExpBeadDensity)
-    NBperTail = _isolate_number_from_header_string(NBperTail)
     DrDtheta = _isolate_number_from_header_string(DrDtheta)
-    sysInfo = SysInfo(NL, NB, NBperTail, BoxArea, ExpBeadDensity, DrDtheta)
+    sysInfo = SysInfo(NL, NB, BoxArea, ExpBeadDensity, DrDtheta)
     return sysInfo
 
 
