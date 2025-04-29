@@ -184,11 +184,11 @@ proc center_and_wrap_system {inpt} {
 proc leaflet_sorter_0 {atsel_in head tail frame_i} {
     #puts "Sorting into leaflets using leaflet_sorter_0"
     set sel_resid [atomselect top "$atsel_in" frame $frame_i]
-    set sel_head [atomselect top "$atsel_in and name $head" frame $frame_i]
-    set sel_tail [atomselect top "$atsel_in and name $tail" frame $frame_i]
+    set sel_head [atomselect top "$atsel_in and $head" frame $frame_i]
+    set sel_tail [atomselect top "$atsel_in and $tail" frame $frame_i]
     
-    set head_Z [${sel_head} get z] 
-    set tail_Z [${sel_tail} get z] 
+    set head_Z [vecmean [${sel_head} get z]]
+    set tail_Z [vecmean [${sel_tail} get z]]
     
     if {$head_Z < $tail_Z } { 
         $sel_resid set user2 -1
@@ -515,8 +515,8 @@ proc set_parameters { config_file_script } {
         backbone_selstr "name BB" 
         protein_selstr "name BB SC1 to SC4"
         atomsels {"resname POPG"}
-        headnames {"PO4"}
-        tailnames {"C4"}
+        headnames {"name PO4"}
+        tailnames {"name C4A C4B"}
         chainlist {A B C D E}
         helixlist {1 2 3 4}
         helix_assignment_script "assign_helices_ELIC_general.tcl" 
