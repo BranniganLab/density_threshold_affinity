@@ -11,9 +11,10 @@ import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 from matplotlib.colors import ListedColormap, Normalize
 from scipy import constants
-from DTA.utils import calculate_hist_mode
+from DTA.utils import calculate_hist_mode, load_inclusion_helices
 from DTA.Site import Site
 from DTA.SymmetricSite import SymmetricSite
+from DTA.density import parse_tcl_dat_file, calculate_density_enrichment, calculate_density
 
 
 def make_custom_colormap():
@@ -481,3 +482,23 @@ def plot_helices(helices, colorbychain, ax, markersize=3, sub=["tab:blue", "tab:
         ax.scatter(np.deg2rad(pro[1::2]), pro[::2], color=colors, linewidth=None,
                    zorder=1, s=markersize)
     return ax
+
+def make_density_enrichment_heatmap(system_names, my_cmap, max_enrichment, helix_definitions, figdims, leaflets, replicas, root_path):
+    fig_h, fig_w = figdims
+    colorbar_range = (1 / max_enrichment, 1, max_enrichment)
+    helices = load_inclusion_helices(helix_definitions)
+    fig1, axes = create_heatmap_figure_and_axes(system_names, my_cmap, colorbar_range, figwidth=fig_h, figheight=fig_w, helices=helices)
+    index = 0
+    for species in system_names:
+        for leaf in leaflets:
+            rep_list = []
+            for rep in replicas:
+                rep_path = root_path.joinpath(rep, f"{species}.{leaf}.avg.dat")
+                counts, grid_dims, system_info = parse_tcl_dat_file(rep_path, bulk=False)
+                density_enrichment = calculate_density_enrichment(calculate_density(counts, grid_dims), system_info.ExpBeadDensity)
+                rep_list.append(density_enrichment)
+            avg_enrichment = np.mean(np.stack(tuple(rep_list), axis=0), axis=0)
+            axes[index] = plot_heatmap(axes[index], avg_enrichment, grid_dims, my_cmap, colorbar_range)
+            index += 1
+    fig1 = make_colorbar(fig1, colorbar_range, my_cmap)
+    return fig1, axes, grid_dims
