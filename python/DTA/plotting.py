@@ -11,9 +11,9 @@ import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 from matplotlib.colors import ListedColormap, Normalize
 from scipy import constants
-from utils import calculate_hist_mode
-from Site import Site
-from SymmetricSite import SymmetricSite
+from DTA.utils import calculate_hist_mode
+from DTA.Site import Site
+from DTA.SymmetricSite import SymmetricSite
 
 
 def make_custom_colormap():

@@ -5,9 +5,9 @@ Created on Thu Nov 14 16:53:18 2024.
 
 @author: js2746
 """
-from Site import Site
+from DTA.Site import Site
 import numpy as np
-from utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, aggregate_site_counts_histograms, check_bulk_counts_histogram
+from DTA.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, aggregate_site_counts_histograms, check_bulk_counts_histogram
 
 
 class SymmetricSite:
