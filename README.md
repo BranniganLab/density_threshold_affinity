@@ -7,7 +7,7 @@ Detailed protocol is in preparation.
 1. Clone this repository
 2. Install the DTA package with the following commands:
    ```
-   cd Polar_Binning_DeltaG
+   cd density_threshold_affinity
    cd python
    #[Optional:] conda create -n DTA
    #[Optional:] conda activate DTA
