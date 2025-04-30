@@ -2,9 +2,9 @@ from setuptools import setup
 
 setup(
     name='DTA',
-    version='0.2',
-    description='Tools for Doing Density Threshold Affinity Analysis',
-    url='https://github.com/BranniganLab/Polar_Binning_DeltaG',
+    version='1.0',
+    description='Tools for Doing Density-Threshold Affinity analysis',
+    url='https://github.com/BranniganLab/density_threshold_affinity',
     author='Brannigan Lab',
     author_email='grace.brannigan@rutgers.edu',
     packages=['DTA'],
