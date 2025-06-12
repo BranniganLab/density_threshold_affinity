@@ -184,22 +184,30 @@ proc center_and_wrap_system {inpt} {
 proc leaflet_sorter_0 {atsel_in head tail frame_i} {
     #puts "Sorting into leaflets using leaflet_sorter_0"
     set sel_resid [atomselect top "$atsel_in" frame $frame_i]
-    set sel_head [atomselect top "$atsel_in and $head" frame $frame_i]
-    set sel_tail [atomselect top "$atsel_in and $tail" frame $frame_i]
+    set resnames [$sel_resid get resname]
+    set resid [$sel_resid get resid]
+    if {[llength [lsort -unique $resid]] != 1} {
+        error "More than one resid returned from atomselection [$sel_resid text]"
+    }
+
+    ;# necessary in case user has selected only part of a lipid with $atsel_in
+    set sel_head [atomselect top "resname $resnames and resid $resid and $head" frame $frame_i]
+    set sel_tail [atomselect top "resname $resnames and resid $resid and $tail" frame $frame_i]
     
     set head_Z [vecmean [${sel_head} get z]]
     set tail_Z [vecmean [${sel_tail} get z]]
+    $sel_head delete
+    $sel_tail delete
     
     if {$head_Z < $tail_Z } { 
         $sel_resid set user2 -1
+        $sel_resid delete
         return -1 
     } else { 
         $sel_resid set user2 1
+        $sel_resid delete
         return 1 
     }
-    $sel_resid delete
-    $sel_head delete
-    $sel_tail delete
 }
 
 ;#originally by Liam Sharp; procedure that was used in JCP 2021 for nAChR
@@ -207,19 +215,36 @@ proc leaflet_sorter_0 {atsel_in head tail frame_i} {
 proc leaflet_sorter_1 {atsel_in frame_i} {
     #puts "Sorting into leaflets using leaflet_sorter_1"
     set sel_resid [atomselect top "$atsel_in" frame $frame_i]
-    set ind 1
-    if { [string range [lsort -unique [$sel_resid get resname]] end-1 end] == "PA" } {
-        set ind 0
+
+    set resnames [$sel_resid get resname]
+    set resid [$sel_resid get resid]
+    if {[llength [lsort -unique $resid]] != 1} {
+        error "More than one resid returned from atomselection [$sel_resid text]"
     }
-    set sel_Z [${sel_resid} get z] 
-    if {[lindex ${sel_Z} $ind] < [lindex ${sel_Z} end] } { 
+
+    ;# necessary in case user has selected only part of a lipid with $atsel_in
+    set sel [atomselect top "resname $resnames and resid $resid" frame $frame_i]
+    
+    ;# if the lipid has a PA headgroup, its 0th (rather than 1st) bead is PO4
+    if { [string range [lsort -unique [$sel get resname]] end-1 end] == "PA" } {
+        set ind 0
+    } else {
+        set ind 1
+    }
+
+    set sel_Z [$sel get z]
+    $sel delete
+
+    if {[lindex $sel_Z $ind] < [lindex $sel_Z end] } { 
         $sel_resid set user2 -1
+        $sel_resid delete
         return -1 
     } else { 
         $sel_resid set user2 1
+        $sel_resid delete
         return 1 
     }
-    $sel_resid delete
+    
 }
 
 ;#originally by Jahmal Ennis, designed for cholesterol 
