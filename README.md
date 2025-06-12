@@ -1,7 +1,8 @@
 # Density Threshold Affinity
-Descended from: https://github.com/BranniganLab/densitymap
 
-Detailed protocol is in preparation.
+Detailed protocol is published! 
+
+Check it out here: https://doi.org/10.1016/bs.mie.2024.03.008 
 
 # Basic usage:
 1. Clone this repository
@@ -34,12 +35,13 @@ Detailed protocol is in preparation.
 
 8. From the tk console:
 
-   ```> source polarDensity_for_DTA.tcl```
+   ```> source ./TCL/polarDensity_for_DTA.tcl```
 
-   ```> polarDensity <config file path>```  
-9. Open the plot_enrichment.ipynb jupyter notebook using your method of choice (e.g. VSCode or a local host)
+   ```> polarDensityBin <config file path>```  
+
+9. Open the preliminaries.ipynb jupyter notebook using your method of choice (e.g. VSCode or a local host)
 10. Update the paths and lipid names to point to your data and run
-11. Select bins for the binding site (the show_bins notebook may be useful here)
+11. Select bins for the binding site
 12. Determine the accessible area for the site (many optional methods for this, get_accessible_area.ipynb describes one method)
-13. Determine the expected mode of the bead probabilities in the bulk for a patch equal to the accessible area (e.g. using get_Npeak.ipynb)
-14. Calculate the dG_bind using the get_probability_distributions.ipynb notebook
+13. Open the DTA notebook and determine the expected mode of the bead probabilities in the bulk for a patch equal to the accessible area
+14. Calculate the dG_bind using the DTA notebook
