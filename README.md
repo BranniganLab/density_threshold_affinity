@@ -1,7 +1,7 @@
 # Density Threshold Affinity
 Descended from: https://github.com/BranniganLab/densitymap
 
-Detailed protocol is in preparation.
+Detailed protocol can be found [here](https://doi.org/10.1016/bs.mie.2024.03.008).
 
 # Basic usage:
 1. Clone this repository
