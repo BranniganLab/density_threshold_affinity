@@ -37,19 +37,22 @@ def make_custom_colormap():
     return my_cmap
 
 
-def outline_site(ax, site, grid_dims, linewidth=1, color='black'):
+def outline_site(axes, site, grid_dims, index, linewidth=1, color='black'):
     """
     Draw an outline around a Site or around each site in a SymmetricSite.
 
     Parameters
     ----------
-    ax : matplotlib.pyplot Axes object
-        The Axes object you want to draw this on.
+    axes : list of matplotlib.pyplot Axes objects
+        The list of Axes objects containing plots.
     site : Site or Symmetric_Site
         The site you want to outline.
     grid_dims : namedtuple
         Contains dr, number of r bins, dtheta, number of theta bins, and number\
         of frames contained in file.
+    index : int
+        The index of the axes list corresponding to the plot you want to draw \
+        a site outline on.
     linewidth : float, optional
         The width of the outline. Default is 1.
     color : str, optional
@@ -57,17 +60,19 @@ def outline_site(ax, site, grid_dims, linewidth=1, color='black'):
 
     Returns
     -------
-    ax : matplotlib.pyplot Axes object
-        The Axes object you want to draw this on.
+    axes : list of matplotlib.pyplot Axes objects
+        The Axes objects, now with a site outlined.
 
     """
     assert isinstance(site, (Site, SymmetricSite)), "site must be a Site or SymmetricSite."
     assert site.bin_coords is not None, "Site must be fully defined first. Please add bin_coords."
+    assert isinstance(index, int), "index must be an int"
+    assert (index < len(axes)), f"index {index} exceeds length of axes list."
     edges = isolate_unique_site_edges(site.bin_coords, grid_dims)
     for edge_tuple in edges:
         r, theta = edge_tuple
-        ax.plot(theta, r, color=color, linewidth=linewidth, marker=None)
-    return ax
+        axes[index].plot(theta, r, color=color, linewidth=linewidth, marker=None)
+    return axes
 
 
 def isolate_unique_site_edges(bin_coords_list, grid_dims):
