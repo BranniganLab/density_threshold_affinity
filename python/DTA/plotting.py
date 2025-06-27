@@ -15,6 +15,7 @@ from DTA.utils import calculate_hist_mode, load_inclusion_helices
 from DTA.Site import Site
 from DTA.SymmetricSite import SymmetricSite
 from DTA.density import parse_tcl_dat_file, calculate_density_enrichment, calculate_density
+from pathlib import Path
 
 
 def make_custom_colormap():
@@ -483,7 +484,58 @@ def plot_helices(helices, colorbychain, ax, markersize=3, sub=["tab:blue", "tab:
                    zorder=1, s=markersize)
     return ax
 
-def make_density_enrichment_heatmap(system_names, my_cmap, max_enrichment, helix_definitions, figdims, leaflets, replicas, root_path):
+
+def make_density_enrichment_heatmap(system_names, my_cmap, max_enrichment, helix_definitions, figdims, leaflets, root_path, replicas=None):
+    """
+    Make a figure and axes objects. Plot heatmaps of density enrichment for each\
+    system on each axes object. Return the figure, axes, and lattice grid dimensions.
+
+    Parameters
+    ----------
+    system_names : list
+        A list of the different system names. Must correspond to system name \
+        provided to PolarDensityBin.
+    my_cmap : cmap
+        The colormap to use.
+    max_enrichment : float or int
+        How high you want your colorbar to go. The minimum will scale proportionally.
+    helix_definitions : str or Path
+        The directory containing your helix coordinate outputs from PolarDensityBin.
+    figdims : 2-tuple
+        The figure height and width, in inches.
+    leaflets : list
+        A list containing "outer", "inner", or both, depending on what you want\
+        to plot.
+    root_path : str or Path
+        The path to the directory containing your PolarDensityBin outputs (if \
+        replicas is None), or the directory containing your replica directories.
+    replicas : None or list, optional
+        If you have multiple replicas that you would like averaged together, \
+        ensure that the files are contained within separate subdirectories of \
+        root_path. Provide the subdirectory names as a list of strs. The default\
+        is None, which turns off this feature.
+
+    Returns
+    -------
+    fig1 : Figure object
+        That matplotlib Figure object containing your plots.
+    axes : Axes object or list of Axes objects
+        The matplotlib Axes object(s) containing your plot(s).
+    grid_dims : named tuple
+        The lattice dimension information; used by other functions.
+
+    """
+    assert isinstance(system_names, list), "system_names must be a list, even if it only contains one item."
+    assert isinstance(leaflets, list), "leaflets must be a list, even if it only contains one item."
+    assert (replicas is None) or (isinstance(replicas, list)), "replicas must either be None or a list."
+    assert isinstance(helix_definitions, (str, Path)), "helix_definitions must be a str or Path object."
+    if isinstance(helix_definitions, str):
+        helix_definitions = Path(helix_definitions)
+    assert helix_definitions.exists(), "helix_definitions not found."
+    assert isinstance(root_path, (str, Path)), "root_path must be a str or Path object."
+    if isinstance(root_path, str):
+        root_path = Path(root_path)
+    assert root_path.exists(), "root_path not found."
     fig_h, fig_w = figdims
     colorbar_range = (1 / max_enrichment, 1, max_enrichment)
     helices = load_inclusion_helices(helix_definitions)
@@ -491,13 +543,19 @@ def make_density_enrichment_heatmap(system_names, my_cmap, max_enrichment, helix
     index = 0
     for species in system_names:
         for leaf in leaflets:
-            rep_list = []
-            for rep in replicas:
-                rep_path = root_path.joinpath(rep, f"{species}.{leaf}.avg.dat")
-                counts, grid_dims, system_info = parse_tcl_dat_file(rep_path, bulk=False)
+            if replicas:
+                rep_list = []
+                for rep in replicas:
+                    rep_path = root_path.joinpath(rep, f"{species}.{leaf}.avg.dat")
+                    counts, grid_dims, system_info = parse_tcl_dat_file(rep_path, bulk=False)
+                    density_enrichment = calculate_density_enrichment(calculate_density(counts, grid_dims), system_info.ExpBeadDensity)
+                    rep_list.append(density_enrichment)
+                avg_enrichment = np.mean(np.stack(tuple(rep_list), axis=0), axis=0)
+            else:
+                path = root_path.joinpath(f"{species}.{leaf}.avg.dat")
+                counts, grid_dims, system_info = parse_tcl_dat_file(path, bulk=False)
                 density_enrichment = calculate_density_enrichment(calculate_density(counts, grid_dims), system_info.ExpBeadDensity)
-                rep_list.append(density_enrichment)
-            avg_enrichment = np.mean(np.stack(tuple(rep_list), axis=0), axis=0)
+                avg_enrichment = density_enrichment
             axes[index] = plot_heatmap(axes[index], avg_enrichment, grid_dims, my_cmap, colorbar_range)
             index += 1
     fig1 = make_colorbar(fig1, colorbar_range, my_cmap)
