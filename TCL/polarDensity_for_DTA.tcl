@@ -480,9 +480,7 @@ proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper
     for {set frm $params(start_frame)} {$frm < ${end_frame}} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
-        if {$params(save_bins)} {
-            $shell set user3 $r_index
-        }
+        $shell set user3 $r_index
         set singleFrame_counts [loop_over_atoms $shell $atseltext $frm]
         set singleFrame_upper [lindex $singleFrame_counts 1] 
         set singleFrame_lower [lindex $singleFrame_counts 0]
@@ -557,7 +555,6 @@ proc set_parameters { config_file_script } {
         Ntheta 50
         restrict_leaflet_sorter_to_Rmax 0
         filename_stems {"POPG"}
-        save_bins 0
     }
     set nframes [molinfo top get numframes] 
     array set params [list end_frame $nframes]
