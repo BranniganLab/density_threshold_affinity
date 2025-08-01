@@ -314,7 +314,7 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
     } elseif { $leaflet_sorting_algorithm == 3 } {
         leaflet_sorter_3 $atsel_in $frame_i
     } elseif { $leaflet_sorting_algorithm == 4} {
-        set sel [atomselect top "all" frame $frame_i]
+        set sel [atomselect top $atsel_in frame $frame_i]
         $sel set user2 1
         $sel delete
     } else { 
