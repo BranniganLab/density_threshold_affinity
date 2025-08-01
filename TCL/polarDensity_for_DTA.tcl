@@ -639,7 +639,6 @@ proc polarDensityBin { config_file_script } {
         set low_f_avg [open "${stem}.low.avg.dat" w]
         set upp_f_avg [open "${stem}.upp.avg.dat" w]
         set totals [frame_leaflet_assignment $atseltext $headname $tailname $params(end_frame) $params(end_frame)]   
-        puts $totals     
         
         foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
             set leaflet_str [lindex $leaf_total 0]
