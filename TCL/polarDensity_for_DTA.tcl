@@ -465,7 +465,7 @@ proc loop_over_atoms {shell atseltext frm} {
         } else {
             puts "WARNING: lipid atom $indx did not get assigned a leaflet for frame $frm"
         }
-        $thislipid set user [expr $theta_bin + 1]
+        $thislipid set user [expr $theta_bin]
         $thislipid delete
     }
     
@@ -473,13 +473,16 @@ proc loop_over_atoms {shell atseltext frm} {
 }
 
 ;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
-proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper} {
+proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper r_index} {
     global params
     set theta_bin_high [lrepeat [expr $params(Ntheta)+1] 0]
     set theta_bin_low [lrepeat [expr $params(Ntheta)+1] 0]
     for {set frm $params(start_frame)} {$frm < ${end_frame}} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
+        if {$params(save_bins)} {
+            $shell set user3 $r_index
+        }
         set singleFrame_counts [loop_over_atoms $shell $atseltext $frm]
         set singleFrame_upper [lindex $singleFrame_counts 1] 
         set singleFrame_lower [lindex $singleFrame_counts 0]
@@ -505,6 +508,7 @@ proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper
 proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
     global params
     set delta_frame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
+    set radial_bin_index 0
     for {set ri $params(Rmin)} { $ri<$params(Rmax)} { set ri [expr $ri + $params(dr)]} {
         #loop over shells
         puts "Now on shell {$ri [expr ${ri}+$params(dr)]}"
@@ -512,7 +516,7 @@ proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
         set rf2 [expr $rf*$rf]
         set ri2 [expr $ri*$ri]
         set shell [atomselect top "($atseltext) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"]
-        set theta_bin [loop_over_frames $shell $atseltext $params(start_frame) $params(end_frame)  $ri $rf $low_f $upp_f]
+        set theta_bin [loop_over_frames $shell $atseltext $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radial_bin_index]
         set theta_bin_high [lindex $theta_bin 1]
         set theta_bin_low [lindex $theta_bin 0]
         $shell delete	
@@ -520,6 +524,7 @@ proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
         set time_avg_lower [vecscale $theta_bin_low [expr 1.0 / (1.0 * $delta_frame)]]
         output_bins $upp_f_avg $ri $rf "$time_avg_upper" 
         output_bins $low_f_avg $ri $rf "$time_avg_lower" 
+        incr radial_bin_index
     }
 }
 
@@ -552,6 +557,7 @@ proc set_parameters { config_file_script } {
         Ntheta 50
         restrict_leaflet_sorter_to_Rmax 0
         filename_stems {"POPG"}
+        save_bins 0
     }
     set nframes [molinfo top get numframes] 
     array set params [list end_frame $nframes]
