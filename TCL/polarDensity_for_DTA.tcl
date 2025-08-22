@@ -297,11 +297,12 @@ proc leaflet_sorter_3 {atsel_in frame_i} {
 }
 
 ;# Determines if the lipid is in the outer or inner leaflet and sets the user2 value accordingly
-;# Algorithm is determined by user: 
+;# Algorithm is selected by user specifying one of the following options: 
 ;# 0: determines leaflet based on relative height of specified head and tail beads
 ;# 1: originally by Liam Sharp; procedure that was used in JCP 2021 for nAChR; similar to leaflet_sorter_0 but autoselects head and tail beads; more appropriate for situations with many species
 ;# 2: originally by Jahmal Ennis; determines whether the auto-determined headbead is above or below the center of mass of some reference selection; more appropriate for rigid lipids like cholesterol that frequently invert or lie at parallel to the membrane
 ;# 3: originally by Grace Brannigan and called local_midplane2; selects all PO4/GL1/GL2 beads within a circular region around the lipid, measures the COM, assumes that COM to be the midplane, and sorts lipids based on whether their COM is above or below the midplane.
+;# 4: assigns all molecules to the outer leaflet
 proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
     global params
     if {$leaflet_sorting_algorithm == 0} {
@@ -312,6 +313,10 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
         leaflet_sorter_2 $atsel_in $params(leaflet_sorter_2_reference_sel) $frame_i
     } elseif { $leaflet_sorting_algorithm == 3 } {
         leaflet_sorter_3 $atsel_in $frame_i
+    } elseif { $leaflet_sorting_algorithm == 4} {
+        set sel [atomselect top $atsel_in frame $frame_i]
+        $sel set user2 1
+        $sel delete
     } else { 
         #default
         leaflet_sorter_1 $atsel_in $frame_i
@@ -341,7 +346,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
         #assign leaflets from $frame_i to user2 field of each bead for this selection
         foreach sel_resid $sel_resid_list {
             set selstring "(${atseltext}) and (resid $sel_resid)"
-            set leaflet [leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)]
+            leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)
         }
         #copy leaflet values from $frame_i to all frames between $frame_i and $frame_f
         set leaflet_list [$sel get user2] 
@@ -368,7 +373,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
 proc trajectory_leaflet_assignment {atseltext headname tailname} { 
     global params
     set num_reassignments 0
-    if {[lsearch -exact "0 1 2 3" $params(leaflet_sorting_algorithm)] == -1} {
+    if {[lsearch -exact "0 1 2 3 4" $params(leaflet_sorting_algorithm)] == -1} {
         puts "Option $params(leaflet_sorting_algorithm) not recognized as a leaflet sorting option. Defaulting to option 1."
     } elseif {$params(leaflet_sorting_algorithm) == 2} {
         if {$params(leaflet_sorter_2_reference_sel) eq "none"} {
@@ -634,7 +639,7 @@ proc polarDensityBin { config_file_script } {
         set upp_f [open "${stem}.upp.dat" w]
         set low_f_avg [open "${stem}.low.avg.dat" w]
         set upp_f_avg [open "${stem}.upp.avg.dat" w]
-        set totals [frame_leaflet_assignment $atseltext $headname $tailname $params(end_frame) $params(end_frame)]        
+        set totals [frame_leaflet_assignment $atseltext $headname $tailname $params(end_frame) $params(end_frame)]   
         
         foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
             set leaflet_str [lindex $leaf_total 0]
