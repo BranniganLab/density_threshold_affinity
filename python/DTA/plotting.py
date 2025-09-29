@@ -203,8 +203,8 @@ def create_heatmap_figure_and_axes(row_names, col_names, cmap, v_vals, figwidth,
     assert len(row_names) > 0, "row_names cannot be an empty list"
     assert isinstance(col_names, list), "col_names must be a list of strings"
     assert len(col_names) > 0, "col_names cannot be an empty list"
-    assert isinstance(helices, list), "helices must be a list of lists"
-    assert isinstance(helices[0], list), "helices must be a list of lists"
+    assert isinstance(helices, list), "helices must be a list"
+    assert isinstance(helices[0], np.ndarray), "helices must be a list of ndarrays"
     assert len(helices) > 0, "helices cannot be an empty list"
     num_rows = len(row_names)
     num_cols = len(col_names)
