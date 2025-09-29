@@ -214,7 +214,7 @@ def create_heatmap_figure_and_axes(row_names, col_names, cmap, v_vals, figwidth,
     for gridbox in range(num_rows * num_cols):
         ax = plt.subplot(gs[gridbox], projection='polar')
         if gridbox < num_cols:
-            ax.set_title(col_names[gridbox])
+            ax.set_title(col_names[gridbox], fontsize='medium')
         if gridbox % num_cols == 0:
             # put the row name to the left of the axes object
             ax.text(-0.5, 0.5, row_names[gridbox // 2], transform=ax.transAxes, fontsize='medium', va='center', fontfamily='serif')
