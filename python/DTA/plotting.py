@@ -167,22 +167,26 @@ def compile_bin_edges(bin_coords, grid_dims):
     return (line1, line2, line3, line4)
 
 
-def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight, helices):
+def create_heatmap_figure_and_axes(row_names, col_names, cmap, v_vals, figwidth, figheight, helices):
     """
     Create the heatmap figure and enough axes to accommodate all the lipids and\
     leaflets.
 
     Parameters
     ----------
-    lipids : list
-        The names of the lipids you intend to plot.
+    row_names : list
+        The names of the items you intend to plot in each row. Frequently the
+        name of each lipid species you are interested in.
+    col_names : list
+        The names of the items you intend to plot in each column. Frequently
+        "outer" and "inner" leaflet.
     cmap : matplotlib ListedColormap
         A custom colormap.
     v_vals : tuple
-        The (vmin, vmid, and vmax)
-    figwidth : int
+        The (vmin, vmid, and vmax) for your color scale
+    figwidth : float
         Figure width.
-    figheight : int
+    figheight : float
         Figure height.
     helices : list
         The outer and inner helix coordinates, in that order.
@@ -195,27 +199,26 @@ def create_heatmap_figure_and_axes(lipids, cmap, v_vals, figwidth, figheight, he
         The polar projection axes that were created.
 
     """
-    assert isinstance(lipids, list), "lipids must be a list of strings"
-    assert len(lipids) > 0, "lipids cannot be an empty list"
-    assert isinstance(helices, list), "helices must be a list"
-    assert len(helices) == 2, "helices must contain [outer helices, inner helices]"
-    numlipids = len(lipids)
+    assert isinstance(row_names, list), "row_names must be a list of strings"
+    assert len(row_names) > 0, "row_names cannot be an empty list"
+    assert isinstance(col_names, list), "col_names must be a list of strings"
+    assert len(col_names) > 0, "col_names cannot be an empty list"
+    assert isinstance(helices, list), "helices must be a list of lists"
+    assert isinstance(helices[0], list), "helices must be a list of lists"
+    assert len(helices) > 0, "helices cannot be an empty list"
+    num_rows = len(row_names)
+    num_cols = len(col_names)
     vmin, vmid, vmax = v_vals
     fig = plt.figure(figsize=(figwidth, figheight))
-    gs = gridspec.GridSpec(numlipids, 2, figure=fig, wspace=0.15, hspace=0.15)
-    for gridbox in range(numlipids * 2):
+    gs = gridspec.GridSpec(num_rows, num_cols, figure=fig, wspace=0.15, hspace=0.15)
+    for gridbox in range(num_rows * num_cols):
         ax = plt.subplot(gs[gridbox], projection='polar')
-        if gridbox == 0:
-            ax.set_title("Outer")
-        elif gridbox == 1:
-            ax.set_title("Inner")
-        if gridbox % 2 == 0:
-            ax = plot_helices(helices[0], False, ax, 50)
-        else:
-            ax = plot_helices(helices[1], False, ax, 50)
-        if gridbox % 2 == 0:
-            # put the lipid name to the left of the axes object
-            ax.text(-0.5, 0.5, lipids[gridbox // 2], transform=ax.transAxes, fontsize='medium', va='center', fontfamily='serif')
+        if gridbox < num_cols:
+            ax.set_title(col_names[gridbox])
+        if gridbox % num_cols == 0:
+            # put the row name to the left of the axes object
+            ax.text(-0.5, 0.5, row_names[gridbox // 2], transform=ax.transAxes, fontsize='medium', va='center', fontfamily='serif')
+        ax = plot_helices(helices[gridbox % num_cols], False, ax, 50)
     return fig, fig.axes
 
 
