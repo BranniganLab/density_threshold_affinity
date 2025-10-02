@@ -37,9 +37,5 @@ Detailed protocol is in preparation.
    ```> source polarDensity_for_DTA.tcl```
 
    ```> polarDensity <config file path>```  
-9. Open the plot_enrichment.ipynb jupyter notebook using your method of choice (e.g. VSCode or a local host)
-10. Update the paths and lipid names to point to your data and run
-11. Select bins for the binding site (the show_bins notebook may be useful here)
-12. Determine the accessible area for the site (many optional methods for this, get_accessible_area.ipynb describes one method)
-13. Determine the expected mode of the bead probabilities in the bulk for a patch equal to the accessible area (e.g. using get_Npeak.ipynb)
-14. Calculate the dG_bind using the get_probability_distributions.ipynb notebook
+9. Open the multiple_replicas_symmetric_site.ipynb jupyter notebook using your method of choice (e.g. VSCode or a local host)
+10. Follow the prompts in the notebook
