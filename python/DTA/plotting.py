@@ -546,7 +546,11 @@ def make_density_enrichment_heatmap(system_names, my_cmap, max_enrichment, helix
     fig_h, fig_w = figdims
     colorbar_range = (1 / max_enrichment, 1, max_enrichment)
     helices = load_inclusion_helices(helix_definitions)
-    fig1, axes = create_heatmap_figure_and_axes(system_names, leaflets, figwidth=fig_w, figheight=fig_h, helices=helices)
+    ordered_helix_list = helices.copy()
+    for i in range(len(system_names) - 1):
+        ordered_helix_list.extend(helices)
+    
+    fig1, axes = create_heatmap_figure_and_axes(system_names, leaflets, figwidth=fig_w, figheight=fig_h, helices=ordered_helix_list)
     index = 0
     for species in system_names:
         for leaf in leaflets:
