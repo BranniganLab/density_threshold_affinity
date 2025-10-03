@@ -184,22 +184,30 @@ proc center_and_wrap_system {inpt} {
 proc leaflet_sorter_0 {atsel_in head tail frame_i} {
     #puts "Sorting into leaflets using leaflet_sorter_0"
     set sel_resid [atomselect top "$atsel_in" frame $frame_i]
-    set sel_head [atomselect top "$atsel_in and $head" frame $frame_i]
-    set sel_tail [atomselect top "$atsel_in and $tail" frame $frame_i]
+    set resnames [$sel_resid get resname]
+    set resid [$sel_resid get resid]
+    if {[llength [lsort -unique $resid]] != 1} {
+        error "More than one resid returned from atomselection [$sel_resid text]"
+    }
+
+    ;# necessary in case user has selected only part of a lipid with $atsel_in
+    set sel_head [atomselect top "resname $resnames and resid $resid and $head" frame $frame_i]
+    set sel_tail [atomselect top "resname $resnames and resid $resid and $tail" frame $frame_i]
     
     set head_Z [vecmean [${sel_head} get z]]
     set tail_Z [vecmean [${sel_tail} get z]]
+    $sel_head delete
+    $sel_tail delete
     
     if {$head_Z < $tail_Z } { 
         $sel_resid set user2 -1
+        $sel_resid delete
         return -1 
     } else { 
         $sel_resid set user2 1
+        $sel_resid delete
         return 1 
     }
-    $sel_resid delete
-    $sel_head delete
-    $sel_tail delete
 }
 
 ;#originally by Liam Sharp; procedure that was used in JCP 2021 for nAChR
@@ -207,19 +215,36 @@ proc leaflet_sorter_0 {atsel_in head tail frame_i} {
 proc leaflet_sorter_1 {atsel_in frame_i} {
     #puts "Sorting into leaflets using leaflet_sorter_1"
     set sel_resid [atomselect top "$atsel_in" frame $frame_i]
-    set ind 1
-    if { [string range [lsort -unique [$sel_resid get resname]] end-1 end] == "PA" } {
-        set ind 0
+
+    set resnames [$sel_resid get resname]
+    set resid [$sel_resid get resid]
+    if {[llength [lsort -unique $resid]] != 1} {
+        error "More than one resid returned from atomselection [$sel_resid text]"
     }
-    set sel_Z [${sel_resid} get z] 
-    if {[lindex ${sel_Z} $ind] < [lindex ${sel_Z} end] } { 
+
+    ;# necessary in case user has selected only part of a lipid with $atsel_in
+    set sel [atomselect top "resname $resnames and resid $resid" frame $frame_i]
+    
+    ;# if the lipid has a PA headgroup, its 0th (rather than 1st) bead is PO4
+    if { [string range [lsort -unique [$sel get resname]] end-1 end] == "PA" } {
+        set ind 0
+    } else {
+        set ind 1
+    }
+
+    set sel_Z [$sel get z]
+    $sel delete
+
+    if {[lindex $sel_Z $ind] < [lindex $sel_Z end] } { 
         $sel_resid set user2 -1
+        $sel_resid delete
         return -1 
     } else { 
         $sel_resid set user2 1
+        $sel_resid delete
         return 1 
     }
-    $sel_resid delete
+    
 }
 
 ;#originally by Jahmal Ennis, designed for cholesterol 
@@ -272,11 +297,12 @@ proc leaflet_sorter_3 {atsel_in frame_i} {
 }
 
 ;# Determines if the lipid is in the outer or inner leaflet and sets the user2 value accordingly
-;# Algorithm is determined by user: 
+;# Algorithm is selected by user specifying one of the following options: 
 ;# 0: determines leaflet based on relative height of specified head and tail beads
 ;# 1: originally by Liam Sharp; procedure that was used in JCP 2021 for nAChR; similar to leaflet_sorter_0 but autoselects head and tail beads; more appropriate for situations with many species
 ;# 2: originally by Jahmal Ennis; determines whether the auto-determined headbead is above or below the center of mass of some reference selection; more appropriate for rigid lipids like cholesterol that frequently invert or lie at parallel to the membrane
 ;# 3: originally by Grace Brannigan and called local_midplane2; selects all PO4/GL1/GL2 beads within a circular region around the lipid, measures the COM, assumes that COM to be the midplane, and sorts lipids based on whether their COM is above or below the midplane.
+;# 4: assigns all molecules to the outer leaflet
 proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
     global params
     if {$leaflet_sorting_algorithm == 0} {
@@ -287,6 +313,10 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
         leaflet_sorter_2 $atsel_in $params(leaflet_sorter_2_reference_sel) $frame_i
     } elseif { $leaflet_sorting_algorithm == 3 } {
         leaflet_sorter_3 $atsel_in $frame_i
+    } elseif { $leaflet_sorting_algorithm == 4} {
+        set sel [atomselect top $atsel_in frame $frame_i]
+        $sel set user2 1
+        $sel delete
     } else { 
         #default
         leaflet_sorter_1 $atsel_in $frame_i
@@ -316,7 +346,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
         #assign leaflets from $frame_i to user2 field of each bead for this selection
         foreach sel_resid $sel_resid_list {
             set selstring "(${atseltext}) and (resid $sel_resid)"
-            set leaflet [leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)]
+            leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)
         }
         #copy leaflet values from $frame_i to all frames between $frame_i and $frame_f
         set leaflet_list [$sel get user2] 
@@ -343,7 +373,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
 proc trajectory_leaflet_assignment {atseltext headname tailname} { 
     global params
     set num_reassignments 0
-    if {[lsearch -exact "0 1 2 3" $params(leaflet_sorting_algorithm)] == -1} {
+    if {[lsearch -exact "0 1 2 3 4" $params(leaflet_sorting_algorithm)] == -1} {
         puts "Option $params(leaflet_sorting_algorithm) not recognized as a leaflet sorting option. Defaulting to option 1."
     } elseif {$params(leaflet_sorting_algorithm) == 2} {
         if {$params(leaflet_sorter_2_reference_sel) eq "none"} {
@@ -440,7 +470,7 @@ proc loop_over_atoms {shell atseltext frm} {
         } else {
             puts "WARNING: lipid atom $indx did not get assigned a leaflet for frame $frm"
         }
-        $thislipid set user [expr $theta_bin + 1]
+        $thislipid set user [expr $theta_bin]
         $thislipid delete
     }
     
@@ -448,13 +478,14 @@ proc loop_over_atoms {shell atseltext frm} {
 }
 
 ;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
-proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper} {
+proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper r_index} {
     global params
     set theta_bin_high [lrepeat [expr $params(Ntheta)+1] 0]
     set theta_bin_low [lrepeat [expr $params(Ntheta)+1] 0]
     for {set frm $params(start_frame)} {$frm < ${end_frame}} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
+        $shell set user3 $r_index
         set singleFrame_counts [loop_over_atoms $shell $atseltext $frm]
         set singleFrame_upper [lindex $singleFrame_counts 1] 
         set singleFrame_lower [lindex $singleFrame_counts 0]
@@ -480,6 +511,7 @@ proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper
 proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
     global params
     set delta_frame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
+    set radial_bin_index 0
     for {set ri $params(Rmin)} { $ri<$params(Rmax)} { set ri [expr $ri + $params(dr)]} {
         #loop over shells
         puts "Now on shell {$ri [expr ${ri}+$params(dr)]}"
@@ -487,7 +519,7 @@ proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
         set rf2 [expr $rf*$rf]
         set ri2 [expr $ri*$ri]
         set shell [atomselect top "($atseltext) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"]
-        set theta_bin [loop_over_frames $shell $atseltext $params(start_frame) $params(end_frame)  $ri $rf $low_f $upp_f]
+        set theta_bin [loop_over_frames $shell $atseltext $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radial_bin_index]
         set theta_bin_high [lindex $theta_bin 1]
         set theta_bin_low [lindex $theta_bin 0]
         $shell delete	
@@ -495,6 +527,7 @@ proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
         set time_avg_lower [vecscale $theta_bin_low [expr 1.0 / (1.0 * $delta_frame)]]
         output_bins $upp_f_avg $ri $rf "$time_avg_upper" 
         output_bins $low_f_avg $ri $rf "$time_avg_lower" 
+        incr radial_bin_index
     }
 }
 
@@ -609,7 +642,7 @@ proc polarDensityBin { config_file_script } {
         set upp_f [open "${stem}.upp.dat" w]
         set low_f_avg [open "${stem}.low.avg.dat" w]
         set upp_f_avg [open "${stem}.upp.avg.dat" w]
-        set totals [frame_leaflet_assignment $atseltext $headname $tailname $params(end_frame) $params(end_frame)]        
+        set totals [frame_leaflet_assignment $atseltext $headname $tailname $params(end_frame) $params(end_frame)]   
         
         foreach lu [list $low_f $upp_f] avgfile [list $low_f_avg $upp_f_avg] leaf_total $totals {
             set leaflet_str [lindex $leaf_total 0]

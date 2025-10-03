@@ -1,7 +1,9 @@
 # Density Threshold Affinity
-Descended from: https://github.com/BranniganLab/densitymap
 
-Detailed protocol is in preparation.
+Detailed protocol is published! 
+
+Check it out here: https://doi.org/10.1016/bs.mie.2024.03.008 
+
 
 # Basic usage:
 1. Clone this repository
@@ -34,7 +36,7 @@ Detailed protocol is in preparation.
 
 8. From the tk console:
 
-   ```> source polarDensity_for_DTA.tcl```
+   ```> source ./TCL/polarDensity_for_DTA.tcl```
 
    ```> polarDensity <config file path>```  
 9. Open the multiple_replicas_symmetric_site.ipynb jupyter notebook using your method of choice (e.g. VSCode or a local host)
