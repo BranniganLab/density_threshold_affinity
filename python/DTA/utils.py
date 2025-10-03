@@ -196,36 +196,6 @@ def check_bulk_counts_histogram(site_list):
     return bulk
 
 
-def determine_index(name, names_list, leaflet, leaflets_list):
-    """
-    Determine which axes object corresponds to this name and leaflet.
-
-    Parameters
-    ----------
-    name : str
-        The system whose index you want.
-    names_list : list
-        The list of systems plotted.
-    leaflet : int
-        The leaflet id whose index you want. 1=outer, 2=inner.
-    leaflets_list : list
-        The list of leaflets plotted.
-
-    Returns
-    -------
-    index : int
-        The index of the axes object corresponding to the supplied name and leaflet.
-
-    """
-    assert isinstance(names_list, list), "names_list must be a list, even if it only has one item."
-    assert isinstance(leaflets_list, list), "leaflets_list must be a list, even if it only has one item."
-    assert name in names_list, f"{name} not found in names_list"
-    assert leaflet in [1, 2], "leaflet must be 1 (outer) or 2 (inner)."
-    num_leaflets_plotted = len(leaflets_list)
-    index = names_list.index(name) * num_leaflets_plotted + leaflet - 1
-    return index
-
-
 def load_replica_counts(root_path, replicas_list, system_name, leaflet_id):
     """
     Load the counts from all replicas of a single system. Return them as a list.
