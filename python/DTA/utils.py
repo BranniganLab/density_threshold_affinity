@@ -224,12 +224,9 @@ def load_replica_counts(root_path, replicas_list, system_name, leaflet_id):
     assert isinstance(replicas_list, list), "replicas_list must be a list."
     assert (len(replicas_list) > 1), "Less than 2 replicas found."
     replica_counts_list = []
-    if leaflet_id == 1:
-        leaflet = "upp"
-    elif leaflet_id == 2:
-        leaflet = "low"
+    leaflet = {1: "upp", 2: "low"}
     for rep in replicas_list:
-        fname = root_path.joinpath(rep, f"{system_name}.{leaflet}.dat")
+        fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.dat")
         assert fname.is_file(), f"could not find file {fname}"
         counts, grid_dims, system_info = parse_tcl_dat_file(fname, bulk=False)
         replica_counts_list.append(counts)
