@@ -184,8 +184,8 @@ def create_heatmap_figure_and_axes(row_names, col_names, figwidth, figheight, he
         Figure width.
     figheight : float
         Figure height.
-    helices : list
-        The outer and inner helix coordinates, in that order.
+    helices : list of ndarrays
+        An ndarray of helix coordinates for each panel of the figure.
 
     Returns
     -------
@@ -201,9 +201,11 @@ def create_heatmap_figure_and_axes(row_names, col_names, figwidth, figheight, he
     assert len(col_names) > 0, "col_names cannot be an empty list"
     assert isinstance(helices, list), "helices must be a list"
     assert isinstance(helices[0], np.ndarray), "helices must be a list of ndarrays"
-    assert len(helices) > 0, "helices cannot be an empty list"
+    
     num_rows = len(row_names)
     num_cols = len(col_names)
+    assert len(helices) == num_rows * num_cols, f"Not enough helix coordinate sets ({str(len(helices))}) for all panels {str(num_rows * num_cols)} in the figure"
+
     fig = plt.figure(figsize=(figwidth, figheight))
     gs = gridspec.GridSpec(num_rows, num_cols, figure=fig, wspace=0.15, hspace=0.15)
     for gridbox in range(num_rows * num_cols):
@@ -213,7 +215,7 @@ def create_heatmap_figure_and_axes(row_names, col_names, figwidth, figheight, he
         if gridbox % num_cols == 0:
             # put the row name to the left of the axes object
             ax.text(-0.5, 0.5, row_names[gridbox // num_cols], transform=ax.transAxes, fontsize='medium', va='center', fontfamily='serif')
-        ax = plot_helices(helices[gridbox % num_cols], False, ax, 50)
+        ax = plot_helices(helices[gridbox], False, ax, 50)
     return fig, fig.axes
 
 
