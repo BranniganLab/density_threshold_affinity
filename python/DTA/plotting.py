@@ -492,35 +492,35 @@ def plot_helices(helices, colorbychain, ax, markersize=3, sub=["tab:blue", "tab:
     return ax
 
 
-def make_density_enrichment_heatmap(system_names, my_cmap, max_enrichment, helix_definitions, figdims, leaflets, root_path, replicas=None):
+def make_density_enrichment_heatmap(row_names, col_names, enrichments_list, colormap, max_enrichment, helices, grid_dims, figdims, output_path):
     """
     Make a figure and axes objects. Plot heatmaps of density enrichment for each\
-    system on each axes object. Return the figure, axes, and lattice grid dimensions.
+    system on each axes object. Return the figure and axes.
 
     Parameters
     ----------
-    system_names : list
-        A list of the different system names. Must correspond to system name \
-        provided to PolarDensityBin.
-    my_cmap : cmap
+    row_names : list
+        A list of the names you wish to appear to the left of each row of \
+        heatmaps. Frequently will be the name of the lipid species.
+    col_names : list
+        A list of the names you wish to appear above each column of heatmaps. \
+        Frequently will be "outer leaflet" and "inner leaflet".
+    enrichments_list : list
+        A list of 2d ndarrays containing enrichment values for each bin in the\
+        lattice. One list item per heatmap.
+    colormap : matplotlib cmap object
         The colormap to use.
     max_enrichment : float or int
         How high you want your colorbar to go. The minimum will scale proportionally.
-    helix_definitions : str or Path
-        The directory containing your helix coordinate outputs from PolarDensityBin.
+    helices : list of ndarrays
+        Each ndarray in the list contains helix coordinates. There should be one\
+        ndarray per heatmap.
+    grid_dims : namedtuple
+        Contains Nr, Ntheta, dr, and dtheta information.
     figdims : 2-tuple
         The figure height and width, in inches.
-    leaflets : list
-        A list containing "outer", "inner", or both, depending on what you want\
-        to plot.
-    root_path : str or Path
-        The path to the directory containing your PolarDensityBin outputs (if \
-        replicas is None), or the directory containing your replica directories.
-    replicas : None or list, optional
-        If you have multiple replicas that you would like averaged together, \
-        ensure that the files are contained within separate subdirectories of \
-        root_path. Provide the subdirectory names as a list of strs. The default\
-        is None, which turns off this feature.
+    output_path : str or Path
+        The path to where you want the figure saved.
 
     Returns
     -------
@@ -528,46 +528,23 @@ def make_density_enrichment_heatmap(system_names, my_cmap, max_enrichment, helix
         That matplotlib Figure object containing your plots.
     axes : Axes object or list of Axes objects
         The matplotlib Axes object(s) containing your plot(s).
-    grid_dims : named tuple
-        The lattice dimension information; used by other functions.
 
     """
-    assert isinstance(system_names, list), "system_names must be a list, even if it only contains one item."
-    assert isinstance(leaflets, list), "leaflets must be a list, even if it only contains one item."
-    assert (replicas is None) or (isinstance(replicas, list)), "replicas must either be None or a list."
-    assert isinstance(helix_definitions, (str, Path)), "helix_definitions must be a str or Path object."
-    if isinstance(helix_definitions, str):
-        helix_definitions = Path(helix_definitions)
-    assert helix_definitions.exists(), "helix_definitions not found."
-    assert isinstance(root_path, (str, Path)), "root_path must be a str or Path object."
+    assert isinstance(row_names, list), "row_names must be a list, even if it only contains one item."
+    assert isinstance(col_names, list), "col_names must be a list, even if it only contains one item."
+    assert isinstance(helices, list), "helices must be a list of ndarrays."
+    assert isinstance(helices[0], np.ndarray), "helices must be a list of ndarrays."
+    assert len(enrichments_list) = len(row_names) * len(col_names), f"There are not enough enrichments_list items ({len(enrichments_list)}) to plot on all the figure panels ({len(row_names) * len(col_names)})."
+    assert len(helices) = len(row_names) * len(col_names), f"There are not enough helices ({len(helices)}) to plot on all the figure panels ({len(row_names) * len(col_names)})."
+    assert isinstance(output_path, (str, Path)), "output_path must be a str or Path object."
     if isinstance(root_path, str):
         root_path = Path(root_path)
-    assert root_path.exists(), "root_path not found."
-    fig_h, fig_w = figdims
+    root_path.resolve()
     colorbar_range = (1 / max_enrichment, 1, max_enrichment)
-    helices = load_inclusion_helices(helix_definitions)
-    ordered_helix_list = helices.copy()
-    for i in range(len(system_names) - 1):
-        ordered_helix_list.extend(helices)
-    
-    fig1, axes = create_heatmap_figure_and_axes(system_names, leaflets, figwidth=fig_w, figheight=fig_h, helices=ordered_helix_list)
-    index = 0
-    for species in system_names:
-        for leaf in leaflets:
-            if replicas:
-                rep_list = []
-                for rep in replicas:
-                    rep_path = root_path.joinpath(rep, f"{species}.{leaf}.avg.dat")
-                    counts, grid_dims, system_info = parse_tcl_dat_file(rep_path, bulk=False)
-                    density_enrichment = calculate_density_enrichment(calculate_density(counts, grid_dims), system_info.ExpBeadDensity)
-                    rep_list.append(density_enrichment)
-                avg_enrichment = np.mean(np.stack(tuple(rep_list), axis=0), axis=0)
-            else:
-                path = root_path.joinpath(f"{species}.{leaf}.avg.dat")
-                counts, grid_dims, system_info = parse_tcl_dat_file(path, bulk=False)
-                density_enrichment = calculate_density_enrichment(calculate_density(counts, grid_dims), system_info.ExpBeadDensity)
-                avg_enrichment = density_enrichment
-            axes[index] = plot_heatmap(axes[index], avg_enrichment, grid_dims, my_cmap, colorbar_range)
-            index += 1
-    fig1 = make_colorbar(fig1, colorbar_range, my_cmap)
-    return fig1, axes, grid_dims
+
+    fig, axes = create_heatmap_figure_and_axes(row_names, col_names, figwidth=figdims[1], figheight=figdims[0], helices=helices)
+    for index, _ in enumerate(axes):
+        axes[index] = plot_heatmap(axes[index], enrichments_list[index], grid_dims, colormap, colorbar_range)
+    fig = make_colorbar(fig, colorbar_range, colormap)
+
+    return fig, axes
