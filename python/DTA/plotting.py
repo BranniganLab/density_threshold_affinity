@@ -68,7 +68,7 @@ def outline_site(ax, site, grid_dims, linewidth=1, color='black'):
         r, theta = edge_tuple
         ax.plot(theta, r, color=color, linewidth=linewidth, marker=None)
     return ax
-    
+
 
 def isolate_unique_site_edges(bin_coords_list, grid_dims):
     """
