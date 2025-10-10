@@ -11,9 +11,11 @@ import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 from matplotlib.colors import ListedColormap, Normalize
 from scipy import constants
-from DTA.utils import calculate_hist_mode
+from DTA.utils import calculate_hist_mode, validate_path
 from DTA.Site import Site
 from DTA.SymmetricSite import SymmetricSite
+from DTA.density import parse_tcl_dat_file, calculate_density_enrichment, calculate_density
+from pathlib import Path
 
 
 def make_custom_colormap():
@@ -483,3 +485,59 @@ def plot_helices(helices, colorbychain, ax, markersize=3, sub=["tab:blue", "tab:
         ax.scatter(np.deg2rad(pro[1::2]), pro[::2], color=colors, linewidth=None,
                    zorder=1, s=markersize)
     return ax
+
+
+def make_density_enrichment_heatmap(row_names, col_names, enrichments_list, colormap, max_enrichment, helices, grid_dims, figdims, output_path):
+    """
+    Make a figure and axes objects. Plot heatmaps of density enrichment for each\
+    system on each axes object. Return the figure and axes.
+
+    Parameters
+    ----------
+    row_names : list
+        A list of the names you wish to appear to the left of each row of \
+        heatmaps. Frequently will be the name of the lipid species.
+    col_names : list
+        A list of the names you wish to appear above each column of heatmaps. \
+        Frequently will be "outer leaflet" and "inner leaflet".
+    enrichments_list : list
+        A list of 2d ndarrays containing enrichment values for each bin in the\
+        lattice. One list item per heatmap.
+    colormap : matplotlib cmap object
+        The colormap to use.
+    max_enrichment : float or int
+        How high you want your colorbar to go. The minimum will scale proportionally.
+    helices : list of ndarrays
+        Each ndarray in the list contains helix coordinates. There should be one\
+        ndarray per heatmap.
+    grid_dims : namedtuple
+        Contains Nr, Ntheta, dr, and dtheta information.
+    figdims : 2-tuple
+        The figure height and width, in inches.
+    output_path : str or Path
+        The path to where you want the figure saved.
+
+    Returns
+    -------
+    fig1 : Figure object
+        That matplotlib Figure object containing your plots.
+    axes : Axes object or list of Axes objects
+        The matplotlib Axes object(s) containing your plot(s).
+
+    """
+    assert isinstance(row_names, list), "row_names must be a list, even if it only contains one item."
+    assert isinstance(col_names, list), "col_names must be a list, even if it only contains one item."
+    assert isinstance(helices, list), "helices must be a list of ndarrays."
+    assert isinstance(helices[0], np.ndarray), "helices must be a list of ndarrays."
+    assert len(enrichments_list) = len(row_names) * len(col_names), f"There are not enough enrichments_list items ({len(enrichments_list)}) to plot on all the figure panels ({len(row_names) * len(col_names)})."
+    assert len(helices) = len(row_names) * len(col_names), f"There are not enough helices ({len(helices)}) to plot on all the figure panels ({len(row_names) * len(col_names)})."
+    root_path = validate_path(root_path)
+    output_path = validate_path(output_path)
+    colorbar_range = (1 / max_enrichment, 1, max_enrichment)
+
+    fig, axes = create_heatmap_figure_and_axes(row_names, col_names, figwidth=figdims[1], figheight=figdims[0], helices=helices)
+    for index, _ in enumerate(axes):
+        axes[index] = plot_heatmap(axes[index], enrichments_list[index], grid_dims, colormap, colorbar_range)
+    fig = make_colorbar(fig, colorbar_range, colormap)
+
+    return fig, axes
