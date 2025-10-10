@@ -219,6 +219,8 @@ def validate_path(path, file=False):
     """
     if isinstance(path, str):
         path = Path(path)
+    if not isinstance(path, Path):
+        raise TypeError(f"path must be a string or a Pathlib Path. Object of type {type(path)} was supplied.")
     if not path.exists():
         raise FileNotFoundError(f"The specified path '{path}' could not be found. Please ensure the path is correct.")
     if file:
