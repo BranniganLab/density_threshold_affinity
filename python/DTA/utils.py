@@ -196,7 +196,7 @@ def check_bulk_counts_histogram(site_list):
     return bulk
 
 
-def load_replica_counts(root_path, replicas_list, system_name, leaflet_id):
+def load_replica_counts(root_path, replicas_list, system_name, leaflet_id, avg=False):
     """
     Load the counts from all replicas of a single system. Return them as a list.
 
@@ -210,6 +210,9 @@ def load_replica_counts(root_path, replicas_list, system_name, leaflet_id):
         The file stem for your PolarDensityBin outputs.
     leaflet_id : int
         Which leaflet your Site is in. 1=outer and 2=inner.
+    avg : bool
+        If True, load the average density file. If False (default), load the \
+        individual frame counts.
 
     Returns
     -------
@@ -226,8 +229,47 @@ def load_replica_counts(root_path, replicas_list, system_name, leaflet_id):
     replica_counts_list = []
     leaflet = {1: "upp", 2: "low"}
     for rep in replicas_list:
-        fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.dat")
+        if avg:
+            fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.avg.dat")    
+        else:
+            fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.dat")
         assert fname.is_file(), f"could not find file {fname}"
         counts, grid_dims, system_info = parse_tcl_dat_file(fname, bulk=False)
         replica_counts_list.append(counts)
     return replica_counts_list
+
+
+def validate_path(path, file=False):
+    """
+    Make sure that a path can be found. If file=True, make sure that it is \
+        recognized as a file. If path is a string, convert it to a Pathlib Path.
+
+    Parameters
+    ----------
+    path : str or Path
+        The path you would like to validate.
+    file : bool, optional
+        If True, check to see if the file is recognized. The default is False.
+
+    Raises
+    ------
+    FileNotFoundError
+    TypeError
+
+    Returns
+    -------
+    path : Path
+        Returns the path as a Path object.
+
+    """
+    if isinstance(path, str):
+        path = Path(path)
+    path = path.resolve()
+    if not isinstance(path, Path):
+        raise TypeError(f"path must be a string or a Pathlib Path. Object of type {type(path)} was supplied.")
+    if not path.exists():
+        raise FileNotFoundError(f"The specified path '{path}' could not be found. Please ensure the path is correct.")
+    if file:
+        if not path.is_file():
+            raise FileNotFoundError(f"The specified file '{path}' is not recognized as a file. Please ensure the path is correct.")
+    return path
