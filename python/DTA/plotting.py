@@ -328,8 +328,10 @@ def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False):
     """
     if plot_probability:
         data = data / np.sum(data)
+        ax.set_ylabel("Probability")
+    else:
+        ax.set_ylabel("Counts")
     ax.plot(range(len(data)), data)
-    ax.set_ylabel("Probability")
     ax.set_xlabel(f"Number of beads in an area about {area} " + r"$\AA^2$")
     mode = calculate_hist_mode(data)
     ax.vlines([mode], 0, np.max(data), color='black', linestyles='dashed', label=f"mode={mode}")
