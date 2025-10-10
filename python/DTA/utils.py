@@ -198,7 +198,7 @@ def check_bulk_counts_histogram(site_list):
 def validate_path(path, file=False):
     """
     Make sure that a path can be found. If file=True, make sure that it is \
-        recognized as a file.
+        recognized as a file. If path is a string, convert it to a Pathlib Path.
 
     Parameters
     ----------
