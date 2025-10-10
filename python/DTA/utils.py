@@ -193,3 +193,14 @@ def check_bulk_counts_histogram(site_list):
     for site in site_list[1:]:
         assert bulk.all() == site.bulk_counts_histogram.all(), "One or more sites have different bulk histograms. This shouldn't be possible."
     return bulk
+
+
+def validate_path(path, file=False):
+    if isinstance(path, str):
+        path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"The specified path '{path}' could not be found. Please ensure the path is correct.")
+    if file:
+        if not path.is_file():
+            raise FileNotFoundError(f"The specified file '{path}' is not recognized as a file. Please ensure the path is correct.")
+    return path
