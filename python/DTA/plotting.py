@@ -11,7 +11,7 @@ import matplotlib as mpl
 import matplotlib.gridspec as gridspec
 from matplotlib.colors import ListedColormap, Normalize
 from scipy import constants
-from DTA.utils import calculate_hist_mode, validate_path
+from DTA.utils import calculate_hist_mode
 from DTA.Site import Site
 from DTA.SymmetricSite import SymmetricSite
 from DTA.density import parse_tcl_dat_file, calculate_density_enrichment, calculate_density
