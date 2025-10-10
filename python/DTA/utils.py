@@ -196,6 +196,27 @@ def check_bulk_counts_histogram(site_list):
 
 
 def validate_path(path, file=False):
+    """
+    Make sure that a path can be found. If file=True, make sure that it is \
+        recognized as a file.
+
+    Parameters
+    ----------
+    path : str or Path
+        The path you would like to validate.
+    file : bool, optional
+        If True, check to see if the file is recognized. The default is False.
+
+    Raises
+    ------
+    FileNotFoundError
+
+    Returns
+    -------
+    path : Path
+        Returns the path as a Path object.
+
+    """
     if isinstance(path, str):
         path = Path(path)
     if not path.exists():
