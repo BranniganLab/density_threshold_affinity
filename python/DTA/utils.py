@@ -210,6 +210,7 @@ def validate_path(path, file=False):
     Raises
     ------
     FileNotFoundError
+    TypeError
 
     Returns
     -------
