@@ -487,7 +487,7 @@ def plot_helices(helices, colorbychain, ax, markersize=3, sub=["tab:blue", "tab:
     return ax
 
 
-def make_density_enrichment_heatmap(row_names, col_names, enrichments_list, colormap, max_enrichment, helices, grid_dims, figdims, output_path):
+def make_density_enrichment_heatmap(row_names, col_names, enrichments_list, colormap, max_enrichment, helices, grid_dims, figdims):
     """
     Make a figure and axes objects. Plot heatmaps of density enrichment for each\
     system on each axes object. Return the figure and axes.
@@ -514,30 +514,36 @@ def make_density_enrichment_heatmap(row_names, col_names, enrichments_list, colo
         Contains Nr, Ntheta, dr, and dtheta information.
     figdims : 2-tuple
         The figure height and width, in inches.
-    output_path : str or Path
-        The path to where you want the figure saved.
 
     Returns
     -------
-    fig1 : Figure object
+    fig : Figure object
         That matplotlib Figure object containing your plots.
     axes : Axes object or list of Axes objects
         The matplotlib Axes object(s) containing your plot(s).
 
     """
-    assert isinstance(row_names, list), "row_names must be a list, even if it only contains one item."
-    assert isinstance(col_names, list), "col_names must be a list, even if it only contains one item."
-    assert isinstance(helices, list), "helices must be a list of ndarrays."
-    assert isinstance(helices[0], np.ndarray), "helices must be a list of ndarrays."
-    assert len(enrichments_list) = len(row_names) * len(col_names), f"There are not enough enrichments_list items ({len(enrichments_list)}) to plot on all the figure panels ({len(row_names) * len(col_names)})."
-    assert len(helices) = len(row_names) * len(col_names), f"There are not enough helices ({len(helices)}) to plot on all the figure panels ({len(row_names) * len(col_names)})."
-    root_path = validate_path(root_path)
-    output_path = validate_path(output_path)
-    colorbar_range = (1 / max_enrichment, 1, max_enrichment)
+    if not all(isinstance(argument, list) for argument in [row_names, col_names, helices, enrichments_list]):
+        raise TypeError(f"{variable} must be a list instead of a {type(variable)}.")
+    if not all(isinstance(item, np.ndarray) for item in helices):
+        raise TypeError("helices must be a list of ndarrays")
+    if not all(isinstance(item, np.ndarray) for item in enrichments_list):
+        raise TypeError("enrichments_list must be a list of ndarrays")
+    if not all(arr.shape == 2 for arr in enrichments_list):
+        raise TypeError("enrichments_list must contain 2d ndarrays")
+
+    num_panels = len(row_names) * len(col_names)
+    if len(enrichments_list) != num_panels:
+        raise IndexError(f"Number of enrichments_list items ({len(enrichments_list)}) does not match number of figure panels ({num_panels}).")
+    if len(helices) != num_panels:
+        raise IndexError(f"Number of helices items ({len(helices)}) does not match number of figure panels ({num_panels}).")
 
     fig, axes = create_heatmap_figure_and_axes(row_names, col_names, figwidth=figdims[1], figheight=figdims[0], helices=helices)
-    for index, _ in enumerate(axes):
-        axes[index] = plot_heatmap(axes[index], enrichments_list[index], grid_dims, colormap, colorbar_range)
+    colorbar_range = (1 / max_enrichment, 1, max_enrichment)
+
+    for index, ax in enumerate(axes):
+        ax = plot_heatmap(ax, enrichments_list[index], grid_dims, colormap, colorbar_range)
+
     fig = make_colorbar(fig, colorbar_range, colormap)
 
     return fig, axes
