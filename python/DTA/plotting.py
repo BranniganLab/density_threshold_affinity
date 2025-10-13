@@ -516,18 +516,24 @@ def make_density_enrichment_heatmap(row_names, col_names, enrichments_list, colo
     Returns
     -------
     fig : Figure object
-        That matplotlib Figure object containing your plots.
+        The matplotlib Figure object containing your plots.
     axes : Axes object or list of Axes objects
         The matplotlib Axes object(s) containing your plot(s).
 
     """
-    if not all(isinstance(argument, list) for argument in [row_names, col_names, helices, enrichments_list]):
-        raise TypeError(f"{variable} must be a list instead of a {type(variable)}.")
+    if not isinstance(col_names, list):
+        raise TypeError(f"{col_names} must be a list instead of a {type(col_names)}.")
+    if not isinstance(row_names, list):
+        raise TypeError(f"{row_names} must be a list instead of a {type(row_names)}.")
+    if not isinstance(helices, list):
+        raise TypeError(f"{helices} must be a list instead of a {type(helices)}.")
+    if not isinstance(enrichments_list, list):
+        raise TypeError(f"{enrichments_list} must be a list instead of a {type(enrichments_list)}.")
     if not all(isinstance(item, np.ndarray) for item in helices):
         raise TypeError("helices must be a list of ndarrays")
     if not all(isinstance(item, np.ndarray) for item in enrichments_list):
         raise TypeError("enrichments_list must be a list of ndarrays")
-    if not all(arr.shape == 2 for arr in enrichments_list):
+    if not all(len(arr.shape) == 2 for arr in enrichments_list):
         raise TypeError("enrichments_list must contain 2d ndarrays")
 
     num_panels = len(row_names) * len(col_names)
