@@ -9,7 +9,7 @@ import numpy as np
 from scipy import constants
 import math
 from pathlib import Path
-from DTA.density import parse_tcl_dat_file
+from DTA.density import parse_tcl_dat_file, Dimensions
 
 
 def calculate_dG(counts_histogram, n_peak, temperature):
@@ -273,3 +273,16 @@ def validate_path(path, file=False):
         if not path.is_file():
             raise FileNotFoundError(f"The specified file '{path}' is not recognized as a file. Please ensure the path is correct.")
     return path
+
+
+def valid_grid_dims(grid_dims_list):
+    if not isinstance(grid_dims_list, list):
+        raise TypeError(f"grid_dims must be a list, not a {type(grid_dims_list)}.")
+    if not all(isinstance(item, Dimensions) for item in grid_dims_list):
+        raise TypeError(f"grid_dims_list must contain Dimensions namedtuples.")
+    dr, Nr, dtheta, Ntheta, _ = grid_dims_list[0]
+    for item in grid_dims_list:
+        for attr, val in zip(["dr", "Nr", "dtheta", "Ntheta"], [dr, Nr, dtheta, Ntheta]):
+            if item[attr] != val:
+                raise ValueError(f"Not all {attr} values match")
+    return grid_dims_list[0]
