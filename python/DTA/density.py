@@ -137,9 +137,9 @@ def calculate_bin_area(r_bin, dr, dtheta):
 def aggregate_density_enrichment_scores(file_paths):
     """
     Collect the average counts, bin sizing, and expected density from each \
-        system, calulate average density enrichment across systems, and return\
-        the average density enrichment. Also return the Dimensions object that \
-        can be used for plotting the heatmaps.
+        system, calulate average density enrichment for each system, and calculate\
+        average density enrichment accross systems. Also, return the Dimensions \
+        object that needs to be used for plotting the heatmaps.
 
     Parameters
     ----------
@@ -163,7 +163,7 @@ def aggregate_density_enrichment_scores(file_paths):
         replica_enrichments_list.append(density_enrichment)
 
     if not valid_Dimensions(replica_dims_list):
-        raise ValueError(f"Not all Dimensions attributes match.")
+        raise ValueError("Not all Dimensions attributes match.")
 
     all_reps_avg = np.nanmean(np.stack(tuple(replica_enrichments_list), axis=0), axis=0)
     grid_dims_final = replica_dims[0]
