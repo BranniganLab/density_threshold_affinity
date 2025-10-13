@@ -156,7 +156,7 @@ def aggregate_density_enrichment_scores(file_paths):
     replica_enrichments_list = []
     replica_dims_list = []
     for rep_path in file_paths:
-        rep_path = validate_path(rep_path), file=True)
+        rep_path = validate_path(rep_path, file=True)
         counts, grid_dims, system_info = parse_tcl_dat_file(rep_path, bulk=False)
         replica_dims_list.append(grid_dims)
         density_enrichment = calculate_density_enrichment(calculate_density(counts, grid_dims), system_info.ExpBeadDensity)
