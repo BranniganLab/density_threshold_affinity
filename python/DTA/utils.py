@@ -278,16 +278,13 @@ def validate_path(path, file=False):
 def valid_Dimensions(list_of_Dimensions_objs):
     """
     Make sure that all Dimensions attributes do not vary across objects \
-        (not counting Nframes) in a list of Dimensions objects.
+        (not counting Nframes) in a list of Dimensions objects. If attributes \
+        do not vary across objects, return True. Else, return False.
 
     Parameters
     ----------
     list_of_Dimensions_objs : list
         List containing multiple Dimensions objects.
-
-    Raises
-    ------
-    ValueError
 
     Returns
     -------
@@ -304,5 +301,5 @@ def valid_Dimensions(list_of_Dimensions_objs):
     for item in list_of_Dimensions_objs:
         for attr, val in zip(["dr", "Nr", "dtheta", "Ntheta"], [dr, Nr, dtheta, Ntheta]):
             if item[attr] != val:
-                raise ValueError(f"Not all {attr} values match")
+                return False
     return True
