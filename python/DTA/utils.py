@@ -275,14 +275,34 @@ def validate_path(path, file=False):
     return path
 
 
-def valid_grid_dims(grid_dims_list):
-    if not isinstance(grid_dims_list, list):
-        raise TypeError(f"grid_dims must be a list, not a {type(grid_dims_list)}.")
-    if not all(isinstance(item, Dimensions) for item in grid_dims_list):
+def valid_Dimensions(list_of_Dimensions_objs):
+    """
+    Make sure that all Dimensions attributes do not vary across objects \
+        (not counting Nframes) in a list of Dimensions objects.
+
+    Parameters
+    ----------
+    list_of_Dimensions_objs : list
+        List containing multiple Dimensions objects.
+
+    Raises
+    ------
+    ValueError
+
+    Returns
+    -------
+    Boolean
+
+    """
+    if not isinstance(list_of_Dimensions_objs, list):
+        raise TypeError(f"grid_dims must be a list, not a {type(list_of_Dimensions_objs)}.")
+    if not all(isinstance(item, Dimensions) for item in list_of_Dimensions_objs):
         raise TypeError(f"grid_dims_list must contain Dimensions namedtuples.")
-    dr, Nr, dtheta, Ntheta, _ = grid_dims_list[0]
-    for item in grid_dims_list:
+    if len(list_of_Dimensions_objs) == 1:
+        return True
+    dr, Nr, dtheta, Ntheta, _ = list_of_Dimensions_objs[0]
+    for item in list_of_Dimensions_objs:
         for attr, val in zip(["dr", "Nr", "dtheta", "Ntheta"], [dr, Nr, dtheta, Ntheta]):
             if item[attr] != val:
                 raise ValueError(f"Not all {attr} values match")
-    return grid_dims_list[0]
+    return True
