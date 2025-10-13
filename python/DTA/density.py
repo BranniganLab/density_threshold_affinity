@@ -8,6 +8,7 @@ Created on Mon Nov 11 09:44:53 2024.
 from pathlib import Path
 import numpy as np
 from collections import namedtuple
+from DTA.utils import validate_path, valid_grid_dims
 
 
 SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
@@ -130,6 +131,31 @@ def calculate_bin_area(r_bin, dr, dtheta):
     bin_radial_midpoint = (r_bin * dr) + (0.5 * dr)
     area = dr * dtheta * bin_radial_midpoint
     return area
+
+
+def aggregate_density_enrichment_scores(lipids, leaflets, replicas):
+    enrichments_list = []
+    grid_dims_list = []
+    for species in lipids:
+        for leaflet in leaflets:
+            replica_enrichments_list = []
+            replica_dims_list = []
+            for rep in replicas:
+                rep_path = validate_path(root.joinpath(rep, f"{species}.{leaflet}.avg.dat"))
+                counts, grid_dims, system_info = parse_tcl_dat_file(rep_path, bulk=False)
+                replica_dims_list.append(grid_dims)
+                density_enrichment = calculate_density_enrichment(calculate_density(counts, grid_dims), system_info.ExpBeadDensity)
+                replica_enrichments_list.append(density_enrichment)
+            all_reps_avg = np.nanmean(np.stack(tuple(rep_list), axis=0), axis=0)
+            if not valid_grid_dims(replica_dims_list):
+                raise 
+            enrichments_list.append(all_reps_avg)
+            grid_dims_list.append(replica_dims)
+    if not valid_grid_dims(grid_dims_list):
+        raise
+    else:
+        grid_dims_final = grid_dims_list[0]
+    return enrichments_list, grid_dims_final
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%  UTIL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
