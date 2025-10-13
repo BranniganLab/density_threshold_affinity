@@ -134,26 +134,28 @@ def calculate_bin_area(r_bin, dr, dtheta):
     return area
 
 
-def aggregate_density_enrichment_scores(lipids, leaflets, replicas):
+def aggregate_density_enrichment_scores(lipid_names, lipid_paths, leaflets, replicas):
+    if len(lipid_names) != len(lipid_paths):
+        raise IndexError("lipid_names and lipid_paths must be same length")
     enrichments_list = []
     grid_dims_list = []
-    for species in lipids:
+    for lipid, path in zip(lipids, lipid_paths):
         for leaflet in leaflets:
             replica_enrichments_list = []
             replica_dims_list = []
             for rep in replicas:
-                rep_path = validate_path(root.joinpath(rep, f"{species}.{leaflet}.avg.dat"))
+                rep_path = validate_path(root.joinpath(rep, f"{lipid}.{leaflet}.avg.dat"), file=True)
                 counts, grid_dims, system_info = parse_tcl_dat_file(rep_path, bulk=False)
                 replica_dims_list.append(grid_dims)
                 density_enrichment = calculate_density_enrichment(calculate_density(counts, grid_dims), system_info.ExpBeadDensity)
                 replica_enrichments_list.append(density_enrichment)
             if not valid_Dimensions(replica_dims_list):
-                raise ValueError(f"Not all Dimensions attributes match within {species} leaflet {leaflet}")
+                raise ValueError(f"Not all Dimensions attributes match within {lipid} leaflet {leaflet}")
             all_reps_avg = np.nanmean(np.stack(tuple(rep_list), axis=0), axis=0)
             enrichments_list.append(all_reps_avg)
             grid_dims_list.append(replica_dims)
     if not valid_Dimensions(grid_dims_list):
-        raise ValueError("Not all Dimensions attributes match across all species and leaflets.")
+        raise ValueError("Not all Dimensions attributes match across all lipids and leaflets.")
     grid_dims_final = grid_dims_list[0]
     return enrichments_list, grid_dims_final
 
