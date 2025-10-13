@@ -8,7 +8,8 @@ Created on Mon Nov 11 09:44:53 2024.
 from pathlib import Path
 import numpy as np
 from collections import namedtuple
-from DTA.utils import validate_path, valid_grid_dims
+import warnings
+from DTA.utils import validate_path, valid_Dimensions
 
 
 SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
@@ -146,15 +147,14 @@ def aggregate_density_enrichment_scores(lipids, leaflets, replicas):
                 replica_dims_list.append(grid_dims)
                 density_enrichment = calculate_density_enrichment(calculate_density(counts, grid_dims), system_info.ExpBeadDensity)
                 replica_enrichments_list.append(density_enrichment)
+            if not valid_Dimensions(replica_dims_list):
+                raise ValueError(f"Not all Dimensions attributes match within {species} leaflet {leaflet}")
             all_reps_avg = np.nanmean(np.stack(tuple(rep_list), axis=0), axis=0)
-            if not valid_grid_dims(replica_dims_list):
-                raise 
             enrichments_list.append(all_reps_avg)
             grid_dims_list.append(replica_dims)
-    if not valid_grid_dims(grid_dims_list):
-        raise
-    else:
-        grid_dims_final = grid_dims_list[0]
+    if not valid_Dimensions(grid_dims_list):
+        raise ValueError("Not all Dimensions attributes match across all species and leaflets.")
+    grid_dims_final = grid_dims_list[0]
     return enrichments_list, grid_dims_final
 
 
