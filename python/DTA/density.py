@@ -8,7 +8,6 @@ Created on Mon Nov 11 09:44:53 2024.
 from pathlib import Path
 import numpy as np
 from collections import namedtuple
-import warnings
 from DTA.utils import validate_path
 
 
