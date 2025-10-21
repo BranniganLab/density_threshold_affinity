@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 from collections import namedtuple
 import warnings
-from DTA.utils import validate_path, valid_Dimensions
+from DTA.utils import validate_path
 
 
 SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
@@ -84,9 +84,9 @@ def valid_Dimensions(list_of_Dimensions_objs):
     if len(list_of_Dimensions_objs) == 1:
         return True
     dr, Nr, dtheta, Ntheta, _ = list_of_Dimensions_objs[0]
-    for item in list_of_Dimensions_objs:
-        for attr, val in zip(["dr", "Nr", "dtheta", "Ntheta"], [dr, Nr, dtheta, Ntheta]):
-            if item[attr] != val:
+    for obj in list_of_Dimensions_objs:
+        for index, val in enumerate([dr, Nr, dtheta, Ntheta]):
+            if obj[index] != val:
                 return False
     return True
 
@@ -239,7 +239,7 @@ def aggregate_density_enrichment_scores(file_paths):
         raise ValueError("Not all Dimensions attributes match.")
 
     all_reps_avg = np.nanmean(np.stack(tuple(replica_enrichments_list), axis=0), axis=0)
-    grid_dims_final = replica_dims[0]
+    grid_dims_final = replica_dims_list[0]
 
     return all_reps_avg, grid_dims_final
 
