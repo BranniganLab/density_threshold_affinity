@@ -1,5 +1,5 @@
 variable help_me_dir [file dirname [file normalize [info script]]]
-source $help_me_dir/TCL/get_counts.tcl
+source $help_me_dir/utilities/TCL/get_counts.tcl
 source $help_me_dir/../TCL/polarDensity_for_DTA.tcl
 
 
