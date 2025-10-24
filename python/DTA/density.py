@@ -8,6 +8,7 @@ Created on Mon Nov 11 09:44:53 2024.
 from pathlib import Path
 import numpy as np
 from collections import namedtuple
+from DTA.utils import validate_path
 
 
 SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
@@ -57,6 +58,79 @@ def parse_tcl_dat_file(filepath, bulk):
         grid_dims = _calculate_grid_dimensions(unrolled_data)
         counts = _package_counts(unrolled_data, grid_dims).squeeze()
         return counts, grid_dims, system_info
+
+
+def valid_Dimensions(list_of_Dimensions_objs):
+    """
+    Make sure that all Dimensions attributes do not vary across objects \
+        (not counting Nframes) in a list of Dimensions objects. If attributes \
+        do not vary across objects, return True. Else, return False.
+
+    Parameters
+    ----------
+    list_of_Dimensions_objs : list
+        List containing multiple Dimensions objects.
+
+    Returns
+    -------
+    Boolean
+
+    """
+    if not isinstance(list_of_Dimensions_objs, list):
+        raise TypeError(f"grid_dims must be a list, not a {type(list_of_Dimensions_objs)}.")
+    if not all(isinstance(item, Dimensions) for item in list_of_Dimensions_objs):
+        raise TypeError(f"grid_dims_list must contain Dimensions namedtuples.")
+    if len(list_of_Dimensions_objs) == 1:
+        return True
+    dr, Nr, dtheta, Ntheta, _ = list_of_Dimensions_objs[0]
+    for obj in list_of_Dimensions_objs:
+        for index, val in enumerate([dr, Nr, dtheta, Ntheta]):
+            if obj[index] != val:
+                return False
+    return True
+
+
+def load_replica_counts(root_path, replicas_list, system_name, leaflet_id, avg=False):
+    """
+    Load the counts from all replicas of a single system. Return them as a list.
+
+    Parameters
+    ----------
+    root_path : str or Path
+        The path to directory containing your replica subdirectories.
+    replicas_list : list
+        The list of replica subdirectory names.
+    system_name : str
+        The file stem for your PolarDensityBin outputs.
+    leaflet_id : int
+        Which leaflet your Site is in. 1=outer and 2=inner.
+    avg : bool
+        If True, load the average density file. If False (default), load the \
+        individual frame counts.
+
+    Returns
+    -------
+    list of ndarrays.
+
+    """
+    assert leaflet_id in [1, 2], "leaflet_id must be 1 (outer) or 2 (inner)."
+    assert isinstance(root_path, (str, Path)), "root_path must be a str or Path."
+    if isinstance(root_path, str):
+        root_path = Path(root_path)
+    assert root_path.exists(), f"could not find root_path {root_path}"
+    assert isinstance(replicas_list, list), "replicas_list must be a list."
+    assert (len(replicas_list) > 1), "Less than 2 replicas found."
+    replica_counts_list = []
+    leaflet = {1: "upp", 2: "low"}
+    for rep in replicas_list:
+        if avg:
+            fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.avg.dat")    
+        else:
+            fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.dat")
+        assert fname.is_file(), f"could not find file {fname}"
+        counts, grid_dims, system_info = parse_tcl_dat_file(fname, bulk=False)
+        replica_counts_list.append(counts)
+    return replica_counts_list
 
 
 def calculate_density(avg_counts, grid_dims):
@@ -130,6 +204,43 @@ def calculate_bin_area(r_bin, dr, dtheta):
     bin_radial_midpoint = (r_bin * dr) + (0.5 * dr)
     area = dr * dtheta * bin_radial_midpoint
     return area
+
+
+def aggregate_density_enrichment_scores(file_paths):
+    """
+    Collect the average counts, bin sizing, and expected density from each \
+        system, calulate average density enrichment for each system, and calculate\
+        average density enrichment accross systems. Also, return the Dimensions \
+        object that needs to be used for plotting the heatmaps.
+
+    Parameters
+    ----------
+    file_paths : list
+        The list of paths to all the average counts files you want to calculate\
+        density enrichment for.
+    
+    Returns
+    -------
+    area : float
+        The bin area in square Angstroms.
+
+    """
+    replica_enrichments_list = []
+    replica_dims_list = []
+    for rep_path in file_paths:
+        rep_path = validate_path(rep_path, file=True)
+        counts, grid_dims, system_info = parse_tcl_dat_file(rep_path, bulk=False)
+        replica_dims_list.append(grid_dims)
+        density_enrichment = calculate_density_enrichment(calculate_density(counts, grid_dims), system_info.ExpBeadDensity)
+        replica_enrichments_list.append(density_enrichment)
+
+    if not valid_Dimensions(replica_dims_list):
+        raise ValueError("Not all Dimensions attributes match.")
+
+    all_reps_avg = np.nanmean(np.stack(tuple(replica_enrichments_list), axis=0), axis=0)
+    grid_dims_final = replica_dims_list[0]
+
+    return all_reps_avg, grid_dims_final
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%  UTIL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%% #

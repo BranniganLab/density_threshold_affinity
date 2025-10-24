@@ -9,7 +9,6 @@ import numpy as np
 from scipy import constants
 import math
 from pathlib import Path
-from DTA.density import parse_tcl_dat_file
 
 
 def calculate_dG(counts_histogram, n_peak, temperature):
@@ -194,49 +193,6 @@ def check_bulk_counts_histogram(site_list):
     for site in site_list[1:]:
         assert bulk.all() == site.bulk_counts_histogram.all(), "One or more sites have different bulk histograms. This shouldn't be possible."
     return bulk
-
-
-def load_replica_counts(root_path, replicas_list, system_name, leaflet_id, avg=False):
-    """
-    Load the counts from all replicas of a single system. Return them as a list.
-
-    Parameters
-    ----------
-    root_path : str or Path
-        The path to directory containing your replica subdirectories.
-    replicas_list : list
-        The list of replica subdirectory names.
-    system_name : str
-        The file stem for your PolarDensityBin outputs.
-    leaflet_id : int
-        Which leaflet your Site is in. 1=outer and 2=inner.
-    avg : bool
-        If True, load the average density file. If False (default), load the \
-        individual frame counts.
-
-    Returns
-    -------
-    list of ndarrays.
-
-    """
-    assert leaflet_id in [1, 2], "leaflet_id must be 1 (outer) or 2 (inner)."
-    assert isinstance(root_path, (str, Path)), "root_path must be a str or Path."
-    if isinstance(root_path, str):
-        root_path = Path(root_path)
-    assert root_path.exists(), f"could not find root_path {root_path}"
-    assert isinstance(replicas_list, list), "replicas_list must be a list."
-    assert (len(replicas_list) > 1), "Less than 2 replicas found."
-    replica_counts_list = []
-    leaflet = {1: "upp", 2: "low"}
-    for rep in replicas_list:
-        if avg:
-            fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.avg.dat")    
-        else:
-            fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.dat")
-        assert fname.is_file(), f"could not find file {fname}"
-        counts, grid_dims, system_info = parse_tcl_dat_file(fname, bulk=False)
-        replica_counts_list.append(counts)
-    return replica_counts_list
 
 
 def validate_path(path, file=False):
