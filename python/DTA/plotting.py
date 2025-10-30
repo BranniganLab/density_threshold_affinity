@@ -302,7 +302,7 @@ def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
     return ax
 
 
-def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False):
+def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False, show_target=False):
     """
     Plot a histogram.
 
@@ -319,6 +319,10 @@ def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False):
     plot_probability : boolean, optional
         If True, turn the y axis into probability percentages, rather than \
         raw counts. The default is False.
+    show_target : boolean, optional
+        If bulk_mode is True and show_target is True, label the red line "target\
+        mode". If bulk_mode is True and show_target is False, label the red line\
+        "bulk mode".
 
     Returns
     -------
@@ -336,7 +340,10 @@ def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False):
     mode = calculate_hist_mode(data)
     ax.vlines([mode], 0, np.max(data), color='black', linestyles='dashed', label=f"mode={mode}")
     if bulk_mode != "NULL":
-        ax.vlines([bulk_mode], 0, np.max(data), color='red', linestyles='dashed', label=f"bulk mode={bulk_mode}")
+        if show_target:
+            ax.vlines([bulk_mode], 0, np.max(data), color='red', linestyles='dotted', label=f"target mode={bulk_mode}")
+        else:
+            ax.vlines([bulk_mode], 0, np.max(data), color='red', linestyles='dotted', label=f"bulk mode={bulk_mode}")
     ax.legend()
     return ax
 

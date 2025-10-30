@@ -38,11 +38,6 @@ Check it out here: https://doi.org/10.1016/bs.mie.2024.03.008
 
    ```> source ./TCL/polarDensity_for_DTA.tcl```
 
-   ```> polarDensityBin <config file path>```  
-
-9. Open the preliminaries.ipynb jupyter notebook using your method of choice (e.g. VSCode or a local host)
-10. Update the paths and lipid names to point to your data and run
-11. Select bins for the binding site
-12. Determine the accessible area for the site (many optional methods for this, get_accessible_area.ipynb describes one method)
-13. Open the DTA notebook and determine the expected mode of the bead probabilities in the bulk for a patch equal to the accessible area
-14. Calculate the dG_bind using the DTA notebook
+   ```> polarDensity <config file path>```  
+9. Open the jupyter notebook that corresponds to your use case using your method of choice (e.g. VSCode or a local host)
+10. Follow the prompts in the notebook
