@@ -36,5 +36,5 @@ Check it out here: https://doi.org/10.1016/bs.mie.2024.03.008
    ```> source ./TCL/polarDensity_for_DTA.tcl```
 
    ```> polarDensity <config file path>```  
-8. Open the jupyter notebook that corresponds to your use case using your method of choice (e.g. VSCode or a local host)
+8. Open the Jupyter notebook that corresponds to your use case in density_threshold_affinity/python/ using your method of choice (e.g. VSCode or a local host)
 9. Follow the prompts in the notebook
