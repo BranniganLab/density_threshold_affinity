@@ -21,9 +21,7 @@ jobs:
         pip install numpy
         pip install scipy
         pip install matplotlib
-        cd ./python/DTA
-        pip install .
+        pip install ./python/DTA
     - name: Analysing the code with pylint
       run: |
-        cd ./python/DTA
-        pylint $(find . -name '*.py')  --fail-under=6.3
+        pylint $(find ./python/DTA/ -name '*.py')  --fail-under=6.3
