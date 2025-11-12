@@ -24,4 +24,5 @@ jobs:
         pip install ./python/
     - name: Analysing the code with pylint
       run: |
+        export PYLINTRC=./.github/workflows/.pylintrc
         pylint $(find ./python/DTA/ -name '*.py')  --fail-under=6.3
