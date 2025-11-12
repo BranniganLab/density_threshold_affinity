@@ -1,19 +1,7 @@
 [MAIN]
 disable=line-too-long
 
-[VARIABLES]
+[BASIC]
 
-# to update: add a variable name to this list without spaces or new lines
-good-names=dG,dGs,deltaG,Nr,Ntheta,dG_site,dG_ref,dG_std,minus_RT,P_unocc,P_occ,total_N,RT,NB,NL,BoxArea,ExpBeadDensity,DrDtheta,sysInfo,delta_G
-
-[FUNCTIONS]
-
-good-names=valid_Dimensions,calculate_P_unnoc,calculate_dG
-
-[ARGUMENTS]
-
-good-names=list_of_Dimensions_objs,deltaG_std
-
-[MODULES]
-
-good-names=DTA,SiteAcrossReplicas,Site,SymmetricSite
+# to update: add a name to this list without spaces or new lines
+good-names=dG,dGs,deltaG,Nr,Ntheta,dG_site,dG_ref,dG_std,minus_RT,P_unocc,P_occ,total_N,RT,NB,NL,BoxArea,ExpBeadDensity,DrDtheta,sysInfo,delta_G,valid_Dimensions,calculate_P_unnoc,calculate_dG,list_of_Dimensions_objs,deltaG_std,DTA,SiteAcrossReplicas,Site,SymmetricSite
