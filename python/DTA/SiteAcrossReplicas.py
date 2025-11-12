@@ -154,17 +154,29 @@ class SiteAcrossReplicas:
         """
         ind_counts_over_time = []
         symm_site_counts_over_time = []
+        min_len = np.inf
         for site in self.get_site_list:
             if isinstance(site, SymmetricSite):
                 symmsite_counts, site_counts_list = site.site_counts_over_time
+                arr_len = symmsite_counts.shape[0]
+                if arr_len < min_len:
+                    min_len = arr_len
                 ind_counts_over_time.append(site_counts_list)
                 symm_site_counts_over_time.append(symmsite_counts)
             else:
-                ind_counts_over_time.append(site.site_counts_over_time)
+                counts = site.site_counts_over_time
+                arr_len = counts.shape[0]
+                if arr_len < min_len:
+                    min_len = arr_len
+                ind_counts_over_time.append(counts)
+        all_same_len = []
         if isinstance(site, SymmetricSite):
-            agg_counts_over_time = np.sum(np.array(symm_site_counts_over_time), axis=0)
+            for arr in symm_site_counts_over_time:
+                all_same_len.append(arr[:min_len])
         else:
-            agg_counts_over_time = np.sum(np.array(ind_counts_over_time), axis=0)
+            for arr in ind_counts_over_time:
+                all_same_len.append(arr[:min_len])
+        agg_counts_over_time = np.sum(np.array(all_same_len), axis=0)
         return agg_counts_over_time, ind_counts_over_time
 
     @property
