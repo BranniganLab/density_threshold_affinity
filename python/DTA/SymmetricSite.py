@@ -169,6 +169,27 @@ class SymmetricSite:
         return check_bulk_counts_histogram(self.get_site_list)
 
     @property
+    def site_counts_over_time(self):
+        """
+        Tell me the counts on each frame of the trajectory for this SymmetricSite.
+
+        Returns
+        -------
+        agg_counts_over_time : numpy ndarray
+            One-dimensional ndarray containing the total SymmetricSite count \
+            for each frame.
+        ind_counts_over_time : list of numpy ndarrays
+            List containing the site_counts_over_time for each Site within this\
+            SymmetricSite.
+
+        """
+        ind_counts_over_time = []
+        for site in self.get_site_list:
+            ind_counts_over_time.append(site.site_counts_over_time)
+        agg_counts_over_time = np.sum(np.array(ind_counts_over_time), axis=0)
+        return agg_counts_over_time, ind_counts_over_time
+
+    @property
     def n_peak(self):
         """
         Tell me what the n_peak is.
