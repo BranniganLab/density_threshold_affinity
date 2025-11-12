@@ -1,3 +1,6 @@
+[MAIN]
+disable=line-too-long
+
 [VARIABLES]
 
 # to update: add a variable name to this list without spaces or new lines
