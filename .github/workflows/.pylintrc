@@ -1,4 +1,4 @@
 [VARIABLES]
 
 # to update: add a variable name to this list without spaces or new lines
-good-names=dG,dGs,deltaG,Nr,Ntheta,dG_site,dG_ref,dG_std,minus_RT,P_unocc,P_occ,total_N,RT,NB,NL,BoxArea,ExpBeadDensity,DrDtheta,sysInfo
+good-names=dG,dGs,deltaG,Nr,Ntheta,dG_site,dG_ref,dG_std,minus_RT,P_unocc,P_occ,total_N,RT,NB,NL,BoxArea,ExpBeadDensity,DrDtheta,sysInfo,delta_G
