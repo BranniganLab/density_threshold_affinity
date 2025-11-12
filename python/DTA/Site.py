@@ -49,6 +49,8 @@ class Site:
         zero beads in the bulk patch, 5 frames having one bead in the patch, 0 \
         frames having 2, 3, or 5 beads in the patch, and 1 frame having 4 beads\
         in the patch.
+    site_counts_over_time : numpy ndarray
+        One-dimensional ndarray containing the total count for each frame.
     n_peak : int
         The mode of the bulk histogram. Indicates the cut-off for P_unocc.
     dG : float
@@ -76,6 +78,7 @@ class Site:
         self._bin_coords = None
         self._site_counts_histogram = None
         self._bulk_counts_histogram = None
+        self._site_counts_over_time = None
 
     @property
     def bin_coords(self):
@@ -153,6 +156,19 @@ class Site:
         return self._bulk_counts_histogram
 
     @property
+    def site_counts_over_time(self):
+        """
+        Tell me the counts on each frame of the trajectory for this Site.
+
+        Returns
+        -------
+        counts_over_time : numpy ndarray
+            One-dimensional ndarray containing the total count for each frame.
+
+        """
+        return self._site_counts_over_time
+
+    @property
     def n_peak(self):
         """
         Tell me what the n_peak is.
@@ -217,9 +233,8 @@ class Site:
         else:
             assert len(counts_data.shape) == 3, f"Counts data is not in the right format: {counts_data}"
             counts_data = counts_data.astype(int)
-            site_counts = self._fetch_site_counts(counts_data)
-            site_hist = np.bincount(site_counts)
-            self._site_counts_histogram = site_hist
+            self._site_counts_over_time = self._fetch_site_counts(counts_data)
+            self._site_counts_histogram = np.bincount(self._site_counts_over_time)
 
     def calculate_geometric_area(self, dr, dtheta):
         """
