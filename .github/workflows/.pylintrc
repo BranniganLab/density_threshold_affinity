@@ -1,5 +1,5 @@
 [MAIN]
-disable=line-too-long
+disable=line-too-long,duplicate-code
 
 [BASIC]
 
