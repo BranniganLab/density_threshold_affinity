@@ -5,10 +5,10 @@ Created on Thu Nov 14 13:55:09 2024.
 
 @author: js2746
 """
-import numpy as np
-from scipy import constants
 import math
 from pathlib import Path
+import numpy as np
+from scipy import constants
 
 
 def calculate_dG(counts_histogram, n_peak, temperature):
