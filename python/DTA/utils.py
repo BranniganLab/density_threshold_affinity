@@ -108,8 +108,8 @@ def calculate_hist_mean(counts_data):
     """
     total_N = np.sum(counts_data)
     sum_i = 0
-    for i in range(len(counts_data)):
-        sum_i += i * counts_data[i]
+    for index, value in enumerate(counts_data):
+        sum_i += index * value
     mean = sum_i / total_N
     return mean
 
