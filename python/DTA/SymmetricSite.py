@@ -46,10 +46,10 @@ class SymmetricSite:
         zero beads in the bulk patch, 5 frames having one bead in the patch, 0 \
         frames having 2, 3, or 5 beads in the patch, and 1 frame having 4 beads\
         in the patch.
-    site_counts_over_time : numpy ndarray and list of ndarrays
-        One-dimensional ndarray containing the total count for each frame as well\
-        as list of one-dimensional ndarrays containing total counts for each Site\
-        that comprises this SymmetricSite.
+    site_counts_over_time : list
+        First item is a one-dimensional ndarray containing the total count for \
+        each frame. Second item is list of one-dimensional ndarrays containing \
+        total counts for each Site that comprises this SymmetricSite.
     n_peak : int
         The mode of the bulk histogram. Indicates the cut-off for P_unocc.
     dG : float
