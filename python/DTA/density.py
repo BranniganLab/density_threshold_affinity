@@ -6,8 +6,8 @@ Created on Mon Nov 11 09:44:53 2024.
 @author: js2746
 """
 from pathlib import Path
-import numpy as np
 from collections import namedtuple
+import numpy as np
 from DTA.utils import validate_path
 
 
