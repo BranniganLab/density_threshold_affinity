@@ -122,7 +122,7 @@ def load_replica_counts(root_path, replicas_list, system_name, leaflet_id, avg=F
         else:
             fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.dat")
         assert fname.is_file(), f"could not find file {fname}"
-        counts, grid_dims, system_info = parse_tcl_dat_file(fname, bulk=False)
+        counts, _, _ = parse_tcl_dat_file(fname, bulk=False)
         replica_counts_list.append(counts)
     return replica_counts_list
 
@@ -212,7 +212,7 @@ def aggregate_density_enrichment_scores(file_paths):
     file_paths : list
         The list of paths to all the average counts files you want to calculate\
         density enrichment for.
-    
+
     Returns
     -------
     area : float
@@ -262,6 +262,8 @@ def _parse_system_info(dat_file_header):
         NL, NB, BoxArea, ExpBeadDensity, _, DrDtheta = dat_file_header
     elif len(dat_file_header) == 5:
         NL, NB, BoxArea, ExpBeadDensity, DrDtheta = dat_file_header
+    else:
+        raise ValueError("The header in your .dat file has an unexpected number of entries.")
     NL = _isolate_number_from_header_string(NL)
     NB = _isolate_number_from_header_string(NB)
     BoxArea = _isolate_number_from_header_string(BoxArea)
@@ -291,8 +293,7 @@ def _isolate_number_from_header_string(string):
     if "/" in right_side:
         # Expected bead density has a division symbol in it
         return float(right_side.split('/')[0])
-    else:
-        return float(right_side.split()[0])
+    return float(right_side.split()[0])
 
 
 def _calculate_grid_dimensions(unrolled_data):
@@ -343,9 +344,9 @@ def _calculate_nframes(r_values):
 
     """
     match_value = r_values[0]
-    for i in range(len(r_values)):
-        if r_values[i] != match_value:
-            return i
+    for index, value in enumerate(r_values):
+        if r_values[index] != match_value:
+            return index
     return len(r_values)
 
 
