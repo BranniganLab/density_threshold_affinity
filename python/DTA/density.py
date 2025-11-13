@@ -345,7 +345,7 @@ def _calculate_nframes(r_values):
     """
     match_value = r_values[0]
     for index, value in enumerate(r_values):
-        if r_values[index] != match_value:
+        if value != match_value:
             return index
     return len(r_values)
 
