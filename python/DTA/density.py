@@ -6,8 +6,8 @@ Created on Mon Nov 11 09:44:53 2024.
 @author: js2746
 """
 from pathlib import Path
-import numpy as np
 from collections import namedtuple
+import numpy as np
 from DTA.utils import validate_path
 
 
@@ -43,21 +43,15 @@ def parse_tcl_dat_file(filepath, bulk):
         filepath. If bulk is True, returns None.
 
     """
-    if isinstance(filepath, str):
-        filepath = Path(filepath)
-    elif not isinstance(filepath, Path):
-        raise Exception("Must provide the path to the .dat file.")
-    assert filepath.exists(), f"Could not find {filepath}"
-    assert filepath.is_file(), f"This is not recognized as a file {filepath}"
+    filepath = validate_path(filepath, file=True)
     assert (filepath.suffixes[-1] == '.dat') or (filepath.suffixes[-1] == '.out'), "You must provide the .dat or .out file output from VMD."
     if bulk:
         return np.loadtxt(filepath).astype(int).flatten(), None, None
-    else:
-        unrolled_data = np.loadtxt(filepath, skiprows=1)
-        system_info = _parse_system_info(np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str))
-        grid_dims = _calculate_grid_dimensions(unrolled_data)
-        counts = _package_counts(unrolled_data, grid_dims).squeeze()
-        return counts, grid_dims, system_info
+    unrolled_data = np.loadtxt(filepath, skiprows=1)
+    system_info = _parse_system_info(np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str))
+    grid_dims = _calculate_grid_dimensions(unrolled_data)
+    counts = _package_counts(unrolled_data, grid_dims).squeeze()
+    return counts, grid_dims, system_info
 
 
 def valid_Dimensions(list_of_Dimensions_objs):
@@ -79,7 +73,7 @@ def valid_Dimensions(list_of_Dimensions_objs):
     if not isinstance(list_of_Dimensions_objs, list):
         raise TypeError(f"grid_dims must be a list, not a {type(list_of_Dimensions_objs)}.")
     if not all(isinstance(item, Dimensions) for item in list_of_Dimensions_objs):
-        raise TypeError(f"grid_dims_list must contain Dimensions namedtuples.")
+        raise TypeError("grid_dims_list must contain Dimensions namedtuples.")
     if len(list_of_Dimensions_objs) == 1:
         return True
     dr, Nr, dtheta, Ntheta, _ = list_of_Dimensions_objs[0]
@@ -124,11 +118,11 @@ def load_replica_counts(root_path, replicas_list, system_name, leaflet_id, avg=F
     leaflet = {1: "upp", 2: "low"}
     for rep in replicas_list:
         if avg:
-            fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.avg.dat")    
+            fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.avg.dat")
         else:
             fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.dat")
         assert fname.is_file(), f"could not find file {fname}"
-        counts, grid_dims, system_info = parse_tcl_dat_file(fname, bulk=False)
+        counts, _, _ = parse_tcl_dat_file(fname, bulk=False)
         replica_counts_list.append(counts)
     return replica_counts_list
 
@@ -218,7 +212,7 @@ def aggregate_density_enrichment_scores(file_paths):
     file_paths : list
         The list of paths to all the average counts files you want to calculate\
         density enrichment for.
-    
+
     Returns
     -------
     area : float
@@ -268,6 +262,8 @@ def _parse_system_info(dat_file_header):
         NL, NB, BoxArea, ExpBeadDensity, _, DrDtheta = dat_file_header
     elif len(dat_file_header) == 5:
         NL, NB, BoxArea, ExpBeadDensity, DrDtheta = dat_file_header
+    else:
+        raise ValueError("The header in your .dat file has an unexpected number of entries.")
     NL = _isolate_number_from_header_string(NL)
     NB = _isolate_number_from_header_string(NB)
     BoxArea = _isolate_number_from_header_string(BoxArea)
@@ -297,8 +293,7 @@ def _isolate_number_from_header_string(string):
     if "/" in right_side:
         # Expected bead density has a division symbol in it
         return float(right_side.split('/')[0])
-    else:
-        return float(right_side.split()[0])
+    return float(right_side.split()[0])
 
 
 def _calculate_grid_dimensions(unrolled_data):
@@ -349,9 +344,9 @@ def _calculate_nframes(r_values):
 
     """
     match_value = r_values[0]
-    for i in range(len(r_values)):
-        if r_values[i] != match_value:
-            return i
+    for index, value in enumerate(r_values):
+        if value != match_value:
+            return index
     return len(r_values)
 
 
