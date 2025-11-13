@@ -43,21 +43,15 @@ def parse_tcl_dat_file(filepath, bulk):
         filepath. If bulk is True, returns None.
 
     """
-    if isinstance(filepath, str):
-        filepath = Path(filepath)
-    elif not isinstance(filepath, Path):
-        raise Exception("Must provide the path to the .dat file.")
-    assert filepath.exists(), f"Could not find {filepath}"
-    assert filepath.is_file(), f"This is not recognized as a file {filepath}"
+    filepath = validate_path(filepath, file=True)
     assert (filepath.suffixes[-1] == '.dat') or (filepath.suffixes[-1] == '.out'), "You must provide the .dat or .out file output from VMD."
     if bulk:
         return np.loadtxt(filepath).astype(int).flatten(), None, None
-    else:
-        unrolled_data = np.loadtxt(filepath, skiprows=1)
-        system_info = _parse_system_info(np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str))
-        grid_dims = _calculate_grid_dimensions(unrolled_data)
-        counts = _package_counts(unrolled_data, grid_dims).squeeze()
-        return counts, grid_dims, system_info
+    unrolled_data = np.loadtxt(filepath, skiprows=1)
+    system_info = _parse_system_info(np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str))
+    grid_dims = _calculate_grid_dimensions(unrolled_data)
+    counts = _package_counts(unrolled_data, grid_dims).squeeze()
+    return counts, grid_dims, system_info
 
 
 def valid_Dimensions(list_of_Dimensions_objs):
@@ -79,7 +73,7 @@ def valid_Dimensions(list_of_Dimensions_objs):
     if not isinstance(list_of_Dimensions_objs, list):
         raise TypeError(f"grid_dims must be a list, not a {type(list_of_Dimensions_objs)}.")
     if not all(isinstance(item, Dimensions) for item in list_of_Dimensions_objs):
-        raise TypeError(f"grid_dims_list must contain Dimensions namedtuples.")
+        raise TypeError("grid_dims_list must contain Dimensions namedtuples.")
     if len(list_of_Dimensions_objs) == 1:
         return True
     dr, Nr, dtheta, Ntheta, _ = list_of_Dimensions_objs[0]
@@ -124,7 +118,7 @@ def load_replica_counts(root_path, replicas_list, system_name, leaflet_id, avg=F
     leaflet = {1: "upp", 2: "low"}
     for rep in replicas_list:
         if avg:
-            fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.avg.dat")    
+            fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.avg.dat")
         else:
             fname = root_path.joinpath(rep, f"{system_name}.{leaflet[leaflet_id]}.dat")
         assert fname.is_file(), f"could not find file {fname}"
