@@ -21,8 +21,12 @@ jobs:
         pip install numpy==2.2.6
         pip install scipy
         pip install matplotlib
+        pip install pytest
         pip install ./python/
     - name: Analysing the code with pylint
       run: |
         export PYLINTRC=./.github/workflows/.pylintrc
         pylint $(find ./python/DTA/ -name '*.py') --fail-under=8
+    - name: Running regression test with pytest
+      run: |
+        python ./test_files/test_file.py
