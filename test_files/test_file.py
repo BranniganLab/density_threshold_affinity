@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
+Author:js2746
 
-This is a temporary script file.
+This is a pytest file for regression testing DTA.
 """
 
 import pytest
