@@ -29,4 +29,4 @@ jobs:
         pylint $(find ./python/DTA/ -name '*.py') --fail-under=8
     - name: Running regression test with pytest
       run: |
-        python ./test_files/test_file.py
+        python -m pytest ./test_files/test_file.py
