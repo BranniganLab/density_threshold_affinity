@@ -49,11 +49,17 @@ def analyze_sample_outputs():
     bulk_counts_list, _, _ = parse_tcl_dat_file(bulk_counts_path, bulk=True)
     symm_site_across_replicas_1.update_counts_histogram(bulk=True, counts_data=bulk_counts_list)
 
-    return symm_site_across_replicas_1.dG, symm_site_across_replicas_1.dG_std
+    return symm_site_across_replicas_1
 
 
 def test_if_delta_G_matches():
-    dG, dG_std = analyze_sample_outputs()
-    assert round(dG, 2) == -1.45, "Delta G value no longer matches!"
-    assert round(dG_std, 2) == 0.05, "Standard deviation no longer matches!"
+    site = analyze_sample_outputs()
+    assert round(site.dG, 2) == -1.45, "Delta G value no longer matches!"
+    assert round(site.dG_std, 2) == 0.05, "Standard deviation no longer matches!"
+
+
+@pytest.mark.xfail(strict=True)
+def test_if_fail_appropriately():
+    site = analyze_sample_outputs()
+    assert site.dG == 0
 
