@@ -38,3 +38,6 @@ for leaf in ["upp", "low"]:
         rep_list.append(rep_path)
     avg_enrichment_over_reps, grid_dims = aggregate_density_enrichment_scores(rep_list)
     avg_enrichments.append(avg_enrichment_over_reps)
+
+print(helices)
+print(avg_enrichments)
