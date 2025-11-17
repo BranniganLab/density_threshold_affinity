@@ -85,6 +85,11 @@ class SymmetricSite:
         yield from self.get_site_list
 
     @property
+    def N_theta(self):
+        """Tell me how many azimuthal bins there are."""
+        return self._Ntheta
+
+    @property
     def symmetry(self):
         """
         Tell me the symmetry, but don't let me change the symmetry.
