@@ -78,7 +78,7 @@ class SymmetricSite:
         assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a SymmetricSite."
         self.name = base_site.name
         self._symmetry = symmetry
-        self._Ntheta = Ntheta
+        self._ntheta_in_lattice = Ntheta
         self._site_list = self._make_symmetric_sites(base_site, Ntheta)
         assert len(self.get_site_list) == symmetry, "Number of Sites does not match symmetry."
         self.temperature = base_site.temperature
