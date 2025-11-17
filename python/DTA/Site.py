@@ -165,7 +165,7 @@ class Site:
 
         """
         if self._bulk_counts_histogram is None:
-            raise Exception("You need to update the bulk counts histogram first.")
+            raise AttributeError("You need to update the bulk counts histogram first.")
         return calculate_hist_mode(self.bulk_counts_histogram)
 
     @property
@@ -213,7 +213,6 @@ class Site:
             assert len(counts_data.shape) == 1, f"Bulk counts data is not in the right format: {counts_data}"
             bulk_hist = np.bincount(counts_data)
             self._bulk_counts_histogram = bulk_hist
-            self._n_peak = calculate_hist_mode(self._bulk_counts_histogram)
         else:
             assert len(counts_data.shape) == 3, f"Counts data is not in the right format: {counts_data}"
             counts_data = counts_data.astype(int)
