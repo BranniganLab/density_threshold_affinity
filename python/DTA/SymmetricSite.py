@@ -5,8 +5,8 @@ Created on Thu Nov 14 16:53:18 2024.
 
 @author: js2746
 """
-from DTA.Site import Site
 import numpy as np
+from DTA.Site import Site
 from DTA.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, aggregate_site_counts_histograms, check_bulk_counts_histogram
 
 
@@ -82,8 +82,7 @@ class SymmetricSite:
 
     def __iter__(self):
         """Iterate through the site_list."""
-        for site in self.get_site_list:
-            yield site
+        yield from self.get_site_list
 
     @property
     def symmetry(self):
