@@ -75,7 +75,7 @@ class SiteAcrossReplicas:
 
     def __iter__(self):
         """Iterate through the site_list."""
-        yield from self.get_site_list:
+        yield from self.get_site_list
 
     @property
     def get_site_list(self):
