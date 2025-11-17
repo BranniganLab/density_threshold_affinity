@@ -245,7 +245,7 @@ class SiteAcrossReplicas:
         assert isinstance(replica_list, list), "replica_list must be a list"
         name = base_site.name
         site_list = []
-        for site_number in range(len(replica_list)):
+        for site_number, _ in enumerate(replica_list):
             site_name = name + '_rep' + str(site_number + 1)
             if isinstance(base_site, Site):
                 new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
