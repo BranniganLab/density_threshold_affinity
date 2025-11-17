@@ -67,7 +67,7 @@ class SiteAcrossReplicas:
         if isinstance(base_site, Site):
             assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a Site_Across_Replicas."
         elif not isinstance(base_site, SymmetricSite):
-            raise Exception("base_site must be a Site or SymmetricSite")
+            raise ValueError("base_site must be a Site or SymmetricSite")
         self.name = base_site.name
         self._site_list = self._make_sites_across_replicas(base_site, replica_list)
         assert len(self.get_site_list) == len(replica_list), "Number of Sites does not match number of replicas."
@@ -75,8 +75,7 @@ class SiteAcrossReplicas:
 
     def __iter__(self):
         """Iterate through the site_list."""
-        for site in self.get_site_list:
-            yield site
+        yield from self.get_site_list:
 
     @property
     def get_site_list(self):
