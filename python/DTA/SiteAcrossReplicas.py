@@ -5,9 +5,9 @@ Created on Mon Jan 27 17:20:36 2025.
 
 @author: js2746
 """
+import numpy as np
 from DTA.Site import Site
 from DTA.SymmetricSite import SymmetricSite
-import numpy as np
 from DTA.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, aggregate_site_counts_histograms, check_bulk_counts_histogram
 
 
@@ -67,7 +67,7 @@ class SiteAcrossReplicas:
         if isinstance(base_site, Site):
             assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a Site_Across_Replicas."
         elif not isinstance(base_site, SymmetricSite):
-            raise Exception("base_site must be a Site or SymmetricSite")
+            raise ValueError("base_site must be a Site or SymmetricSite")
         self.name = base_site.name
         self._site_list = self._make_sites_across_replicas(base_site, replica_list)
         assert len(self.get_site_list) == len(replica_list), "Number of Sites does not match number of replicas."
@@ -75,8 +75,7 @@ class SiteAcrossReplicas:
 
     def __iter__(self):
         """Iterate through the site_list."""
-        for site in self.get_site_list:
-            yield site
+        yield from self.get_site_list
 
     @property
     def get_site_list(self):
@@ -246,7 +245,7 @@ class SiteAcrossReplicas:
         assert isinstance(replica_list, list), "replica_list must be a list"
         name = base_site.name
         site_list = []
-        for site_number in range(len(replica_list)):
+        for site_number, _ in enumerate(replica_list):
             site_name = name + '_rep' + str(site_number + 1)
             if isinstance(base_site, Site):
                 new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
@@ -254,7 +253,7 @@ class SiteAcrossReplicas:
             elif isinstance(base_site, SymmetricSite):
                 new_single_site = Site(site_name, base_site.get_site_list[0].leaflet_id, base_site.get_site_list[0].temperature)
                 new_single_site.bin_coords = base_site.get_site_list[0].bin_coords
-                new_site = SymmetricSite(base_site.symmetry, new_single_site, base_site._Ntheta)
+                new_site = SymmetricSite(base_site.symmetry, new_single_site, base_site.ntheta_in_lattice)
             new_site.update_counts_histogram(bulk=False, counts_data=replica_list[site_number])
             site_list.append(new_site)
         return site_list
