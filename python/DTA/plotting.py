@@ -8,7 +8,7 @@ Created on Mon Nov 11 14:41:24 2024.
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import matplotlib.gridspec as gridspec
+from matplotlib import gridspec
 from matplotlib.colors import ListedColormap, Normalize
 from scipy import constants
 from DTA.utils import calculate_hist_mode
@@ -124,8 +124,8 @@ def _find_edge_in_list(edge, line_list):
         The index in line_list at which edge is found.
 
     """
-    for index in range(len(line_list)):
-        if np.allclose(edge, line_list[index]):
+    for index, line in enumerate(line_list):
+        if np.allclose(edge, line):
             return index
     return -1
 
@@ -201,7 +201,7 @@ def create_heatmap_figure_and_axes(row_names, col_names, figwidth, figheight, he
     assert len(col_names) > 0, "col_names cannot be an empty list"
     assert isinstance(helices, list), "helices must be a list"
     assert isinstance(helices[0], np.ndarray), "helices must be a list of ndarrays"
-    
+
     num_rows = len(row_names)
     num_cols = len(col_names)
     assert len(helices) == num_rows * num_cols, f"Not enough helix coordinate sets ({str(len(helices))}) for all panels {str(num_rows * num_cols)} in the figure"
@@ -463,7 +463,7 @@ class MidpointNormalize(Normalize):
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
 
-def plot_helices(helices, colorbychain, ax, markersize=3, sub=["tab:blue", "tab:cyan", "tab:green", "tab:purple", "tab:brown", "tab:olive", "tab:orange"]):
+def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
     """
     Plot helices on a polar plot.
 
@@ -473,20 +473,22 @@ def plot_helices(helices, colorbychain, ax, markersize=3, sub=["tab:blue", "tab:
     - colorbychain (bool): A flag to determine if the helices should be colored by chain.
     - ax (matplotlib.axes.Axes): The polar subplot axis on which to plot the helices.
     - markersize (int, optional): The size of the scatter markers. Defaults to 3.
-    - sub (list, optional): The list of colors to use for coloring the helices. Defaults to a predefined list of colors.
+    - colorlist (list, optional): The list of colors to use for coloring the helices. Defaults to a predefined list of colors.
 
     Returns
     -------
     - ax (matplotlib.axes.Axes): The modified polar subplot axis with the helices plotted.
 
     """
+    if colorlist is None:
+        colorlist = ["tab:blue", "tab:cyan", "tab:green", "tab:purple", "tab:brown", "tab:olive", "tab:orange"]
     if len(np.shape(helices)) == 1:
         helices = np.reshape(helices, (1, len(helices)))
     for i, pro in enumerate(helices[:]):
         if colorbychain:
-            colors = sub[i]
+            colors = colorlist[i]
         else:
-            colors = sub[:len(pro[::2])]
+            colors = colorlist[:len(pro[::2])]
         ax.scatter(np.deg2rad(pro[1::2]), pro[::2], color=colors, linewidth=None,
                    zorder=1, s=markersize)
     return ax
