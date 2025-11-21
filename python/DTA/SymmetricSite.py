@@ -5,8 +5,8 @@ Created on Thu Nov 14 16:53:18 2024.
 
 @author: js2746
 """
-from DTA.Site import Site
 import numpy as np
+from DTA.Site import Site
 from DTA.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, aggregate_site_counts_histograms, check_bulk_counts_histogram
 
 
@@ -27,6 +27,9 @@ class SymmetricSite:
         The name of the Site. Will be inherited from base_site.
     symmetry : int
         The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
+    ntheta_in_lattice : int
+        The number of azimuthal bins in the lattice (not just how many are in \
+        the site!)
     bin_coords : list of tuples
         The bins that belong to this site in (r, theta) format. e.g. \
         [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
@@ -79,15 +82,20 @@ class SymmetricSite:
         assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a SymmetricSite."
         self.name = base_site.name
         self._symmetry = symmetry
-        self._Ntheta = Ntheta
+        self._ntheta_in_lattice = Ntheta
         self._site_list = self._make_symmetric_sites(base_site, Ntheta)
         assert len(self.get_site_list) == symmetry, "Number of Sites does not match symmetry."
         self.temperature = base_site.temperature
 
     def __iter__(self):
         """Iterate through the site_list."""
-        for site in self.get_site_list:
-            yield site
+        yield from self.get_site_list
+
+    @property
+    def ntheta_in_lattice(self):
+        """Tell me how many azimuthal bins there are in the lattice (not this \
+        site)."""
+        return self._ntheta_in_lattice
 
     @property
     def symmetry(self):

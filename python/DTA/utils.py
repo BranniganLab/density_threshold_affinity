@@ -5,10 +5,10 @@ Created on Thu Nov 14 13:55:09 2024.
 
 @author: js2746
 """
-import numpy as np
-from scipy import constants
 import math
 from pathlib import Path
+import numpy as np
+from scipy import constants
 
 
 def calculate_dG(counts_histogram, n_peak, temperature):
@@ -31,12 +31,12 @@ def calculate_dG(counts_histogram, n_peak, temperature):
 
     """
     minus_RT = -1.0 * temperature * constants.R / 4184.  # 4184 converts J to kcal
-    P_unnoc = calculate_P_unnoc(counts_histogram, n_peak)
-    delta_G = minus_RT * np.log((1 - P_unnoc) / P_unnoc)
+    P_unocc = calculate_P_unocc(counts_histogram, n_peak)
+    delta_G = minus_RT * np.log((1 - P_unocc) / P_unocc)
     return delta_G
 
 
-def calculate_P_unnoc(counts_histogram, n_peak):
+def calculate_P_unocc(counts_histogram, n_peak):
     """
     Calculate the probability that the site is unoccupied by ligand. This \
     is defined by the portion of the histogram <= n_peak divided by the \
@@ -51,15 +51,15 @@ def calculate_P_unnoc(counts_histogram, n_peak):
 
     Returns
     -------
-    P_unnoc : float
+    P_unocc : float
         The probability that the site is unoccupied by ligand.
 
     """
     total_N = np.sum(counts_histogram)
-    P_unnoc = np.sum(counts_histogram[:n_peak + 1]) / total_N
+    P_unocc = np.sum(counts_histogram[:n_peak + 1]) / total_N
     P_occ = np.sum(counts_histogram[n_peak + 1:]) / total_N
-    assert math.isclose(P_occ + P_unnoc, 1, abs_tol=0.01), f"Probabilities do not sum to one. Current sum: {P_unnoc + P_occ}"
-    return P_unnoc
+    assert math.isclose(P_occ + P_unocc, 1, abs_tol=0.01), f"Probabilities do not sum to one. Current sum: {P_unocc + P_occ}"
+    return P_unocc
 
 
 def calculate_hist_mode(histogram, nonzero=False):
@@ -108,8 +108,8 @@ def calculate_hist_mean(counts_data):
     """
     total_N = np.sum(counts_data)
     sum_i = 0
-    for i in range(len(counts_data)):
-        sum_i += i * counts_data[i]
+    for index, value in enumerate(counts_data):
+        sum_i += index * value
     mean = sum_i / total_N
     return mean
 
