@@ -166,7 +166,7 @@ class SiteAcrossReplicas:
                 ind_counts_over_time.append(counts)
             min_len = min(min_len, arr_len)
         all_same_len = []
-        if isinstance(site, SymmetricSite):
+        if isinstance(self.get_site_list[0], SymmetricSite):
             for arr in symm_site_counts_over_time:
                 all_same_len.append(arr[:min_len])
         else:
