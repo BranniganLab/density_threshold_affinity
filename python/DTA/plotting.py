@@ -199,12 +199,9 @@ def create_heatmap_figure_and_axes(row_names, col_names, figwidth, figheight, he
     assert len(row_names) > 0, "row_names cannot be an empty list"
     assert isinstance(col_names, list), "col_names must be a list of strings"
     assert len(col_names) > 0, "col_names cannot be an empty list"
-    assert isinstance(helices, list), "helices must be a list"
-    assert isinstance(helices[0], np.ndarray), "helices must be a list of ndarrays"
 
     num_rows = len(row_names)
     num_cols = len(col_names)
-    assert len(helices) == num_rows * num_cols, f"Not enough helix coordinate sets ({str(len(helices))}) for all panels {str(num_rows * num_cols)} in the figure"
 
     fig = plt.figure(figsize=(figwidth, figheight))
     gs = gridspec.GridSpec(num_rows, num_cols, figure=fig, wspace=0.15, hspace=0.15)
@@ -216,7 +213,16 @@ def create_heatmap_figure_and_axes(row_names, col_names, figwidth, figheight, he
             # put the row name to the left of the axes object
             ax.text(-0.5, 0.5, row_names[gridbox // num_cols], transform=ax.transAxes, fontsize='medium', va='center', fontfamily='serif')
         ax = plot_helices(helices[gridbox], False, ax, 50)
-    return fig, fig.axes
+    return fig
+
+
+def plot_helices_on_panels(fig, helices):
+    assert isinstance(helices, list), "helices must be a list"
+    assert isinstance(helices[0], np.ndarray), "helices must be a list of ndarrays"
+    assert len(helices) == np.ravel(fig.axes).shape[0]
+    for ax, helix_set in zip(np.ravel(fig.axes), helices):
+        ax = plot_helices(helix_set, False, ax, 50)
+    return fig
 
 
 def make_colorbar(fig, v_vals, cmap):
@@ -551,12 +557,13 @@ def make_density_enrichment_heatmap(row_names, col_names, enrichments_list, colo
     if len(helices) != num_panels:
         raise IndexError(f"Number of helices items ({len(helices)}) does not match number of figure panels ({num_panels}).")
 
-    fig, axes = create_heatmap_figure_and_axes(row_names, col_names, figwidth=figdims[1], figheight=figdims[0], helices=helices)
+    fig = create_heatmap_figure_and_axes(row_names, col_names, figwidth=figdims[1], figheight=figdims[0], helices=helices)
+    fig = plot_helices_on_panels(fig, helices)
     colorbar_range = (1 / max_enrichment, 1, max_enrichment)
 
-    for index, ax in enumerate(axes):
+    for index, ax in enumerate(fig.axes):
         ax = plot_heatmap(ax, enrichments_list[index], grid_dims, colormap, colorbar_range)
 
     fig = make_colorbar(fig, colorbar_range, colormap)
 
-    return fig, axes
+    return fig, fig.axes
