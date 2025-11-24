@@ -283,47 +283,34 @@ def compile_bin_edges(bin_coords, grid_dims):
     return (line1, line2, line3, line4)
 
 
-def create_heatmap_figure_and_axes(row_names, col_names, figwidth, figheight, helices):
+def create_heatmap_figure_and_axes(heatmap_settings):
     """
     Create the heatmap figure and enough axes to accommodate all the lipids and\
     leaflets.
 
     Parameters
     ----------
-    row_names : list
-        The names of the items you intend to plot in each row. Frequently the
-        name of each lipid species you are interested in.
-    col_names : list
-        The names of the items you intend to plot in each column. Frequently
-        "outer" and "inner" leaflet.
-    figwidth : float
-        Figure width.
-    figheight : float
-        Figure height.
-    helices : list of ndarrays
-        An ndarray of helix coordinates for each panel of the figure.
+    heatmap_settings : HeatmapSettings object
+        All of the auxiliary (non-data) information needed to plot a heatmap.
 
     Returns
     -------
     fig : matplotlib Fig object
         The figure you just created.
-    matplotlib Axes objects
-        The polar projection axes that were created.
 
     """
-    num_rows = len(row_names)
-    num_cols = len(col_names)
+    num_rows = len(heatmap_settings.row_names)
+    num_cols = len(heatmap_settings.col_names)
 
-    fig = plt.figure(figsize=(figwidth, figheight))
+    fig = plt.figure(figsize=(heatmap_settings.fig_width, heatmap_settings.fig_height))
     gs = gridspec.GridSpec(num_rows, num_cols, figure=fig, wspace=0.15, hspace=0.15)
     for gridbox in range(num_rows * num_cols):
         ax = plt.subplot(gs[gridbox], projection='polar')
         if gridbox < num_cols:
-            ax.set_title(col_names[gridbox], fontsize='medium')
+            ax.set_title(heatmap_settings.col_names[gridbox], fontsize='medium')
         if gridbox % num_cols == 0:
             # put the row name to the left of the axes object
-            ax.text(-0.5, 0.5, row_names[gridbox // num_cols], transform=ax.transAxes, fontsize='medium', va='center', fontfamily='serif')
-        ax = plot_helices(helices[gridbox], False, ax, 50)
+            ax.text(-0.5, 0.5, heatmap_settings.row_names[gridbox // num_cols], transform=ax.transAxes, fontsize='medium', va='center', fontfamily='serif')
     return fig
 
 
@@ -354,7 +341,7 @@ def plot_helices_on_panels(fig, helices):
     return fig
 
 
-def make_colorbar(fig, v_vals, cmap):
+def make_colorbar(fig, heatmap_settings):
     """
     Generate the colorbar. Must be done after plot_heatmap.
 
@@ -362,20 +349,18 @@ def make_colorbar(fig, v_vals, cmap):
     ----------
     fig : fig
         The figure object from matplotlib.
-    v_vals : list or tuple
-        min, mid, and max values for the colorbar.
-    cmap : colormap
-        matplotlib colormap object.
+    heatmap_settings : HeatmapSettings object
+        All the auxiliary information needed to plot a heatmap.
 
     Returns
     -------
     fig
 
     """
-    vmin, vmid, vmax = v_vals
+    vmin, vmid, vmax = heatmap_settings.colorbar_range
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.21, 1, 0.5, 0.02])
-    sm = mpl.cm.ScalarMappable(cmap=cmap)
+    sm = mpl.cm.ScalarMappable(cmap=heatmap_settings.colormap)
     cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
     cbar.set_ticks(np.linspace(0, 1, 3))
     cbar.ax.set_xticklabels([round(vmin, 2), vmid, vmax])
@@ -403,7 +388,7 @@ def bin_prep(bin_info):
     return [r_vals, theta_vals]
 
 
-def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
+def plot_heatmap(ax, data, heatmap_settings):
     """
     Plot a heatmap on a pre-existing axes object.
 
@@ -413,12 +398,8 @@ def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
         The pre-existing axes object you wish to plot a heatmap on.
     data : ndarray
         The heatmap heat values (probably density enrichment).
-    grid_dims : namedtuple
-        Contains Nr, Ntheta, dr, and dtheta information.
-    cmap : colorbar object
-        Custom colorbar.
-    v_vals : 3-tuple
-        (colorbar vmin, vmid, and vmax).
+    heatmap_settings : HeatmapSettings object
+        All the auxiliary information needed to plot a heatmap.
 
     Returns
     -------
@@ -426,12 +407,10 @@ def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
         The axes object, which now contains your heatmap.
 
     """
-    grid = bin_prep(grid_dims)
-    vmin, vmid, vmax = v_vals
+    vmin, vmid, vmax = heatmap_settings.colorbar_range
     norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
     ax.grid(False)
-    radius, theta = grid
-    ax.pcolormesh(theta, radius, data, cmap=cmap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
+    ax.pcolormesh(heatmap_settings.theta_vals, heatmap_settings.r_vals, data, cmap=heatmap_settings.colormap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     return ax
