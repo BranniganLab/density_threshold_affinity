@@ -55,7 +55,7 @@ class HeatmapSettings:
         Parameters
         ----------
         max_enrichment : float
-            How high you want your colorbar to go. The minimum will scale proportionally..
+            How high you want your colorbar to go. The minimum will scale proportionally.
 
         Raises
         ------
@@ -80,7 +80,7 @@ class HeatmapSettings:
         Parameters
         ----------
         grid_dims : namedtuple
-            Contains Nr, Ntheta, dr, and dtheta information.. The default is None.
+            Contains Nr, Ntheta, dr, and dtheta information. The default is None.
 
         Returns
         -------
