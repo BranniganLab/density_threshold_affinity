@@ -28,15 +28,13 @@ class HeatmapSettings:
     col_names : list
         A list of the names you wish to appear above each column of heatmaps. \
         Frequently will be "outer leaflet" and "inner leaflet".
-    fig_height : float
-        Figure height, in inches.
-    fig_width : float
-        Figure width, in inches.
+    fig_dims : 2-tuple
+        Figure height and width, in inches.
     colormap : matplotlib cmap object
         The colormap to use.
-    max_enrichment : float or int
-        How high you want your colorbar to go. The minimum will scale proportionally.
-    r_vals, theta_vals : numpy ndarrays
+    colorbar_range : 3-tuple
+        The min, mid, and max values of your colorbar.
+    polar_grid : 2-tuple of numpy ndarrays
         The numpy meshgrids needed to plot a heatmap using polar coordinates.
     """
 
@@ -77,14 +75,13 @@ class HeatmapSettings:
             raise TypeError(f"{row_names} must be a list instead of a {type(row_names)}.")
         self.row_names = row_names
         self.col_names = col_names
-        self.fig_height = fig_dims[0]
-        self.fig_width = fig_dims[1]
+        self.fig_dims = fig_dims
         self.colormap = colormap
         self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
         if grid_dims is not None:
-            self.r_vals, self.theta_vals = bin_prep(grid_dims)
+            self.polar_grid = bin_prep(grid_dims)
         else:
-            self.r_vals, self.theta_vals = None, None
+            self.polar_grid = None
 
     def add_grid_dims(self, grid_dims):
         """
@@ -100,7 +97,7 @@ class HeatmapSettings:
         None.
 
         """
-        self.r_vals, self.theta_vals = bin_prep(grid_dims)
+        self.polar_grid = bin_prep(grid_dims)
 
 
 def make_custom_colormap():
@@ -273,7 +270,7 @@ def create_heatmap_figure_and_axes(heatmap_settings):
     num_rows = len(heatmap_settings.row_names)
     num_cols = len(heatmap_settings.col_names)
 
-    fig = plt.figure(figsize=(heatmap_settings.fig_width, heatmap_settings.fig_height))
+    fig = plt.figure(figsize=(heatmap_settings.fig_dims[1], heatmap_settings.fig_dims[0]))
     gs = gridspec.GridSpec(num_rows, num_cols, figure=fig, wspace=0.15, hspace=0.15)
     for gridbox in range(num_rows * num_cols):
         ax = plt.subplot(gs[gridbox], projection='polar')
@@ -356,7 +353,7 @@ def bin_prep(bin_info):
     r_vals = np.linspace(0, bin_info.Nr * bin_info.dr, bin_info.Nr + 1)
     theta_vals = np.linspace(0, 2 * np.pi, bin_info.Ntheta + 1)
     r_vals, theta_vals = np.meshgrid(r_vals, theta_vals, indexing='ij')
-    return [r_vals, theta_vals]
+    return [theta_vals, r_vals]
 
 
 def plot_heatmap(ax, data, heatmap_settings):
@@ -381,7 +378,8 @@ def plot_heatmap(ax, data, heatmap_settings):
     vmin, vmid, vmax = heatmap_settings.colorbar_range
     norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
     ax.grid(False)
-    ax.pcolormesh(heatmap_settings.theta_vals, heatmap_settings.r_vals, data, cmap=heatmap_settings.colormap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
+    theta_vals, r_vals = heatmap_settings.polar_grid
+    ax.pcolormesh(theta_vals, r_vals, data, cmap=heatmap_settings.colormap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     return ax
