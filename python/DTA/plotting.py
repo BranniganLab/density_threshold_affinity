@@ -16,36 +16,7 @@ from DTA.Site import Site
 from DTA.SymmetricSite import SymmetricSite
 
 
-class FigureSettings:
-    """
-    Base class for Figure settings in DTA.
-
-    Attributes
-    ----------
-    fig_height : float
-        Figure height, in inches.
-    fig_width : float
-        Figure width, in inches.
-    linestyles : list
-        List of matplotlib.pyplot-recognized linestyles.
-    colors : list
-        List of matplotlib.pyplot-recognized colors.
-    x_labels : list
-        List of labels for x axes.
-    y_labels : list
-        List of labels for y axes.
-    """
-
-    def __init__(self):
-        self.fig_height = None
-        self.fig_width = None
-        self.linestyles = None
-        self.colors = None
-        self.x_labels = None
-        self.y_labels = None
-
-
-class HeatmapSettings(FigureSettings):
+class HeatmapSettings:
     """
     Class for heatmap Figure settings in DTA.
 
