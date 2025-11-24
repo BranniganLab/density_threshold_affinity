@@ -5,13 +5,13 @@ Created on Mon Nov 11 14:41:24 2024.
 
 @author: js2746
 """
+from dataclasses import dataclass, InitVar, field
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib import gridspec
 from matplotlib.colors import ListedColormap, Normalize
 from scipy import constants
-from dataclasses import dataclass, InitVar, field
 from DTA.utils import calculate_hist_mode
 from DTA.Site import Site
 from DTA.SymmetricSite import SymmetricSite
