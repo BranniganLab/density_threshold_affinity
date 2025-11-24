@@ -217,6 +217,22 @@ def create_heatmap_figure_and_axes(row_names, col_names, figwidth, figheight, he
 
 
 def plot_helices_on_panels(fig, helices):
+    """
+    Plot helix locations on each panel present in the figure.
+
+    Parameters
+    ----------
+    fig : matplotlib Figure object
+        The Figure containing your heatmap panels.
+    helices : list of numpy ndarrays
+        List containing one set of helix coordinates per panel.
+
+    Returns
+    -------
+    fig : matplotlib Figure
+        The Figure containing your heatmap panels, now with helix locations.
+
+    """
     assert isinstance(helices, list), "helices must be a list"
     assert isinstance(helices[0], np.ndarray), "helices must be a list of ndarrays"
     assert len(helices) == np.ravel(fig.axes).shape[0]
