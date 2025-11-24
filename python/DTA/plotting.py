@@ -11,11 +11,13 @@ import matplotlib as mpl
 from matplotlib import gridspec
 from matplotlib.colors import ListedColormap, Normalize
 from scipy import constants
+from dataclasses import dataclass, InitVar, field
 from DTA.utils import calculate_hist_mode
 from DTA.Site import Site
 from DTA.SymmetricSite import SymmetricSite
 
 
+@dataclass
 class HeatmapSettings:
     """
     Class for heatmap Figure settings in DTA.
@@ -38,26 +40,22 @@ class HeatmapSettings:
         The numpy meshgrids needed to plot a heatmap using polar coordinates.
     """
 
-    def __init__(self, row_names, col_names, fig_dims, colormap, max_enrichment, grid_dims=None):
+    row_names: list
+    col_names: list
+    fig_dims: tuple
+    max_enrichment: InitVar[float]
+    colorbar_range: tuple = field(init=False)
+    colormap: ListedColormap = field(init=False)
+    polar_grid: list = field(init=False)
+
+    def __post_init__(self, max_enrichment):
         """
-        Create a HeatmapSettings object.
+        Calculate colorbar_range and make sure row_names and col_names are lists.
 
         Parameters
         ----------
-        row_names : list
-            A list of the names you wish to appear to the left of each row of \
-            heatmaps. Frequently will be the name of the lipid species.
-        col_names : list
-            A list of the names you wish to appear above each column of heatmaps. \
-            Frequently will be "outer leaflet" and "inner leaflet".
-        fig_dims : 2-tuple or 2-list
-            The height and width, in inches, of your Figure.
-        colormap : matplotlib cmap object
-            The colormap to use.
-        max_enrichment : float or int
-            How high you want your colorbar to go. The minimum will scale proportionally.
-        grid_dims : namedtuple, optional
-            Contains Nr, Ntheta, dr, and dtheta information.. The default is None.
+        max_enrichment : float
+            How high you want your colorbar to go. The minimum will scale proportionally..
 
         Raises
         ------
@@ -69,19 +67,11 @@ class HeatmapSettings:
         None.
 
         """
-        if not isinstance(col_names, list):
-            raise TypeError(f"{col_names} must be a list instead of a {type(col_names)}.")
-        if not isinstance(row_names, list):
-            raise TypeError(f"{row_names} must be a list instead of a {type(row_names)}.")
-        self.row_names = row_names
-        self.col_names = col_names
-        self.fig_dims = fig_dims
-        self.colormap = colormap
+        if not isinstance(self.col_names, list):
+            raise TypeError(f"{self.col_names} must be a list instead of a {type(self.col_names)}.")
+        if not isinstance(self.row_names, list):
+            raise TypeError(f"{self.row_names} must be a list instead of a {type(self.row_names)}.")
         self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
-        if grid_dims is not None:
-            self.polar_grid = bin_prep(grid_dims)
-        else:
-            self.polar_grid = None
 
     def add_grid_dims(self, grid_dims):
         """
