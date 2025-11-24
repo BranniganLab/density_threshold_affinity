@@ -343,7 +343,7 @@ def bin_prep(bin_info):
     r_vals = np.linspace(0, bin_info.Nr * bin_info.dr, bin_info.Nr + 1)
     theta_vals = np.linspace(0, 2 * np.pi, bin_info.Ntheta + 1)
     r_vals, theta_vals = np.meshgrid(r_vals, theta_vals, indexing='ij')
-    return [theta_vals, r_vals]
+    return (theta_vals, r_vals)
 
 
 def plot_heatmap(ax, data, heatmap_settings):
