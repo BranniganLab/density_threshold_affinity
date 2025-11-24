@@ -46,7 +46,7 @@ class HeatmapSettings:
     max_enrichment: InitVar[float]
     colorbar_range: tuple = field(init=False)
     colormap: ListedColormap = field(init=False)
-    polar_grid: list = field(init=False)
+    polar_grid: tuple = field(init=False)
 
     def __post_init__(self, max_enrichment):
         """
@@ -336,7 +336,7 @@ def bin_prep(bin_info):
 
     Returns
     -------
-    list
+    2-tuple
         The two numpy ndarrays needed for plotting a heatmap.
 
     """
