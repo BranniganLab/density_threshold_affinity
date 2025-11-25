@@ -43,10 +43,10 @@ class HeatmapSettings:
     row_names: list
     col_names: list
     fig_dims: tuple
-    max_enrichment: InitVar[float]
     colorbar_range: tuple = field(init=False)
     colormap: ListedColormap = field(init=False)
     polar_grid: tuple = field(init=False)
+    max_enrichment: InitVar[float]
 
     def __post_init__(self, max_enrichment):
         """
