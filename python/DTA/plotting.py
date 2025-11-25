@@ -39,12 +39,15 @@ class HeatmapSettings:
         from max_enrichment InitVar.
     polar_grid : 2-tuple of numpy ndarrays
         The numpy meshgrids needed to plot a heatmap using polar coordinates. \
-        Provided after init with add_grid_dims() class method.
+        Automatically calculated from grid_dims InitVar.
 
     InitVars
     --------
     max_enrichment : float
         Gets passed to post_init and turned into colorbar_range.
+    grid_dims : namedtuple
+        Contains dr, number of r bins, dtheta, number of theta bins, and number\
+        of frames contained in file.
     """
 
     row_names: list
@@ -54,8 +57,9 @@ class HeatmapSettings:
     colorbar_range: tuple = field(init=False)
     polar_grid: tuple = field(init=False)
     max_enrichment: InitVar[float]
+    grid_dims: InitVar[tuple]
 
-    def __post_init__(self, max_enrichment):
+    def __post_init__(self, max_enrichment, grid_dims):
         """
         Calculate colorbar_range and make sure row_names and col_names are lists.
 
@@ -63,6 +67,9 @@ class HeatmapSettings:
         ----------
         max_enrichment : float
             How high you want your colorbar to go. The minimum will scale proportionally.
+        grid_dims : namedtuple
+            Contains dr, number of r bins, dtheta, number of theta bins, and number\
+            of frames contained in file.
 
         Raises
         ------
@@ -79,21 +86,6 @@ class HeatmapSettings:
         if not isinstance(self.row_names, list):
             raise TypeError(f"{self.row_names} must be a list instead of a {type(self.row_names)}.")
         self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
-
-    def add_grid_dims(self, grid_dims):
-        """
-        Calculate the meshgrids needed to plot a heatmap in polar coordinates.
-
-        Parameters
-        ----------
-        grid_dims : namedtuple
-            Contains Nr, Ntheta, dr, and dtheta information. The default is None.
-
-        Returns
-        -------
-        None.
-
-        """
         self.polar_grid = bin_prep(grid_dims)
 
 
