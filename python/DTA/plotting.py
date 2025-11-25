@@ -50,7 +50,7 @@ class HeatmapSettings:
     row_names: list
     col_names: list
     fig_dims: tuple
-    colormap: ListedColormap = field(init=False)
+    colormap: mpl.colors.ListedColormap = field(init=False)
     colorbar_range: tuple = field(init=False)
     polar_grid: tuple = field(init=False)
     max_enrichment: InitVar[float]
