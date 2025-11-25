@@ -33,11 +33,18 @@ class HeatmapSettings:
     fig_dims : 2-tuple
         Figure height and width, in inches.
     colormap : matplotlib cmap object
-        The colormap to use.
+        The colormap to use. Provided after init.
     colorbar_range : 3-tuple
-        The min, mid, and max values of your colorbar.
+        The min, mid, and max values of your colorbar. Automatically calculated\
+        from max_enrichment InitVar.
     polar_grid : 2-tuple of numpy ndarrays
-        The numpy meshgrids needed to plot a heatmap using polar coordinates.
+        The numpy meshgrids needed to plot a heatmap using polar coordinates. \
+        Provided after init with add_grid_dims() class method.
+
+    InitVars
+    --------
+    max_enrichment : float
+        Gets passed to post_init and turned into colorbar_range.
     """
 
     row_names: list
