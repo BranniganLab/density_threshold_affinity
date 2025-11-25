@@ -350,7 +350,7 @@ def bin_prep(bin_info):
     r_vals = np.linspace(0, bin_info.Nr * bin_info.dr, bin_info.Nr + 1)
     theta_vals = np.linspace(0, 2 * np.pi, bin_info.Ntheta + 1)
     r_vals, theta_vals = np.meshgrid(r_vals, theta_vals, indexing='ij')
-    return (theta_vals, r_vals)
+    return (r_vals, theta_vals)
 
 
 def plot_heatmap(ax, data, heatmap_settings):
@@ -375,7 +375,7 @@ def plot_heatmap(ax, data, heatmap_settings):
     vmin, vmid, vmax = heatmap_settings.colorbar_range
     norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
     ax.grid(False)
-    theta_vals, r_vals = heatmap_settings.polar_grid
+    r_vals, theta_vals = heatmap_settings.polar_grid
     ax.pcolormesh(theta_vals, r_vals, data, cmap=heatmap_settings.colormap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
