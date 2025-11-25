@@ -52,7 +52,7 @@ proc lcount list {
 # Outputs:
 #   float: the same angle in degrees
 proc RtoD {r} {
-    set pi 3.14159265358979323846
+    global pi
     return [expr $r*180.0/$pi]
 }
 
@@ -65,7 +65,7 @@ proc RtoD {r} {
 # Outputs:
 #   float: the angle of the point in degrees relative to the origin
 proc get_theta {x y} {
-    set pi 3.14159265358979323846
+    global pi
     set tmp  [expr {atan2($y,$x)}]
     if {$tmp < 0} {
         set theta [expr 2*$pi + $tmp]    
