@@ -5,6 +5,7 @@ Created on Mon Nov 11 14:41:24 2024.
 
 @author: js2746
 """
+from dataclasses import dataclass, InitVar, field
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -14,6 +15,78 @@ from scipy import constants
 from DTA.utils import calculate_hist_mode
 from DTA.Site import Site
 from DTA.SymmetricSite import SymmetricSite
+
+
+@dataclass
+class HeatmapSettings:
+    """
+    Class for heatmap Figure settings in DTA.
+
+    Attributes
+    ----------
+    row_names : list
+        A list of the names you wish to appear to the left of each row of \
+        heatmaps. Frequently will be the name of the lipid species.
+    col_names : list
+        A list of the names you wish to appear above each column of heatmaps. \
+        Frequently will be "outer leaflet" and "inner leaflet".
+    fig_dims : 2-tuple
+        Figure height and width, in inches.
+    colormap : matplotlib cmap object
+        The colormap to use. Provided after init.
+    colorbar_range : 3-tuple
+        The min, mid, and max values of your colorbar. Automatically calculated\
+        from max_enrichment InitVar.
+    polar_grid : 2-tuple of numpy ndarrays
+        The numpy meshgrids needed to plot a heatmap using polar coordinates. \
+        Automatically calculated from grid_dims InitVar.
+
+    InitVars
+    --------
+    max_enrichment : float
+        Gets passed to post_init and turned into colorbar_range.
+    grid_dims : namedtuple
+        Contains dr, number of r bins, dtheta, number of theta bins, and number\
+        of frames contained in file.
+    """
+
+    row_names: list
+    col_names: list
+    fig_dims: tuple
+    colormap: mpl.colors.ListedColormap = field(init=False)
+    colorbar_range: tuple = field(init=False)
+    polar_grid: tuple = field(init=False)
+    max_enrichment: InitVar[float]
+    grid_dims: InitVar[tuple]
+
+    def __post_init__(self, max_enrichment, grid_dims):
+        """
+        Calculate colorbar_range and make sure row_names and col_names are lists.
+
+        Parameters
+        ----------
+        max_enrichment : float
+            How high you want your colorbar to go. The minimum will scale proportionally.
+        grid_dims : namedtuple
+            Contains dr, number of r bins, dtheta, number of theta bins, and number\
+            of frames contained in file.
+
+        Raises
+        ------
+        TypeError
+            Makes sure that row_names and col_names are lists.
+
+        Returns
+        -------
+        None.
+
+        """
+        if not isinstance(self.col_names, list):
+            raise TypeError(f"{self.col_names} must be a list instead of a {type(self.col_names)}.")
+        if not isinstance(self.row_names, list):
+            raise TypeError(f"{self.row_names} must be a list instead of a {type(self.row_names)}.")
+        self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
+        self.polar_grid = bin_prep(grid_dims)
 
 
 def make_custom_colormap():
@@ -167,59 +240,65 @@ def compile_bin_edges(bin_coords, grid_dims):
     return (line1, line2, line3, line4)
 
 
-def create_heatmap_figure_and_axes(row_names, col_names, figwidth, figheight, helices):
+def create_heatmap_figure_and_axes(heatmap_settings):
     """
     Create the heatmap figure and enough axes to accommodate all the lipids and\
     leaflets.
 
     Parameters
     ----------
-    row_names : list
-        The names of the items you intend to plot in each row. Frequently the
-        name of each lipid species you are interested in.
-    col_names : list
-        The names of the items you intend to plot in each column. Frequently
-        "outer" and "inner" leaflet.
-    figwidth : float
-        Figure width.
-    figheight : float
-        Figure height.
-    helices : list of ndarrays
-        An ndarray of helix coordinates for each panel of the figure.
+    heatmap_settings : HeatmapSettings object
+        All of the auxiliary (non-data) information needed to plot a heatmap.
 
     Returns
     -------
     fig : matplotlib Fig object
         The figure you just created.
-    matplotlib Axes objects
-        The polar projection axes that were created.
 
     """
-    assert isinstance(row_names, list), "row_names must be a list of strings"
-    assert len(row_names) > 0, "row_names cannot be an empty list"
-    assert isinstance(col_names, list), "col_names must be a list of strings"
-    assert len(col_names) > 0, "col_names cannot be an empty list"
-    assert isinstance(helices, list), "helices must be a list"
-    assert isinstance(helices[0], np.ndarray), "helices must be a list of ndarrays"
+    num_rows = len(heatmap_settings.row_names)
+    num_cols = len(heatmap_settings.col_names)
 
-    num_rows = len(row_names)
-    num_cols = len(col_names)
-    assert len(helices) == num_rows * num_cols, f"Not enough helix coordinate sets ({str(len(helices))}) for all panels {str(num_rows * num_cols)} in the figure"
-
-    fig = plt.figure(figsize=(figwidth, figheight))
+    fig = plt.figure(figsize=(heatmap_settings.fig_dims[1], heatmap_settings.fig_dims[0]))
     gs = gridspec.GridSpec(num_rows, num_cols, figure=fig, wspace=0.15, hspace=0.15)
     for gridbox in range(num_rows * num_cols):
         ax = plt.subplot(gs[gridbox], projection='polar')
         if gridbox < num_cols:
-            ax.set_title(col_names[gridbox], fontsize='medium')
+            ax.set_title(heatmap_settings.col_names[gridbox], fontsize='medium')
         if gridbox % num_cols == 0:
             # put the row name to the left of the axes object
-            ax.text(-0.5, 0.5, row_names[gridbox // num_cols], transform=ax.transAxes, fontsize='medium', va='center', fontfamily='serif')
-        ax = plot_helices(helices[gridbox], False, ax, 50)
-    return fig, fig.axes
+            ax.text(-0.5, 0.5, heatmap_settings.row_names[gridbox // num_cols], transform=ax.transAxes, fontsize='medium', va='center', fontfamily='serif')
+    return fig
 
 
-def make_colorbar(fig, v_vals, cmap):
+def plot_helices_on_panels(fig, helices):
+    """
+    Plot helix locations on each panel present in the figure.
+
+    Parameters
+    ----------
+    fig : matplotlib Figure object
+        The Figure containing your heatmap panels.
+    helices : list of numpy ndarrays
+        List containing one set of helix coordinates per panel.
+
+    Returns
+    -------
+    fig : matplotlib Figure
+        The Figure containing your heatmap panels, now with helix locations.
+
+    """
+    if not isinstance(helices, list):
+        raise TypeError(f"{helices} must be a list instead of a {type(helices)}.")
+    if not all(isinstance(item, np.ndarray) for item in helices):
+        raise TypeError("helices must be a list of ndarrays")
+    assert len(helices) == np.ravel(fig.axes).shape[0]
+    for ax, helix_set in zip(np.ravel(fig.axes), helices):
+        ax = plot_helices(helix_set, False, ax, 50)
+    return fig
+
+
+def make_colorbar(fig, heatmap_settings):
     """
     Generate the colorbar. Must be done after plot_heatmap.
 
@@ -227,20 +306,18 @@ def make_colorbar(fig, v_vals, cmap):
     ----------
     fig : fig
         The figure object from matplotlib.
-    v_vals : list or tuple
-        min, mid, and max values for the colorbar.
-    cmap : colormap
-        matplotlib colormap object.
+    heatmap_settings : HeatmapSettings object
+        All the auxiliary information needed to plot a heatmap.
 
     Returns
     -------
     fig
 
     """
-    vmin, vmid, vmax = v_vals
+    vmin, vmid, vmax = heatmap_settings.colorbar_range
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.21, 1, 0.5, 0.02])
-    sm = mpl.cm.ScalarMappable(cmap=cmap)
+    sm = mpl.cm.ScalarMappable(cmap=heatmap_settings.colormap)
     cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
     cbar.set_ticks(np.linspace(0, 1, 3))
     cbar.ax.set_xticklabels([round(vmin, 2), vmid, vmax])
@@ -258,17 +335,17 @@ def bin_prep(bin_info):
 
     Returns
     -------
-    list
+    2-tuple
         The two numpy ndarrays needed for plotting a heatmap.
 
     """
     r_vals = np.linspace(0, bin_info.Nr * bin_info.dr, bin_info.Nr + 1)
     theta_vals = np.linspace(0, 2 * np.pi, bin_info.Ntheta + 1)
     r_vals, theta_vals = np.meshgrid(r_vals, theta_vals, indexing='ij')
-    return [r_vals, theta_vals]
+    return (r_vals, theta_vals)
 
 
-def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
+def plot_heatmap(ax, data, heatmap_settings):
     """
     Plot a heatmap on a pre-existing axes object.
 
@@ -278,12 +355,8 @@ def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
         The pre-existing axes object you wish to plot a heatmap on.
     data : ndarray
         The heatmap heat values (probably density enrichment).
-    grid_dims : namedtuple
-        Contains Nr, Ntheta, dr, and dtheta information.
-    cmap : colorbar object
-        Custom colorbar.
-    v_vals : 3-tuple
-        (colorbar vmin, vmid, and vmax).
+    heatmap_settings : HeatmapSettings object
+        All the auxiliary information needed to plot a heatmap.
 
     Returns
     -------
@@ -291,12 +364,11 @@ def plot_heatmap(ax, data, grid_dims, cmap, v_vals):
         The axes object, which now contains your heatmap.
 
     """
-    grid = bin_prep(grid_dims)
-    vmin, vmid, vmax = v_vals
+    vmin, vmid, vmax = heatmap_settings.colorbar_range
     norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
     ax.grid(False)
-    radius, theta = grid
-    ax.pcolormesh(theta, radius, data, cmap=cmap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
+    r_vals, theta_vals = heatmap_settings.polar_grid
+    ax.pcolormesh(theta_vals, r_vals, data, cmap=heatmap_settings.colormap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     return ax
@@ -494,33 +566,21 @@ def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
     return ax
 
 
-def make_density_enrichment_heatmap(row_names, col_names, enrichments_list, colormap, max_enrichment, helices, grid_dims, figdims):
+def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings):
     """
     Make a figure and axes objects. Plot heatmaps of density enrichment for each\
     system on each axes object. Return the figure and axes.
 
     Parameters
     ----------
-    row_names : list
-        A list of the names you wish to appear to the left of each row of \
-        heatmaps. Frequently will be the name of the lipid species.
-    col_names : list
-        A list of the names you wish to appear above each column of heatmaps. \
-        Frequently will be "outer leaflet" and "inner leaflet".
     enrichments_list : list
         A list of 2d ndarrays containing enrichment values for each bin in the\
         lattice. One list item per heatmap.
-    colormap : matplotlib cmap object
-        The colormap to use.
-    max_enrichment : float or int
-        How high you want your colorbar to go. The minimum will scale proportionally.
     helices : list of ndarrays
         Each ndarray in the list contains helix coordinates. There should be one\
         ndarray per heatmap.
-    grid_dims : namedtuple
-        Contains Nr, Ntheta, dr, and dtheta information.
-    figdims : 2-tuple
-        The figure height and width, in inches.
+    heatmap_settings : HeatmapSettings object
+        Contains all of the auxiliary information needed to plot heatmaps.
 
     Returns
     -------
@@ -530,33 +590,21 @@ def make_density_enrichment_heatmap(row_names, col_names, enrichments_list, colo
         The matplotlib Axes object(s) containing your plot(s).
 
     """
-    if not isinstance(col_names, list):
-        raise TypeError(f"{col_names} must be a list instead of a {type(col_names)}.")
-    if not isinstance(row_names, list):
-        raise TypeError(f"{row_names} must be a list instead of a {type(row_names)}.")
-    if not isinstance(helices, list):
-        raise TypeError(f"{helices} must be a list instead of a {type(helices)}.")
     if not isinstance(enrichments_list, list):
         raise TypeError(f"{enrichments_list} must be a list instead of a {type(enrichments_list)}.")
-    if not all(isinstance(item, np.ndarray) for item in helices):
-        raise TypeError("helices must be a list of ndarrays")
     if not all(isinstance(item, np.ndarray) for item in enrichments_list):
         raise TypeError("enrichments_list must be a list of ndarrays")
     if not all(len(arr.shape) == 2 for arr in enrichments_list):
         raise TypeError("enrichments_list must contain 2d ndarrays")
 
-    num_panels = len(row_names) * len(col_names)
-    if len(enrichments_list) != num_panels:
-        raise IndexError(f"Number of enrichments_list items ({len(enrichments_list)}) does not match number of figure panels ({num_panels}).")
-    if len(helices) != num_panels:
-        raise IndexError(f"Number of helices items ({len(helices)}) does not match number of figure panels ({num_panels}).")
+    fig = create_heatmap_figure_and_axes(heatmap_settings)
+    axes = np.ravel(fig.axes)
+    if len(enrichments_list) != axes.shape[0]:
+        raise IndexError(f"Number of enrichments_list items ({len(enrichments_list)}) does not match number of figure panels ({axes.shape[0]}).")
 
-    fig, axes = create_heatmap_figure_and_axes(row_names, col_names, figwidth=figdims[1], figheight=figdims[0], helices=helices)
-    colorbar_range = (1 / max_enrichment, 1, max_enrichment)
-
+    fig = plot_helices_on_panels(fig, helices)
     for index, ax in enumerate(axes):
-        ax = plot_heatmap(ax, enrichments_list[index], grid_dims, colormap, colorbar_range)
-
-    fig = make_colorbar(fig, colorbar_range, colormap)
+        ax = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
+    fig = make_colorbar(fig, heatmap_settings)
 
     return fig, axes

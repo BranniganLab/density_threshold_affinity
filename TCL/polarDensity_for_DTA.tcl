@@ -52,8 +52,8 @@ proc lcount list {
 # Outputs:
 #   float: the same angle in degrees
 proc RtoD {r} {
-    set pi 3.14159265358979323846
-    return [expr $r*180.0/$pi]
+    global M_PI
+    return [expr $r*180.0/$M_PI]
 }
 
 # get_theta
@@ -65,10 +65,10 @@ proc RtoD {r} {
 # Outputs:
 #   float: the angle of the point in degrees relative to the origin
 proc get_theta {x y} {
-    set pi 3.14159265358979323846
+    global M_PI
     set tmp  [expr {atan2($y,$x)}]
     if {$tmp < 0} {
-        set theta [expr 2*$pi + $tmp]    
+        set theta [expr 2*$M_PI + $tmp]    
     } else {
         set theta $tmp
     }
@@ -381,8 +381,8 @@ proc trajectory_leaflet_assignment {atseltext headname tailname} {
                 puts "Defaulting to z=0 as the reference height to sort by."
         }
     }
-    for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame $params(dt)} {
-        frame_leaflet_assignment $atseltext $headname $tailname $update_frame [expr $update_frame + $params(dt)] $params(restrict_leaflet_sorter_to_Rmax)
+    for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame $params(leaflet_reassign_interval)} {
+        frame_leaflet_assignment $atseltext $headname $tailname $update_frame [expr $update_frame + $params(leaflet_reassign_interval)] $params(restrict_leaflet_sorter_to_Rmax)
         incr num_reassignments
     }
     puts "Checked for leaflet reassignments $num_reassignments times."
