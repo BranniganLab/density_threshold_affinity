@@ -8,10 +8,10 @@ This is a pytest file for regression testing DTA.
 import pytest
 from pathlib import Path
 
-from DTA.density import parse_tcl_dat_file, aggregate_density_enrichment_scores, load_replica_counts
 from DTA.Site import Site
 from DTA.SymmetricSite import SymmetricSite
 from DTA.SiteAcrossReplicas import SiteAcrossReplicas
+from DTA.density import parse_tcl_dat_file, aggregate_density_enrichment_scores, load_replica_counts
 
 
 def analyze_sample_outputs():
