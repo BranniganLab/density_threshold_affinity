@@ -199,7 +199,7 @@ class SymmetricSite:
         ind_counts_over_time = []
         for site in self.get_site_list:
             ind_counts_over_time.append(site.site_counts_over_time)
-        agg_counts_over_time = np.sum(np.array(ind_counts_over_time), axis=0)
+        agg_counts_over_time = np.mean(np.array(ind_counts_over_time), axis=0)
         return agg_counts_over_time, ind_counts_over_time
 
     @property

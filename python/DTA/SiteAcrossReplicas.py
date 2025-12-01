@@ -172,7 +172,7 @@ class SiteAcrossReplicas:
         else:
             for arr in ind_counts_over_time:
                 all_same_len.append(arr[:min_len])
-        agg_counts_over_time = np.sum(np.array(all_same_len), axis=0)
+        agg_counts_over_time = np.mean(np.array(all_same_len), axis=0)
         return agg_counts_over_time, ind_counts_over_time
 
     @property
