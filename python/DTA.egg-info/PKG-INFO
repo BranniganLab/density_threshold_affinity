@@ -1,0 +1,13 @@
+Metadata-Version: 2.1
+Name: DTA
+Version: 1.0
+Summary: Tools for Doing Density-Threshold Affinity analysis
+Home-page: https://github.com/BranniganLab/density_threshold_affinity
+Author: Brannigan Lab
+Author-email: grace.brannigan@rutgers.edu
+Classifier: Development Status :: 1 - Planning
+Classifier: Intended Audience :: Science/Research
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
