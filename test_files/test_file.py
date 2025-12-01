@@ -6,13 +6,11 @@ This is a pytest file for regression testing DTA.
 """
 
 import pytest
-import numpy as np
 from pathlib import Path
-import matplotlib.pyplot as plt
 
 from DTA.utils import load_inclusion_helices
-from DTA.density import parse_tcl_dat_file, aggregate_density_enrichment_scores, load_replica_counts, valid_Dimensions
-from DTA.plotting import make_density_enrichment_heatmap, make_custom_colormap, plot_histogram, outline_site, plot_titration_curve
+from DTA.density import parse_tcl_dat_file, aggregate_density_enrichment_scores, load_replica_counts
+from DTA.plotting import make_custom_colormap
 from DTA.Site import Site
 from DTA.SymmetricSite import SymmetricSite
 from DTA.SiteAcrossReplicas import SiteAcrossReplicas
