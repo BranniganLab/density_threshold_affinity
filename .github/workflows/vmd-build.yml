@@ -7,8 +7,8 @@ jobs:
   build-vmd:
     runs-on: ubuntu-latest
     env:
-        VMDINSTALLBINDIR: $GITHUB_WORKSPACE/.cache/vmd-install
-        VMDINSTALLLIBRARYDIR: $GITHUB_WORKSPACE/.cache/vmd-install
+        VMDINSTALLBINDIR: ".cache/vmd-install"
+        VMDINSTALLLIBRARYDIR: ".cache/vmd-install"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
