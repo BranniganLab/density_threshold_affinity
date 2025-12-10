@@ -1,0 +1,84 @@
+name: Build and Cache VMD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-vmd:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libx11-dev \
+            libglu1-mesa-dev \
+            libxi-dev \
+            libxext-dev \
+            libxmu-dev \
+            libjpeg-dev \
+            libpng-dev \
+            tcl-dev \
+            tk-dev \
+            python3-dev \
+            flex \
+            bison \
+            git
+
+      # ------------------------------------------------
+      # Restore VMD compiled build (if exists)
+      # ------------------------------------------------
+      - name: Restore VMD build cache
+        id: cache-vmd
+        uses: actions/cache@v4
+        with:
+          path: .cache/vmd-install
+          key: vmd-build-${{ hashFiles('vmd-1.9.4a57.src.tar.gz') }}
+          restore-keys: vmd-build-
+
+      # ------------------------------------------------
+      # Build VMD only if cache NOT found
+      # ------------------------------------------------
+      - name: Build VMD (only if cache is missing)
+        if: steps.cache-vmd.outputs.cache-hit != 'true'
+        run: |
+          echo "No cache hit — compiling VMD..."
+          tar xzf vmd-1.9.4a57.src.tar.gz
+          cd vmd-1.9.4a57.src
+
+          ./configure \
+            LINUXAMD64 \
+            OPENGLOFF \
+            FLTKOFF \
+            TKOFF \
+            TCL \
+            PTHREADS \
+            IMD \
+            SILENT \
+            -prefix $GITHUB_WORKSPACE/.cache/vmd-install
+
+          cd src
+          make -j$(nproc)
+          make install
+
+      - name: Cache status
+        run: |
+          if [ "${{ steps.cache-vmd.outputs.cache-hit }}" = "true" ]; then
+            echo "VMD was restored from cache."
+          else
+            echo "VMD was compiled and cached."
+          fi
+
+      # ------------------------------------------------
+      # Test running VMD
+      # ------------------------------------------------
+      - name: Run VMD headless
+        run: |
+          $GITHUB_WORKSPACE/.cache/vmd-install/bin/vmd -dispdev text -e /dev/null
