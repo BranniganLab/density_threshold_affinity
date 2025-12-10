@@ -50,6 +50,7 @@ jobs:
         if: steps.cache-vmd.outputs.cache-hit != 'true'
         run: |
           echo "No cache hit — compiling VMD..."
+          mkdir -p $GITHUB_WORKSPACE/.cache/vmd-install
           tar xzf ./.github/vmd_src/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar.gz
           cd vmd-1.9.4a57
 
