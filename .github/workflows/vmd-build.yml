@@ -6,7 +6,9 @@ on:
 jobs:
   build-vmd:
     runs-on: ubuntu-latest
-
+    env:
+        VMDINSTALLBINDIR: $GITHUB_WORKSPACE/.cache/vmd-install
+        VMDINSTALLLIBRARYDIR: $GITHUB_WORKSPACE/.cache/vmd-install
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -51,10 +53,9 @@ jobs:
           tar xzf ./.github/vmd_src/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar.gz
           cd vmd-1.9.4a57
 
-          ./configure -prefix $GITHUB_WORKSPACE/.cache/vmd-install
+          ./configure
 
           cd src
-          make -j$(nproc)
           make install
 
       - name: Cache status
