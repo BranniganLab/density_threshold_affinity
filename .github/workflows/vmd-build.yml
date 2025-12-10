@@ -2,8 +2,6 @@ name: Build and Cache VMD
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
 
 jobs:
   build-vmd:
