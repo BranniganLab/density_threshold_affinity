@@ -49,7 +49,7 @@ jobs:
         run: |
           echo "No cache hit — compiling VMD..."
           tar xzf ./.github/vmd_src/vmd-1.9.4a57.src.tar.gz
-          cd ./.github/vmd_src/vmd-1.9.4a57.src
+          cd vmd-1.9.4a57
 
           ./configure \
             LINUXAMD64 \
