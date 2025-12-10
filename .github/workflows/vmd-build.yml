@@ -48,8 +48,8 @@ jobs:
         if: steps.cache-vmd.outputs.cache-hit != 'true'
         run: |
           echo "No cache hit — compiling VMD..."
-          tar xzf .github/vmd_src/vmd-1.9.4a57.src.tar.gz
-          cd .github/vmd_src/vmd-1.9.4a57.src
+          tar xzf ./.github/vmd_src/vmd-1.9.4a57.src.tar.gz
+          cd ./.github/vmd_src/vmd-1.9.4a57.src
 
           ./configure \
             LINUXAMD64 \
