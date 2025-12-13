@@ -58,6 +58,7 @@ class HeatmapSettings:
     polar_grid: tuple = field(init=False)
     max_enrichment: InitVar[float]
     grid_dims: InitVar[tuple]
+    occupancy_color: list
 
     def __post_init__(self, max_enrichment, grid_dims):
         """
@@ -271,7 +272,7 @@ def create_heatmap_figure_and_axes(heatmap_settings):
     return fig
 
 
-def plot_helices_on_panels(fig, helices):
+def plot_helices_on_panels(fig, helices, heatmap_settings):
     """
     Plot helix locations on each panel present in the figure.
 
@@ -294,7 +295,7 @@ def plot_helices_on_panels(fig, helices):
         raise TypeError("helices must be a list of ndarrays")
     assert len(helices) == np.ravel(fig.axes).shape[0]
     for ax, helix_set in zip(np.ravel(fig.axes), helices):
-        ax = plot_helices(helix_set, False, ax, 50)
+        ax = plot_helices(helix_set, False, ax, 50, colorlist=heatmap_settings.occupancy_color)
     return fig
 
 
@@ -534,7 +535,6 @@ class MidpointNormalize(Normalize):
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
-
 def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
     """
     Plot helices on a polar plot.
@@ -562,7 +562,7 @@ def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
         else:
             colors = colorlist[:len(pro[::2])]
         ax.scatter(np.deg2rad(pro[1::2]), pro[::2], color=colors, linewidth=None,
-                   zorder=1, s=markersize)
+                   zorder=1, s=markersize, edgecolors='black')
     return ax
 
 
@@ -602,7 +602,7 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings)
     if len(enrichments_list) != axes.shape[0]:
         raise IndexError(f"Number of enrichments_list items ({len(enrichments_list)}) does not match number of figure panels ({axes.shape[0]}).")
 
-    fig = plot_helices_on_panels(fig, helices)
+    fig = plot_helices_on_panels(fig, helices, heatmap_settings)
     for index, ax in enumerate(axes):
         ax = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
     fig = make_colorbar(fig, heatmap_settings)
