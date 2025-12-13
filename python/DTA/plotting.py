@@ -40,6 +40,8 @@ class HeatmapSettings:
     polar_grid : 2-tuple of numpy ndarrays
         The numpy meshgrids needed to plot a heatmap using polar coordinates. \
         Automatically calculated from grid_dims InitVar.
+    occupancy_color : list
+        The colors for the helicies, stands or general occupancy numbers associated with the dots on the heat map
 
     InitVars
     --------
@@ -369,6 +371,7 @@ def plot_heatmap(ax, data, heatmap_settings):
     norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
     ax.grid(False)
     r_vals, theta_vals = heatmap_settings.polar_grid
+    print(r_vals, theta_vals, data, heatmap_settings.colormap)
     ax.pcolormesh(theta_vals, r_vals, data, cmap=heatmap_settings.colormap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
@@ -566,7 +569,7 @@ def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
     return ax
 
 
-def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings):
+def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings, helix_colors=None):
     """
     Make a figure and axes objects. Plot heatmaps of density enrichment for each\
     system on each axes object. Return the figure and axes.
