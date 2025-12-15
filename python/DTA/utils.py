@@ -146,7 +146,7 @@ def load_inclusion_coordinates(directory):
             if fails == 2:
                 raise FileNotFoundError(f"Could not find protein coordinate files in {path}") from err
 
-        coords_without_chain_occ = custom_str_mask(coords, "/")
+        coords_without_chain_occ = filter_array_by_substring(coords, "/")
         if leaflet == "upr":
             backbone_com_upr = coords_without_chain_occ
         else:
@@ -155,9 +155,28 @@ def load_inclusion_coordinates(directory):
     return [backbone_com_upr, backbone_com_lwr]
 
 
-def custom_str_mask(arr, filter_val):
+def filter_array_by_substring(arr, filter_val):
+    """
+    Remove elements of a string array that contain the filter_val substring.
+
+    Parameters
+    ----------
+    arr : numpy ndarray
+        A 2D string array.
+    filter_val : str
+        The substring you wish to use as a filter.
+
+    Returns
+    -------
+    numpy ndarray
+        The same values as arr, but without any items containing the filter_val\
+        substring.
+
+    """
     if arr is None:
         return None
+    if len(arr.shape) != 2:
+        raise IndexError("arr must be a 2D array")
     mask = np.zeros_like(arr, dtype=int)
     for row, _ in enumerate(mask):
         for col, _ in enumerate(mask[0]):
