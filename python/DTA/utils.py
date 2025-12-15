@@ -162,6 +162,8 @@ def remove_vals_that_match_substring(input_text, substring):
     ----------
     input_text : list
         The text that was read-in from file with readlines().
+    substring : str
+        Filter out any values that contain substring.
 
     Returns
     -------
@@ -171,7 +173,7 @@ def remove_vals_that_match_substring(input_text, substring):
     """
     if input_text is None:
         return []
-    coords_list = []
+    output_text = []
     for row in input_text:
         row = row.strip()
         if row:
@@ -182,8 +184,8 @@ def remove_vals_that_match_substring(input_text, substring):
                 if substring in value:
                     continue
                 temp.append(value)
-            coords_list.append(temp)
-    return coords_list
+            output_text.append(temp)
+    return output_text
 
 
 def aggregate_site_counts_histograms(site_list):
