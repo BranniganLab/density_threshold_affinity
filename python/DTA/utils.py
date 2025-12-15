@@ -115,13 +115,13 @@ def calculate_hist_mean(counts_data):
     return mean
 
 
-def load_inclusion_helices(path):
+def load_inclusion_helices(directory):
     """
-    Get helix coordinates from the given path.
+    Get helix coordinates from the given directory.
 
     Parameters
     ----------
-    path  :  str or Path
+    directory  :  str or Path
         The path to the directory containing the helix coordinate files.
 
     Returns
@@ -129,7 +129,7 @@ def load_inclusion_helices(path):
     helix_list  :  list of lists
         List of outer and inner leaflet helix coordinates, alternating r and theta.
     """
-    path = validate_path(path)
+    path = validate_path(directory)
     helices_upr = []
     helices_lwr = []
     fails = 0
