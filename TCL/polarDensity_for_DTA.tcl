@@ -99,12 +99,13 @@ proc z_mid {init_frm nframes} {
 
 
 
-;#Outputs xy position of helix centers to file for each leaflet; center is calculated using the part of the helix in the given leaflet
-proc output_helix_centers {{a ""} } {
+;#Outputs radial position of TMD centers to file for each leaflet
+;#Calculated using the midplane_selstr specified in the config to determine leaflet.
+proc output_inclusion_centers {{a ""} } {
     global params
     ;# list for the chain names
     ;# finds the center of the membranes
-    set zed [z_mid 0 20]
+    set midplane_height [z_mid 0 20]
     ;# calculates the center of mass for subunit alpha helices in both leaflets
     puts "Writing coordinates for [llength $params(chainlist)] chains and [llength $params(helixlist)] helices per chain"
     foreach eq {"<" ">"} eqtxt {"lwr" "upr"} {
@@ -113,7 +114,7 @@ proc output_helix_centers {{a ""} } {
         set warning_text ""
         foreach chnm $params(chainlist) {
             foreach occ $params(helixlist) {
-                set sel [atomselect top "(chain ${chnm}) and (occupancy $occ and $params(backbone_selstr)) and (z ${eq} $zed)" frame 0]
+                set sel [atomselect top "(chain ${chnm}) and (occupancy $occ and $params(backbone_selstr)) and (z ${eq} $midplane_height)" frame 0]
                 if {[$sel num] != 0} {
                     set com [measure center $sel weight mass]
                     $sel delete
