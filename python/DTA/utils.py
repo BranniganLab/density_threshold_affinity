@@ -126,7 +126,7 @@ def load_inclusion_coordinates(directory):
 
     Returns
     -------
-    backbone_coms  :  list of lists
+    backbone_coms  :  2-list of 1D numpy ndarrays
         List of outer and inner leaflet backbone coordinates, alternating r and theta.
     """
     path = validate_path(directory)
@@ -156,7 +156,7 @@ def load_inclusion_coordinates(directory):
         else:
             backbone_com_lwr = temp
 
-    return [backbone_com_upr, backbone_com_lwr]
+    return [np.array(backbone_com_upr), np.array(backbone_com_lwr)]
 
 
 def aggregate_site_counts_histograms(site_list):
