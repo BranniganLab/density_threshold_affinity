@@ -136,7 +136,7 @@ def load_inclusion_coordinates(directory):
     for leaflet in ["upr", "lwr"]:
         fname = path.joinpath(f"Protein_coords_{leaflet}.dat")
         try:
-            coords = fname.read_text()
+            coords = fname.read_text(encoding='utf-8')
         except FileNotFoundError as err:
             # Sometimes user will only want coordinates from one leaflet. Only
             # error if there are no coordinates from both leaflets.
@@ -180,8 +180,7 @@ def remove_vals_that_match_substring(input_text, substring):
             for value in row.split(' '):
                 if substring in value:
                     continue
-                else:
-                    temp.append(value)
+                temp.append(value)
             coords_list.append(temp)
     return coords_list
 
