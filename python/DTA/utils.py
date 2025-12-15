@@ -6,10 +6,10 @@ Created on Thu Nov 14 13:55:09 2024.
 @author: js2746
 """
 import math
+import warnings
 from pathlib import Path
 import numpy as np
 from scipy import constants
-import warnings
 
 
 def calculate_dG(counts_histogram, n_peak, temperature):
@@ -130,19 +130,21 @@ def load_inclusion_helices(path):
         List of outer and inner leaflet helix coordinates, alternating r and theta.
     """
     path = validate_path(path)
+    helices_upr = []
+    helices_lwr = []
     for leaflet in ["upr", "lwr"]:
         fails = 0
         fname = path.joinpath(f"Protein_coords_{leaflet}.dat")
         try:
             coords = np.loadtxt(fname)
-        except FileNotFoundError:
+        except FileNotFoundError as err:
             # Sometimes user will only want coordinates from one leaflet. Only
             # error if there are no coordinates from both leaflets.
             coords = []
             warnings.warn(f"No coordinates found in {leaflet} leaflet.")
             fails += 1
             if fails == 2:
-                raise FileNotFoundError("Could not find protein coordinate files in {path}")
+                raise FileNotFoundError(f"Could not find protein coordinate files in {path}") from err
 
         temp = []
         for item in coords:
