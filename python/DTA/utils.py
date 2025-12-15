@@ -136,7 +136,7 @@ def load_inclusion_coordinates(directory):
     for leaflet in ["upr", "lwr"]:
         fname = path.joinpath(f"Protein_coords_{leaflet}.dat")
         try:
-            coords = np.loadtxt(fname, dtype=str, delimiter=' ')
+            coords = fname.read_text()
         except FileNotFoundError as err:
             # Sometimes user will only want coordinates from one leaflet. Only
             # error if there are no coordinates from both leaflets.
@@ -145,44 +145,45 @@ def load_inclusion_coordinates(directory):
             fails += 1
             if fails == 2:
                 raise FileNotFoundError(f"Could not find protein coordinate files in {path}") from err
-
-        coords_without_chain_occ = filter_array_by_substring(coords, "/")
+        coords_list = remove_vals_that_match_substring(coords, "/")
         if leaflet == "upr":
-            backbone_com_upr = coords_without_chain_occ
+            backbone_com_upr = coords_list
         else:
-            backbone_com_lwr = coords_without_chain_occ
-
+            backbone_com_lwr = coords_list
     return [backbone_com_upr, backbone_com_lwr]
 
 
-def filter_array_by_substring(arr, filter_val):
+def remove_vals_that_match_substring(input_text, substring):
     """
-    Remove elements of a string array that contain the filter_val substring.
+    Iterate through lines and remove anything that contains substring.
 
     Parameters
     ----------
-    arr : numpy ndarray
-        A 2D string array.
-    filter_val : str
-        The substring you wish to use as a filter.
+    input_text : str
+        The text that was read-in from file.
 
     Returns
     -------
-    numpy ndarray
-        The same values as arr, but without any items containing the filter_val\
-        substring.
+    list of lists
+        The filtered text.
 
     """
-    if arr is None:
-        return None
-    if len(arr.shape) != 2:
-        raise IndexError("arr must be a 2D array")
-    mask = np.zeros_like(arr, dtype=int)
-    for row, _ in enumerate(mask):
-        for col, _ in enumerate(mask[0]):
-            if filter_val in arr[row, col]:
-                mask[row, col] = 1
-    return arr[~mask]
+    if input_text is None:
+        return []
+    coords_list = []
+    for row in input_text.split('\n'):
+        row = row.strip()
+        if row:
+            if row[0] == "#":
+                continue
+            temp = []
+            for value in row.split(' '):
+                if substring in value:
+                    continue
+                else:
+                    temp.append(value)
+            coords_list.append(temp)
+    return coords_list
 
 
 def aggregate_site_counts_histograms(site_list):
