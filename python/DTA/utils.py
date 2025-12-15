@@ -158,7 +158,7 @@ def load_inclusion_coordinates(directory):
 def custom_str_mask(arr, filter_val):
     if arr is None:
         return None
-    mask = np.zeros_like(arr)
+    mask = np.zeros_like(arr, dtype=int)
     for row, _ in enumerate(mask):
         for col, _ in enumerate(mask[0]):
             if filter_val in arr[row, col]:
