@@ -122,7 +122,6 @@ proc output_inclusion_centers {{a ""} } {
                     set y [lindex $com 1]
                     set r [expr sqrt($x*$x+$y*$y)]
                     set theta [get_theta $x $y]
-                    #puts "chain ${chnm} and occupancy $occ $r $theta"
                     puts -nonewline $fout "${chnm}/${occ}: $r $theta "
                 } else {
                     set warning_text "${warning_text} ${chnm}/${occ}"
