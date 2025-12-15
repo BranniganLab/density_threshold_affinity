@@ -381,8 +381,12 @@ proc trajectory_leaflet_assignment {atseltext headname tailname} {
                 puts "Defaulting to z=0 as the reference height to sort by."
         }
     }
-    for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame $params(leaflet_reassign_interval)} {
-        frame_leaflet_assignment $atseltext $headname $tailname $update_frame [expr $update_frame + $params(leaflet_reassign_interval)] $params(restrict_leaflet_sorter_to_Rmax)
+    for {set update_frame $params(start_frame)} {$update_frame <= $params(end_frame)} {incr update_frame $params(leaflet_reassign_interval)} {
+        if {$update_frame < $end_frame} {
+            frame_leaflet_assignment $atseltext $headname $tailname $update_frame [expr $update_frame + $params(leaflet_reassign_interval)] $params(restrict_leaflet_sorter_to_Rmax)
+        } else {
+            frame_leaflet_assignment $atseltext $headname $tailname $update_frame $end_frame $params(restrict_leaflet_sorter_to_Rmax)
+        }
         incr num_reassignments
     }
     puts "Checked for leaflet reassignments $num_reassignments times."
