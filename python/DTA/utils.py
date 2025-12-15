@@ -132,8 +132,8 @@ def load_inclusion_helices(path):
     path = validate_path(path)
     helices_upr = []
     helices_lwr = []
+    fails = 0
     for leaflet in ["upr", "lwr"]:
-        fails = 0
         fname = path.joinpath(f"Protein_coords_{leaflet}.dat")
         try:
             coords = np.loadtxt(fname)
