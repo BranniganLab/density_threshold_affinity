@@ -131,7 +131,7 @@ proc output_helix_centers {{a ""} } {
         }
         close $fout
         if {$warning_text ne ""} {
-            puts "CAUTION: the following chain/occupancy pairs were not found in the ${eqtxt} leaflet:"
+            puts "NOTE: the following chain/occupancy pairs were not found in the ${eqtxt} leaflet:"
             puts $warning_text
         }
     }
