@@ -136,7 +136,7 @@ def load_inclusion_coordinates(directory):
     for leaflet in ["upr", "lwr"]:
         fname = path.joinpath(f"Protein_coords_{leaflet}.dat")
         try:
-            with open(fname, 'r') as file:
+            with open(fname, 'r', encoding="utf-8") as file:
                 coords = file.readlines()
         except FileNotFoundError as err:
             # Sometimes user will only want coordinates from one leaflet. Only
