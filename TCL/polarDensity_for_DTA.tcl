@@ -105,7 +105,7 @@ proc output_inclusion_centers {{a ""} } {
     global params
     ;# list for the chain names
     ;# finds the center of the membranes
-    set midplane_height [z_mid 0 20]
+    set midplane_height [z_mid $params(start_frame) $params(end_frame)]
     ;# calculates the center of mass for subunit alpha helices in both leaflets
     puts "Writing coordinates for [llength $params(chainlist)] chains and [llength $params(helixlist)] helices per chain"
     foreach eq {"<" ">"} eqtxt {"lwr" "upr"} {
