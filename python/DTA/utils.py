@@ -9,6 +9,7 @@ import math
 from pathlib import Path
 import numpy as np
 from scipy import constants
+import warnings
 
 
 def calculate_dG(counts_histogram, n_peak, temperature):
@@ -116,7 +117,7 @@ def calculate_hist_mean(counts_data):
 
 def load_inclusion_helices(path):
     """
-    Get helix locations from the given path.
+    Get helix coordinates from the given path.
 
     Parameters
     ----------
@@ -125,18 +126,33 @@ def load_inclusion_helices(path):
 
     Returns
     -------
-    helix_list  :  list
-        List of upper and lower helix coordinates.
+    helix_list  :  list of lists
+        List of outer and inner leaflet helix coordinates, alternating r and theta.
     """
-    if isinstance(path, str):
-        path = Path(path)
-    try:
-        helices_lwr = np.loadtxt(path.joinpath("Protein_coords_lwr.dat"))
-        helices_upr = np.loadtxt(path.joinpath("Protein_coords_upr.dat"))
-    except FileNotFoundError:
-        helices_lwr = None
-        helices_upr = None
-        print("Protein coordinates not found")
+    path = validate_path(path)
+    for leaflet in ["upr", "lwr"]:
+        fails = 0
+        fname = path.joinpath(f"Protein_coords_{leaflet}.dat")
+        try:
+            coords = np.loadtxt(fname)
+        except FileNotFoundError:
+            # Sometimes user will only want coordinates from one leaflet. Only
+            # error if there are no coordinates from both leaflets.
+            coords = []
+            warnings.warn(f"No coordinates found in {leaflet} leaflet.")
+            fails += 1
+            if fails == 2:
+                raise FileNotFoundError("Could not find protein coordinate files in {path}")
+
+        temp = []
+        for item in coords:
+            if "/" not in item:
+                # strip out chain/occupancy if included (for now)
+                temp.append(item)
+        if leaflet == "upr":
+            helices_upr = temp
+        else:
+            helices_lwr = temp
 
     return [helices_upr, helices_lwr]
 
