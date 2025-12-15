@@ -109,22 +109,31 @@ proc output_helix_centers {{a ""} } {
     puts "Writing coordinates for [llength $params(chainlist)] chains and [llength $params(helixlist)] helices per chain"
     foreach eq {"<" ">"} eqtxt {"lwr" "upr"} {
         set fout [open "./Protein${a}_coords_${eqtxt}.dat" w]
-        puts $fout  "# chain A ooc1r occ1the occ2r occ2the... "
+        puts $fout  "# chain/occupancy: r_val theta_val ... "
+        set warning_text ""
         foreach chnm $params(chainlist) {
             foreach occ $params(helixlist) {
                 set sel [atomselect top "(chain ${chnm}) and (occupancy $occ and $params(backbone_selstr)) and (z ${eq} $zed)" frame 0]
-                set com [measure center $sel weight mass]
-                $sel delete
-                set x [lindex $com 0]
-                set y [lindex $com 1]
-                set r [expr sqrt($x*$x+$y*$y)]
-                set theta [get_theta $x $y]
-                #puts "chain ${chnm} and occupancy $occ $r $theta"
-                puts -nonewline $fout "$r $theta "
+                if {[$sel num] != 0} {
+                    set com [measure center $sel weight mass]
+                    $sel delete
+                    set x [lindex $com 0]
+                    set y [lindex $com 1]
+                    set r [expr sqrt($x*$x+$y*$y)]
+                    set theta [get_theta $x $y]
+                    #puts "chain ${chnm} and occupancy $occ $r $theta"
+                    puts -nonewline $fout "${chnm}/${occ}: $r $theta "
+                } else {
+                    set warning_text "${warning_text} ${chnm}/${occ}"
+                }
             }
             puts $fout ""
         }
         close $fout
+        if {$warning_text ne ""} {
+            puts "CAUTION: the following chain/occupancy pairs were not found in the ${eqtxt} leaflet:"
+            puts $warning_text
+        }
     }
 }
 
