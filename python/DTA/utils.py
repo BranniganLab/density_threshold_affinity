@@ -130,33 +130,40 @@ def load_inclusion_coordinates(directory):
         List of outer and inner leaflet backbone coordinates, alternating r and theta.
     """
     path = validate_path(directory)
-    backbone_com_upr = []
-    backbone_com_lwr = []
+    backbone_com_upr = None
+    backbone_com_lwr = None
     fails = 0
     for leaflet in ["upr", "lwr"]:
         fname = path.joinpath(f"Protein_coords_{leaflet}.dat")
         try:
-            coords = np.loadtxt(fname)
+            coords = np.loadtxt(fname, dtype=str, delimiter=' ')
         except FileNotFoundError as err:
             # Sometimes user will only want coordinates from one leaflet. Only
             # error if there are no coordinates from both leaflets.
-            coords = []
+            coords = None
             warnings.warn(f"No coordinates found in {leaflet} leaflet.")
             fails += 1
             if fails == 2:
                 raise FileNotFoundError(f"Could not find protein coordinate files in {path}") from err
 
-        temp = []
-        for item in coords:
-            if "/" not in item:
-                # strip out chain/occupancy if included (for now)
-                temp.append(item)
+        coords_without_chain_occ = custom_str_mask(coords, "/")
         if leaflet == "upr":
-            backbone_com_upr = temp
+            backbone_com_upr = coords_without_chain_occ
         else:
-            backbone_com_lwr = temp
+            backbone_com_lwr = coords_without_chain_occ
 
-    return [np.array(backbone_com_upr), np.array(backbone_com_lwr)]
+    return [backbone_com_upr, backbone_com_lwr]
+
+
+def custom_str_mask(arr, filter_val):
+    if arr is None:
+        return None
+    mask = np.zeros_like(arr)
+    for row, _ in enumerate(mask):
+        for col, _ in enumerate(mask[0]):
+            if filter_val in arr[row, col]:
+                mask[row, col] = 1
+    return arr[~mask]
 
 
 def aggregate_site_counts_histograms(site_list):
