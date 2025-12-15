@@ -634,7 +634,7 @@ proc polarDensityBin { config_file_script } {
             Align "occupancy $params(helixlist) and $params(backbone_selstr)"
         }
         ;# outputs protein positions
-        output_helix_centers
+        output_inclusion_centers
         ;# initialize some constants
         set area [get_avg_area top]
         set nframes [molinfo top get numframes]
