@@ -115,9 +115,9 @@ def calculate_hist_mean(counts_data):
     return mean
 
 
-def load_inclusion_helices(directory):
+def load_inclusion_coordinates(directory):
     """
-    Get helix coordinates from the given directory.
+    Get backbone coordinates from the given directory.
 
     Parameters
     ----------
@@ -126,12 +126,12 @@ def load_inclusion_helices(directory):
 
     Returns
     -------
-    helix_list  :  list of lists
-        List of outer and inner leaflet helix coordinates, alternating r and theta.
+    backbone_coms  :  list of lists
+        List of outer and inner leaflet backbone coordinates, alternating r and theta.
     """
     path = validate_path(directory)
-    helices_upr = []
-    helices_lwr = []
+    backbone_com_upr = []
+    backbone_com_lwr = []
     fails = 0
     for leaflet in ["upr", "lwr"]:
         fname = path.joinpath(f"Protein_coords_{leaflet}.dat")
@@ -152,11 +152,11 @@ def load_inclusion_helices(directory):
                 # strip out chain/occupancy if included (for now)
                 temp.append(item)
         if leaflet == "upr":
-            helices_upr = temp
+            backbone_com_upr = temp
         else:
-            helices_lwr = temp
+            backbone_com_lwr = temp
 
-    return [helices_upr, helices_lwr]
+    return [backbone_com_upr, backbone_com_lwr]
 
 
 def aggregate_site_counts_histograms(site_list):
