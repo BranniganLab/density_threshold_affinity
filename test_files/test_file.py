@@ -7,7 +7,6 @@ This is a pytest file for regression testing DTA.
 
 import pytest
 from pathlib import Path
-
 from DTA.Site import Site
 from DTA.SymmetricSite import SymmetricSite
 from DTA.SiteAcrossReplicas import SiteAcrossReplicas

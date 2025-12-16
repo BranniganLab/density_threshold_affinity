@@ -6,6 +6,7 @@ Created on Thu Nov 14 13:55:09 2024.
 @author: js2746
 """
 import math
+import warnings
 from pathlib import Path
 import numpy as np
 from scipy import constants
@@ -114,31 +115,77 @@ def calculate_hist_mean(counts_data):
     return mean
 
 
-def load_inclusion_helices(path):
+def load_inclusion_coordinates(directory):
     """
-    Get helix locations from the given path.
+    Get backbone coordinates from the given directory.
 
     Parameters
     ----------
-    path  :  str or Path
+    directory  :  str or Path
         The path to the directory containing the helix coordinate files.
 
     Returns
     -------
-    helix_list  :  list
-        List of upper and lower helix coordinates.
+    backbone_coms  :  2-list of 1D numpy ndarrays
+        List of outer and inner leaflet backbone coordinates, alternating r and theta.
     """
-    if isinstance(path, str):
-        path = Path(path)
-    try:
-        helices_lwr = np.loadtxt(path.joinpath("Protein_coords_lwr.dat"))
-        helices_upr = np.loadtxt(path.joinpath("Protein_coords_upr.dat"))
-    except FileNotFoundError:
-        helices_lwr = None
-        helices_upr = None
-        print("Protein coordinates not found")
+    path = validate_path(directory)
+    backbone_com_upr = None
+    backbone_com_lwr = None
+    fails = 0
+    for leaflet in ["upr", "lwr"]:
+        fname = path.joinpath(f"Protein_coords_{leaflet}.dat")
+        try:
+            with open(fname, 'r', encoding="utf-8") as file:
+                coords = file.readlines()
+        except FileNotFoundError as err:
+            # Sometimes user will only want coordinates from one leaflet. Only
+            # error if there are no coordinates from both leaflets.
+            coords = None
+            warnings.warn(f"No coordinates found in {leaflet} leaflet.")
+            fails += 1
+            if fails == 2:
+                raise FileNotFoundError(f"Could not find protein coordinate files in {path}") from err
+        coords_list = remove_vals_that_match_substring(coords, "/")
+        if leaflet == "upr":
+            backbone_com_upr = coords_list
+        else:
+            backbone_com_lwr = coords_list
+    return [backbone_com_upr, backbone_com_lwr]
 
-    return [helices_upr, helices_lwr]
+
+def remove_vals_that_match_substring(input_text, substring):
+    """
+    Iterate through lines and remove anything that contains substring.
+
+    Parameters
+    ----------
+    input_text : list
+        The text that was read-in from file with readlines().
+    substring : str
+        Filter out any values that contain substring.
+
+    Returns
+    -------
+    list of lists
+        The filtered text.
+
+    """
+    if input_text is None:
+        return []
+    output_text = []
+    for row in input_text:
+        row = row.strip()
+        if row:
+            if row[0] == "#":
+                continue
+            temp = []
+            for value in row.split(' '):
+                if substring in value:
+                    continue
+                temp.append(value)
+            output_text.append(temp)
+    return output_text
 
 
 def aggregate_site_counts_histograms(site_list):

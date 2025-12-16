@@ -99,32 +99,41 @@ proc z_mid {init_frm nframes} {
 
 
 
-;#Outputs xy position of helix centers to file for each leaflet; center is calculated using the part of the helix in the given leaflet
-proc output_helix_centers {{a ""} } {
+;#Outputs radial position of TMD centers to file for each leaflet
+;#Calculated using the midplane_selstr specified in the config to determine leaflet.
+proc output_inclusion_centers {{a ""} } {
     global params
     ;# list for the chain names
     ;# finds the center of the membranes
-    set zed [z_mid 0 20]
+    set midplane_height [z_mid $params(start_frame) $params(end_frame)]
     ;# calculates the center of mass for subunit alpha helices in both leaflets
     puts "Writing coordinates for [llength $params(chainlist)] chains and [llength $params(helixlist)] helices per chain"
     foreach eq {"<" ">"} eqtxt {"lwr" "upr"} {
         set fout [open "./Protein${a}_coords_${eqtxt}.dat" w]
-        puts $fout  "# chain A ooc1r occ1the occ2r occ2the... "
+        puts $fout  "# chain/occupancy: r_val theta_val ... "
+        set warning_text ""
         foreach chnm $params(chainlist) {
             foreach occ $params(helixlist) {
-                set sel [atomselect top "(chain ${chnm}) and (occupancy $occ and $params(backbone_selstr)) and (z ${eq} $zed)" frame 0]
-                set com [measure center $sel weight mass]
-                $sel delete
-                set x [lindex $com 0]
-                set y [lindex $com 1]
-                set r [expr sqrt($x*$x+$y*$y)]
-                set theta [get_theta $x $y]
-                #puts "chain ${chnm} and occupancy $occ $r $theta"
-                puts -nonewline $fout "$r $theta "
+                set sel [atomselect top "(chain ${chnm}) and (occupancy $occ and $params(backbone_selstr)) and (z ${eq} $midplane_height)" frame 0]
+                if {[$sel num] != 0} {
+                    set com [measure center $sel weight mass]
+                    $sel delete
+                    set x [lindex $com 0]
+                    set y [lindex $com 1]
+                    set r [expr sqrt($x*$x+$y*$y)]
+                    set theta [get_theta $x $y]
+                    puts -nonewline $fout "${chnm}/${occ}: $r $theta "
+                } else {
+                    set warning_text "${warning_text} ${chnm}/${occ}"
+                }
             }
             puts $fout ""
         }
         close $fout
+        if {$warning_text ne ""} {
+            puts "NOTE: the following chain/occupancy pairs were not found in the ${eqtxt} leaflet:"
+            puts $warning_text
+        }
     }
 }
 
@@ -624,7 +633,7 @@ proc polarDensityBin { config_file_script } {
             Align "occupancy $params(helixlist) and $params(backbone_selstr)"
         }
         ;# outputs protein positions
-        output_helix_centers
+        output_inclusion_centers
         ;# initialize some constants
         set area [get_avg_area top]
         set nframes [molinfo top get numframes]
