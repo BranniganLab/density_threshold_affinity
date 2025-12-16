@@ -40,7 +40,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache/vmd-install
-          key: vmd-build-${{ hashFiles('vmd-1.9.4a57.src.tar.gz') }}
+          key: vmd-build-${{ hashFiles('vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar.gz') }}
           restore-keys: vmd-build-
 
       # ------------------------------------------------
