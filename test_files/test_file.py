@@ -10,7 +10,7 @@ import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-from DTA.utils import load_inclusion_helices
+from DTA.utils import load_inclusion_coordinates
 from DTA.density import parse_tcl_dat_file, aggregate_density_enrichment_scores, load_replica_counts, valid_Dimensions
 from DTA.plotting import make_density_enrichment_heatmap, make_custom_colormap, plot_histogram, outline_site, plot_titration_curve
 from DTA.Site import Site
@@ -29,7 +29,7 @@ def analyze_sample_outputs():
     helix_definitions = root_path.joinpath(replicas[0]) #where are the coordinates for the transmembrane helices?
     max_enrichment = 5 # how high do you want your heat map to go?
     
-    helices = load_inclusion_helices(helix_definitions)
+    helices = load_inclusion_coordinates(helix_definitions)
     avg_enrichments = []
     for leaf in ["upp", "low"]:
         rep_list = []
