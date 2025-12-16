@@ -215,8 +215,10 @@ def aggregate_density_enrichment_scores(file_paths):
 
     Returns
     -------
-    area : float
-        The bin area in square Angstroms.
+    all_reps_avg : numpy ndarray
+        The density enrichment scores, averaged together in a 2D array.
+    grid_dims_final : namedtuple
+        The Dimensions namedtuple that contains information about lattice sizes.
 
     """
     replica_enrichments_list = []
