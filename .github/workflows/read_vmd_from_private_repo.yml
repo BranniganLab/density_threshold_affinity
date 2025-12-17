@@ -41,7 +41,7 @@ jobs:
         with:
           app-id: ${{ secrets.GH_APP_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          installation-id: ${{ secrets.GH_APP_INSTALLATION_ID }}
+          repositories: BranniganLab/vmd_for_testing
 
       # Step 2: Get tarball SHA for cache key
       - name: Get tarball SHA
