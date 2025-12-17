@@ -37,11 +37,13 @@ jobs:
       # Step 1: Generate GitHub App token
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.GH_APP_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          repositories: BranniganLab/vmd_for_testing
+          owner: BranniganLab
+          repositories: |
+            vmd_for_testing
 
       # Step 2: Get tarball SHA for cache key
       - name: Get tarball SHA
