@@ -1,0 +1,27 @@
+name: Read private repo file
+
+on:
+  push:
+
+jobs:
+  read-private:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          installation-id: ${{ secrets.GH_APP_INSTALLATION_ID }}
+
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+        with:
+          repository: BranniganLab/vmd_for_testing
+          token: ${{ steps.app-token.outputs.token }}
+          path: private-repo
+
+      - name: Use the file
+        run: |
+          [ -e private-repo/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar.gz ]
