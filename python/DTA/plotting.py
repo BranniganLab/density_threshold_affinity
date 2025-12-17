@@ -293,8 +293,6 @@ def plot_helices_on_panels(fig, helices, heatmap_settings):
     """
     if not isinstance(helices, list):
         raise TypeError(f"{helices} must be a list instead of a {type(helices)}.")
-    if not all(isinstance(item, np.ndarray) for item in helices):
-        raise TypeError("helices must be a list of ndarrays")
     assert len(helices) == np.ravel(fig.axes).shape[0]
     for ax, helix_set in zip(np.ravel(fig.axes), helices):
         ax = plot_helices(helix_set, False, ax, 50, colorlist=heatmap_settings.occupancy_color)
@@ -555,6 +553,8 @@ def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
     - ax (matplotlib.axes.Axes): The modified polar subplot axis with the helices plotted.
 
     """
+    if isinstance(helices, list):
+        helices = np.array(helices, dtype=np.float64)
     if colorlist is None:
         colorlist = ["tab:blue", "tab:cyan", "tab:green", "tab:purple", "tab:brown", "tab:olive", "tab:orange"]
     if len(np.shape(helices)) == 1:
