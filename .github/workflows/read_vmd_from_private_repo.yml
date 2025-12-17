@@ -83,8 +83,6 @@ jobs:
           ./configure
           cd src
           make install
-          cd $GITHUB_WORKSPACE/.cache/vmd-install
-          ls
 
       # Step 6: Add VMD to PATH
       - name: Add VMD to PATH
@@ -95,7 +93,7 @@ jobs:
       - name: Verify VMD installation
         run: |
           echo "Testing VMD installation..."
-          vmd -dispdev text -e <<<'quit'
+          vmd -dispdev text -e /dev/null
           if [ $? -ne 0 ]; then
             echo "VMD failed to run!"
             exit 1
