@@ -59,10 +59,11 @@ class HeatmapSettings:
     colorbar_range: tuple = field(init=False)
     polar_grid: tuple = field(init=False)
     max_enrichment: InitVar[float]
+    min_enrichment: InitVar[float]
     grid_dims: InitVar[tuple]
     occupancy_color: list
 
-    def __post_init__(self, max_enrichment, grid_dims):
+    def __post_init__(self, max_enrichment, min_enrichment, grid_dims):
         """
         Calculate colorbar_range and make sure row_names and col_names are lists.
 
@@ -88,7 +89,10 @@ class HeatmapSettings:
             raise TypeError(f"{self.col_names} must be a list instead of a {type(self.col_names)}.")
         if not isinstance(self.row_names, list):
             raise TypeError(f"{self.row_names} must be a list instead of a {type(self.row_names)}.")
-        self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
+        if min_enrichment != 0.0:
+            self.colorbar_range = (min_enrichment, 1, max_enrichment)
+        else:
+            self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
         self.polar_grid = bin_prep(grid_dims)
 
 
@@ -369,7 +373,6 @@ def plot_heatmap(ax, data, heatmap_settings):
     norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
     ax.grid(False)
     r_vals, theta_vals = heatmap_settings.polar_grid
-    print(r_vals, theta_vals, data, heatmap_settings.colormap)
     ax.pcolormesh(theta_vals, r_vals, data, cmap=heatmap_settings.colormap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
