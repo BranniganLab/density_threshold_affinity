@@ -25,3 +25,4 @@ jobs:
       - name: Use the file
         run: |
           [ -e private-repo/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar.gz ]
+          echo "testing"
