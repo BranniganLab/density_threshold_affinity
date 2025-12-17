@@ -89,7 +89,7 @@ jobs:
       # Step 6: Add VMD to PATH
       - name: Add VMD to PATH
         run: |
-          echo "$GITHUB_WORKSPACE/.cache/vmd-install" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/.cache/vmd-install/bin" >> $GITHUB_PATH
 
       # Step 7: Verify installation
       - name: Verify VMD installation
