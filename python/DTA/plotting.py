@@ -143,26 +143,26 @@ def outline_site(ax, site, grid_dims, linewidth=1, color='black'):
 
 def isolate_unique_site_edges(bin_coords_list, grid_dims):
     """
-    List all of the edges that need to be drawn in order to enclose the site.\
-    In this lattice space, if edges are repeated it means they are internal \
+    List all of the edges that need to be drawn in order to enclose the site.
+
+    In this lattice space, if edges are repeated it means they are internal
     edges and should not be drawn at all.
 
     Parameters
     ----------
     bin_coords_list : list or tuples
-        The bins that belong to this site in (r, theta) format. e.g. \
-        [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
-        13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
+        The bins that belong to this site in (r, theta) format. e.g.
+        [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and
+        13th theta bins in the 3rd radial bin from the origin. Bin coordinates
         are zero-indexed by convention.
-        The list of bin.
     grid_dims : namedtuple
-        Contains dr, number of r bins, dtheta, number of theta bins, and number\
+        Contains dr, number of r bins, dtheta, number of theta bins, and number
         of frames contained in file.
 
     Returns
     -------
     line_list : list of tuples
-        The list of exterior bin edges needed in order to draw the site outline.\
+        The list of exterior bin edges needed in order to draw the site outline.
         Each bin edge is a tuple, with each tuple value being an ndarray.
 
     """
