@@ -360,8 +360,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
         #copy leaflet values from $frame_i to all frames between $frame_i and $frame_f
         #need a new atomselection that is just based on index rather than shell (when restrict_to_Rmax is on)
         set leaflet_list [$sel get user2] 
-        set indices [$sel get index]
-        set interim_sel [atomselect top "index $indices"]
+        set interim_sel [atomselect top "index [$sel get index]"]
         for {set interim_frame [expr $frame_i + 1]} {$interim_frame < [expr $frame_f]} {incr interim_frame} {
             $interim_sel frame $interim_frame
             $interim_sel update
