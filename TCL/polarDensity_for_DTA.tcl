@@ -358,12 +358,16 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
             leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)
         }
         #copy leaflet values from $frame_i to all frames between $frame_i and $frame_f
+        #need a new atomselection that is just based on index rather than shell
         set leaflet_list [$sel get user2] 
+        set indices [$sel get index]
+        set update_sel [atomselect top "index $indices"]
         for {set interim_frame [expr $frame_i + 1]} {$interim_frame < [expr $frame_f]} {incr interim_frame} {
-            $sel frame $interim_frame
-            $sel update
-            $sel set user2 $leaflet_list
+            $update_sel frame $interim_frame
+            $update_sel update
+            $update_sel set user2 $leaflet_list
         }
+        $update_sel delete
         #count the number of lipids and the number of beads in each leaflet
         foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
             set leaf_sel [ atomselect top "(${atseltext}) and $leaf"  frame $frame_i]
