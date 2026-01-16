@@ -276,3 +276,16 @@ def validate_path(path, file=False):
         if not path.is_file():
             raise FileNotFoundError(f"The specified file '{path}' is not recognized as a file. Please ensure the path is correct.")
     return path
+
+
+def theta_in_bin(self, t0, t1, t_low, t_high):
+    dt = (t1 - t0) % (2 * np.pi)
+    if dt <= np.pi:
+        theta_val = t0
+    if dt > np.pi:
+        dt = (t0 - t1) % (2 * np.pi)
+        theta_val = t1
+    condition1 = (t_low - theta_val) % (2 * np.pi)
+    condition2 = (t_high - theta_val) % (2 * np.pi)
+    condition3 = (theta_val - t_low) % (2 * np.pi)
+    return ((condition1 < dt) or (condition2 < dt) or (condition3 < (t_high - t_low)))
