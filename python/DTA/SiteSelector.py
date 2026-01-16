@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from DTA.utils import theta_in_bin
 
 
+# pylint: disable=too-many-instance-attributes
 class SiteSelector:
     """
     Interactive bin selector for polar plots.
@@ -116,6 +117,7 @@ class SiteSelector:
                         bins.append((ti, ri))
         return bins
 
+    # pylint: disable=too-many-locals
     def _draw_outer_edges(self, mask_bins, color, lw):
         """Draw outline around selected bins."""
         if not mask_bins:
