@@ -279,6 +279,26 @@ def validate_path(path, file=False):
 
 
 def theta_in_bin(t0, t1, t_low, t_high):
+    """
+    Do something.
+
+    Parameters
+    ----------
+    t0 : TYPE
+        DESCRIPTION.
+    t1 : TYPE
+        DESCRIPTION.
+    t_low : TYPE
+        DESCRIPTION.
+    t_high : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
     dt = (t1 - t0) % (2 * np.pi)
     theta_val = t0
     if dt > np.pi:
