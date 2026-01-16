@@ -1,5 +1,13 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jan 16 13:02:14 2026.
+
+@author: js2746
+"""
 import numpy as np
 import matplotlib.pyplot as plt
+from DTA.utils import theta_in_bin
 
 
 class SiteSelector:
@@ -90,18 +98,6 @@ class SiteSelector:
             a.remove()
         artists.clear()
 
-    def _theta_in_bin(self, t0, t1, t_low, t_high):
-        dt = (t1 - t0) % (2 * np.pi)
-        if dt <= np.pi:
-            theta_val = t0
-        else:
-            dt = (t0 - t1) % (2 * np.pi)
-            theta_val = t1
-        condition1 = (t_low - theta_val) % (2 * np.pi)
-        condition2 = (t_high - theta_val) % (2 * np.pi)
-        condition3 = (theta_val - t_low) % (2 * np.pi)
-        return ((condition1 < dt) or (condition2 < dt) or (condition3 < (t_high - t_low)))
-
     def _bins_in_region(self, t0, t1, r0, r1):
         """Find all bins within a rectangular selection region."""
         r0, r1 = sorted([r0, r1])
@@ -112,7 +108,7 @@ class SiteSelector:
         for ti in range(len(self.theta_edges) - 1):
             t_low = self.theta_edges[ti]
             t_high = self.theta_edges[ti + 1]
-            if self._theta_in_bin(t0, t1, t_low, t_high):
+            if theta_in_bin(t0, t1, t_low, t_high):
                 for ri in range(len(self.r_edges) - 1):
                     r_low = self.r_edges[ri]
                     r_high = self.r_edges[ri + 1]
