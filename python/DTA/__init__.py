@@ -12,7 +12,8 @@ __all__=['Site',
         'SiteAcrossReplicas',
         'utils',
         'plotting',
-        'density']
+        'density',
+        'SiteSelector']
 
 
 from .Site import *
@@ -21,3 +22,4 @@ from .SymmetricSite import *
 from .utils import *
 from .density import *
 from .plotting import *
+from .SiteSelector import *
