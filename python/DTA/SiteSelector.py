@@ -16,9 +16,7 @@ class SiteSelector:
         selected = selector.get_selected_bins()
     """
 
-    def __init__(self, ax, theta_edges, r_edges,
-                 hover_color='orange', selected_color='red',
-                 hover_lw=1.5, selected_lw=2):
+    def __init__(self, ax, theta_edges, r_edges):
         """
         Initialize the polar bin selector.
 
@@ -30,22 +28,10 @@ class SiteSelector:
             Angular bin edges (radians)
         r_edges : array-like
             Radial bin edges
-        hover_color : str, optional
-            Color for hover preview
-        selected_color : str, optional
-            Color for confirmed selection
-        hover_lw : float, optional
-            Line width for hover preview
-        selected_lw : float, optional
-            Line width for confirmed selection
         """
         self.ax = ax
         self.theta_edges = np.asarray(theta_edges)
         self.r_edges = np.asarray(r_edges)
-        self.hover_color = hover_color
-        self.selected_color = selected_color
-        self.hover_lw = hover_lw
-        self.selected_lw = selected_lw
 
         # State
         self.selected_bins = set()
@@ -205,7 +191,7 @@ class SiteSelector:
             temp_mask = self.selected_bins.union(bins)
 
         self.hover_artists.extend(
-            self._draw_outer_edges(temp_mask, self.hover_color, self.hover_lw)
+            self._draw_outer_edges(temp_mask, 'orange', 1.5)
         )
         self.fig.canvas.draw_idle()
 
@@ -213,8 +199,7 @@ class SiteSelector:
         """Update confirmed selection display."""
         self._clear_artists(self.selected_artists)
         self.selected_artists.extend(
-            self._draw_outer_edges(self.selected_bins,
-                                  self.selected_color, self.selected_lw)
+            self._draw_outer_edges(self.selected_bins, 'red', 2)
         )
         self.fig.canvas.draw_idle()
 
