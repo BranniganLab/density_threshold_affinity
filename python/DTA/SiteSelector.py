@@ -189,9 +189,7 @@ class SiteSelector:
             if 0 <= ti < len(self.theta_edges) - 1 and 0 <= ri < len(self.r_edges) - 1:
                 return [(ti, ri)]
             return []
-        else:
-            # Rectangle selection
-            return self._bins_in_region(x0, x1, y0, y1)
+        return self._bins_in_region(x0, x1, y0, y1)
 
     def _update_hover_display(self, bins):
         """Update hover preview."""
@@ -282,12 +280,11 @@ def create_example_plot():
 
     theta_centers = 0.5 * (theta_edges[:-1] + theta_edges[1:])
     r_centers = 0.5 * (r_edges[:-1] + r_edges[1:])
-    Theta, R = np.meshgrid(theta_centers, r_centers)
-
-    Z = np.sin(2 * Theta) * np.exp(-R / 2)
+    theta_vals, r_vals = np.meshgrid(theta_centers, r_centers)
+    example = np.sin(2 * theta_vals) * np.exp(-r_vals / 2)
 
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
-    ax.pcolormesh(theta_edges, r_edges, Z, shading="auto")
+    ax.pcolormesh(theta_edges, r_edges, example, shading="auto")
     ax.set_title("Hover = preview | Release = confirm\nShift=add, Ctrl=subtract")
     ax.set_axis_off()
 
