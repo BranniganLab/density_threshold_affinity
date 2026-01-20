@@ -406,7 +406,8 @@ proc trajectory_leaflet_assignment {atseltext headname tailname} {
         incr num_reassignments
     }
     if {[test_if_evenly_divisible $params(end_frame) $params(leaflet_reassign_interval)] != 1} {
-        # Run one extra iteration to finish final leftover frames at end of trajectory
+        # Run one extra iteration to finish final leftover frames at end of trajectory.
+
         frame_leaflet_assignment $atseltext $headname $tailname $update_frame $params(end_frame) $params(restrict_leaflet_sorter_to_Rmax)
         incr num_reassignments
     }
