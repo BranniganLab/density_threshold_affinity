@@ -340,34 +340,42 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
     global params
     if {$restrict_to_Rmax == 1} {
         set outer_r2 [expr $params(Rmax)**2]
-        set sel [ atomselect top "($atseltext) and same resid as (x*x + y*y < $outer_r2)"  frame $frame_i]
+        set sel_to_sort [ atomselect top "($atseltext) and same resid as (x*x + y*y < $outer_r2)"  frame $frame_i]
     } elseif {$restrict_to_Rmax == 0} {
-        set sel [ atomselect top "$atseltext"  frame $frame_i]
+        set sel_to_sort [ atomselect top "$atseltext"  frame $frame_i]
     } else {
         error "restrict_leaflet_sorter_to_Rmax must be 1 or 0"
     }
-    set sel_num [llength [lsort -unique [$sel get resid] ] ]
-    set sel_resid_list [lsort -unique [$sel get resid] ]
+    set sel_num [llength [lsort -unique [$sel_to_sort get resid] ] ]
+    set sel_resid_list [lsort -unique [$sel_to_sort get resid] ]
     set totals {}
     if {$sel_num < 1} {
+        # No lipids to sort. Return zeros.
+
         set totals [list "lower 0 0" "upper 0 0"] 
     } else {
-        #assign leaflets from $frame_i to user2 field of each bead for this selection
+        # Assign user2 values for of each bead of each lipid in the selection.
+
         foreach sel_resid $sel_resid_list {
             set selstring "(${atseltext}) and (resid $sel_resid)"
             leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)
         }
-        #copy leaflet values from $frame_i to all frames between $frame_i and $frame_f
-        #use index numbers for this, since $sel is based off of a radial shell when $restrict_to_Rmax is on
-        set leaflet_list [$sel get user2] 
-        set cached_sel [atomselect top "index [$sel get index]"]
+
+        # Copy leaflet values from $frame_i to all frames between $frame_i and 
+        # $frame_f. Use index numbers for this, since $sel is based off of a 
+        # radial shell when $restrict_to_Rmax is on.
+
+        set leaflet_list [$sel_to_sort get user2] 
+        set sel_to_update [atomselect top "index [$sel_to_sort get index]"]
         for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame < [expr $frame_f]} {incr unsorted_frame} {
-            $cached_sel frame $unsorted_frame
-            $cached_sel update
-            $cached_sel set user2 $leaflet_list
+            $sel_to_update frame $unsorted_frame
+            $sel_to_update update
+            $sel_to_update set user2 $leaflet_list
         }
-        $cached_sel delete
-        #count the number of lipids and the number of beads in each leaflet
+        $sel_to_update delete
+
+        # Count the number of lipids and the number of beads in each leaflet.
+
         foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
             set leaf_sel [ atomselect top "(${atseltext}) and $leaf"  frame $frame_i]
             set num_beads [$leaf_sel num]
