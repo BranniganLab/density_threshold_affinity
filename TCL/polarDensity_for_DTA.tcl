@@ -358,15 +358,15 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
             leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)
         }
         #copy leaflet values from $frame_i to all frames between $frame_i and $frame_f
-        #need a new atomselection that is just based on index rather than shell (when restrict_to_Rmax is on)
+        #use index numbers for this, since $sel is based off of a radial shell when $restrict_to_Rmax is on
         set leaflet_list [$sel get user2] 
-        set interim_sel [atomselect top "index [$sel get index]"]
-        for {set interim_frame [expr $frame_i + 1]} {$interim_frame < [expr $frame_f]} {incr interim_frame} {
-            $interim_sel frame $interim_frame
-            $interim_sel update
-            $interim_sel set user2 $leaflet_list
+        set cached_sel [atomselect top "index [$sel get index]"]
+        for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame < [expr $frame_f]} {incr unsorted_frame} {
+            $cached_sel frame $unsorted_frame
+            $cached_sel update
+            $cached_sel set user2 $leaflet_list
         }
-        $interim_sel delete
+        $cached_sel delete
         #count the number of lipids and the number of beads in each leaflet
         foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
             set leaf_sel [ atomselect top "(${atseltext}) and $leaf"  frame $frame_i]
