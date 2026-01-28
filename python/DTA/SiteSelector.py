@@ -57,6 +57,12 @@ class SiteSelector:
             self.fig.canvas.mpl_connect("button_release_event", self._on_release)
         ]
 
+        # Remove matplotlib default content
+        self.fig.canvas.toolbar_visible = False
+        self.fig.canvas.header_visible = False
+        self.fig.canvas.footer_visible = False
+        self.fig.canvas.resizable = False
+
     def disconnect(self):
         """Disconnect all event handlers."""
         for cid in self._connections:
@@ -266,9 +272,9 @@ def create_example_plot():
     theta_vals, r_vals = np.meshgrid(theta_centers, r_centers)
     example = np.sin(2 * theta_vals) * np.exp(-r_vals / 2)
 
-    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, layout='constrained')
     ax.pcolormesh(theta_edges, r_edges, example, shading="auto")
-    ax.set_title("Hover = preview | Release = confirm\nShift=add, Ctrl=subtract")
+    ax.set_title("Click + Drag = preview | Release = confirm\nShift = add | Ctrl = subtract")
     ax.set_axis_off()
 
     # Create selector
