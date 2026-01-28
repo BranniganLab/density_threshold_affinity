@@ -87,21 +87,21 @@ class SiteSelector:
             a.remove()
         artists.clear()
 
-    def _bins_in_region(self, t0, t1, r0, r1):
-        """Find all bins within a rectangular selection region."""
-        r0, r1 = sorted([r0, r1])
-        t0 = t0 % (2 * np.pi)
-        t1 = t1 % (2 * np.pi)
+    def _bins_in_region(self, theta_start, theta_end, r_start, r_end):
+        """Find all bins within a polar selection region."""
+        r_start, r_end = sorted([r_start, r_end])
+        theta_start = theta_start % (2 * np.pi)
+        theta_end = theta_end % (2 * np.pi)
 
         bins = []
         for ti in range(len(self.theta_edges) - 1):
             t_low = self.theta_edges[ti]
             t_high = self.theta_edges[ti + 1]
-            if theta_in_bin(t0, t1, t_low, t_high):
+            if theta_in_bin(theta_start, theta_end, t_low, t_high):
                 for ri in range(len(self.r_edges) - 1):
                     r_low = self.r_edges[ri]
                     r_high = self.r_edges[ri + 1]
-                    if r_high >= r0 and r_low <= r1:
+                    if r_high >= r_start and r_low <= r_end:
                         bins.append((ti, ri))
         return bins
 
@@ -148,20 +148,42 @@ class SiteSelector:
                                                color=color, lw=lw, zorder=10)[0])
         return artists
 
-    def _get_bins_from_drag(self, t0, r0, t1, r1):
-        """Get bins from drag coordinates."""
-        dt = t1 - t0
-        dr = r1 - r0
+    def _get_bins_from_drag(self, theta_start, r_start, theta_end, r_end):
+        """
+        Determine whether click or drag and return selected bins.
+
+        Parameters
+        ----------
+        theta_start : float
+            Theta coordinate of drag/click start.
+        r_start : float
+            r coordinate of drag/click start.
+        theta_end : float
+            Theta coordinate of drag/click end.
+        r_end : float
+            r coordinate of drag/click end.
+
+        Returns
+        -------
+        list of tuple
+            List of (theta_index, r_index) tuples
+
+        """
+        dt = theta_end - theta_start
+        dr = r_end - r_start
         threshold = 1e-8
 
         if abs(dt) < threshold and abs(dr) < threshold:
-            # Single bin click
-            ti = np.searchsorted(self.theta_edges, t1 % (2 * np.pi), side="right") - 1
-            ri = np.searchsorted(self.r_edges, r1, side="right") - 1
+            # Single bin click, not drag event
+            ti = np.searchsorted(self.theta_edges, theta_end % (2 * np.pi), side="right") - 1
+            ri = np.searchsorted(self.r_edges, r_end, side="right") - 1
             if 0 <= ti < len(self.theta_edges) - 1 and 0 <= ri < len(self.r_edges) - 1:
+                # In-bounds click, return current bin
                 return [(ti, ri)]
+            # else: out-of-bounds click, return empty list
             return []
-        return self._bins_in_region(t0, t1, r0, r1)
+        # else: this was a drag event, return all the bins in the drag region
+        return self._bins_in_region(theta_start, theta_end, r_start, r_end)
 
     def _update_hover_display(self, bins):
         """Update hover preview."""
