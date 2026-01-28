@@ -63,12 +63,6 @@ class SiteSelector:
         self.fig.canvas.footer_visible = False
         self.fig.canvas.resizable = False
 
-    def disconnect(self):
-        """Disconnect all event handlers."""
-        for cid in self._connections:
-            self.fig.canvas.mpl_disconnect(cid)
-        self.clear_selection()
-
     def get_selected_bins(self):
         """
         Get the currently selected bins.
@@ -78,7 +72,7 @@ class SiteSelector:
         list of tuple
             List of (theta_idx, r_idx) tuples
         """
-        return list(self.selected_bins)
+        return sorted(list(self.selected_bins))
 
     def clear_selection(self):
         """Clear all selected bins and remove artists."""
@@ -86,18 +80,6 @@ class SiteSelector:
         self._clear_artists(self.selected_artists)
         self._clear_artists(self.hover_artists)
         self.fig.canvas.draw_idle()
-
-    def set_selection(self, bins):
-        """
-        Programmatically set the selected bins.
-
-        Parameters
-        ----------
-        bins : iterable of tuple
-            Bins to select as (theta_idx, r_idx) tuples
-        """
-        self.selected_bins = set(bins)
-        self._update_selected_display()
 
     def _clear_artists(self, artists):
         """Remove artists from plot and clear list."""
@@ -259,6 +241,12 @@ class SiteSelector:
         self._update_selected_display()
         self._clear_artists(self.hover_artists)
         self.drag_start = None
+
+    def _disconnect(self):
+        """Disconnect all event handlers."""
+        for cid in self._connections:
+            self.fig.canvas.mpl_disconnect(cid)
+        self.clear_selection()
 
 
 # Example usage
