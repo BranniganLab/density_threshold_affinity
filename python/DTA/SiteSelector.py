@@ -148,20 +148,20 @@ class SiteSelector:
                                                color=color, lw=lw, zorder=10)[0])
         return artists
 
-    def _get_bins_from_drag(self, t0, y0, t1, y1):
+    def _get_bins_from_drag(self, t0, r0, t1, r1):
         """Get bins from drag coordinates."""
         dt = t1 - t0
-        dy = y1 - y0
+        dr = r1 - r0
         threshold = 1e-8
 
-        if abs(dt) < threshold and abs(dy) < threshold:
+        if abs(dt) < threshold and abs(dr) < threshold:
             # Single bin click
             ti = np.searchsorted(self.theta_edges, t1 % (2 * np.pi), side="right") - 1
-            ri = np.searchsorted(self.r_edges, y1, side="right") - 1
+            ri = np.searchsorted(self.r_edges, r1, side="right") - 1
             if 0 <= ti < len(self.theta_edges) - 1 and 0 <= ri < len(self.r_edges) - 1:
                 return [(ti, ri)]
             return []
-        return self._bins_in_region(t0, t1, y0, y1)
+        return self._bins_in_region(t0, t1, r0, r1)
 
     def _update_hover_display(self, bins):
         """Update hover preview."""
