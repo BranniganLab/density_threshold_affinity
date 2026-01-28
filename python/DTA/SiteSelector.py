@@ -221,6 +221,7 @@ class SiteSelector:
         else:
             self.mode = "replace"
             self.selected_bins.clear()
+            self._clear_artists(self.selected_artists)
 
     def _on_motion(self, event):
         """Handle mouse motion event."""
