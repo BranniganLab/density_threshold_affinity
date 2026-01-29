@@ -103,48 +103,122 @@ class SiteSelector:
                         bins.append((ti, ri))
         return bins
 
-    # pylint: disable=too-many-locals
     def _draw_outer_edges(self, mask_bins, color, lw):
-        """Draw outline around selected bins."""
+        """
+        Draw an outline around the outer boundary of a set of selected polar bins.
+
+        Only edges that border an unselected neighbor (or the plot boundary)
+        are drawn.
+        """
         if not mask_bins:
             return []
 
+        mask = self._build_bin_mask(mask_bins)
+        artists = []
+
+        for ri, ti in zip(*np.where(mask)):
+            artists.extend(
+                self._draw_bin_edges(mask, ri, ti, color, lw)
+            )
+
+        return artists
+
+    def _build_bin_mask(self, mask_bins):
+        """Return a boolean (r, theta) mask of selected bins."""
         n_r = len(self.r_edges) - 1
         n_t = len(self.theta_edges) - 1
         mask = np.zeros((n_r, n_t), dtype=bool)
+
         for ti, ri in mask_bins:
             mask[ri, ti] = True
 
+        return mask
+
+    def _draw_bin_edges(self, mask, ri, ti, color, lw):
+        """
+        Draw the visible (outer) edges of a single selected bin.
+
+        Each bin has four possible edges:
+
+                top
+             ┌─────────┐
+             │         │
+        left │ (ri,ti) │ right
+             │         │
+             └─────────┘
+               bottom
+
+        An edge is drawn if:
+            - The neighboring bin in that direction is unselected
+            - OR the bin lies on the outer boundary of the grid
+
+        This ensures:
+            - Continuous outlines
+            - No duplicated internal edges
+
+        Parameters
+        ----------
+        mask : ndarray
+            2D boolean array of selected bins.
+        ri : int
+            r index of bin.
+        ti : int
+            Theta index of bin.
+        color : str
+            Line color to be drawn.
+        lw : float
+            Line width to be drawn.
+
+        Returns
+        -------
+        list of matplotlib artists to draw.
+        """
+        n_r, n_t = mask.shape
+        edges = self._bin_edges(ri, ti)
+        neighbors = self._bin_neighbors(mask, ri, ti)
+
         artists = []
-        for ri in range(n_r):
-            for ti in range(n_t):
-                if not mask[ri, ti]:
-                    continue
 
-                # Check neighbors
-                top = ri == n_r - 1 or not mask[ri + 1, ti]
-                bottom = ri == 0 or not mask[ri - 1, ti]
-                left = not mask[ri, (ti - 1) % n_t]
-                right = not mask[ri, (ti + 1) % n_t]
+        if neighbors["top"]:
+            artists.append(self._plot_edge(edges["top"], color, lw))
+        if neighbors["bottom"]:
+            artists.append(self._plot_edge(edges["bottom"], color, lw))
+        if neighbors["left"]:
+            artists.append(self._plot_edge(edges["left"], color, lw))
+        if neighbors["right"]:
+            artists.append(self._plot_edge(edges["right"], color, lw))
 
-                t0 = self.theta_edges[ti]
-                t1 = self.theta_edges[(ti + 1) % n_t]
-                r0 = self.r_edges[ri]
-                r1 = self.r_edges[ri + 1]
-
-                if top:
-                    artists.append(self.ax.plot([t0, t1], [r1, r1],
-                                               color=color, lw=lw, zorder=10)[0])
-                if bottom:
-                    artists.append(self.ax.plot([t0, t1], [r0, r0],
-                                               color=color, lw=lw, zorder=10)[0])
-                if left:
-                    artists.append(self.ax.plot([t0, t0], [r0, r1],
-                                               color=color, lw=lw, zorder=10)[0])
-                if right:
-                    artists.append(self.ax.plot([t1, t1], [r0, r1],
-                                               color=color, lw=lw, zorder=10)[0])
         return artists
+
+    def _bin_edges(self, ri, ti):
+        """Return the polar line segments corresponding to a bin's edges."""
+        t0 = self.theta_edges[ti]
+        t1 = self.theta_edges[(ti + 1) % (len(self.theta_edges) - 1)]
+        r0 = self.r_edges[ri]
+        r1 = self.r_edges[ri + 1]
+
+        return {
+            "top":    ([t0, t1], [r1, r1]),
+            "bottom": ([t0, t1], [r0, r0]),
+            "left":   ([t0, t0], [r0, r1]),
+            "right":  ([t1, t1], [r0, r1]),
+        }
+
+    def _bin_neighbors(self, mask, ri, ti):
+        """Determine which edges of a bin are exposed (i.e., neighbor not selected)."""
+        n_r, n_t = mask.shape
+
+        return {
+            "top":    ri == n_r - 1 or not mask[ri + 1, ti],
+            "bottom": ri == 0 or not mask[ri - 1, ti],
+            "left":   not mask[ri, (ti - 1) % n_t],
+            "right":  not mask[ri, (ti + 1) % n_t],
+        }
+
+    def _plot_edge(self, coords, color, lw):
+        """Plot a single polar edge line."""
+        theta, r = coords
+        return self.ax.plot(theta, r, color=color, lw=lw, zorder=10)[0]
 
     def _get_bins_from_drag(self, theta_start, r_start, theta_end, r_end):
         """
