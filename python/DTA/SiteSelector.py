@@ -286,6 +286,10 @@ class SiteSelector:
 
     def _update_hover_display(self, bins):
         """Update hover preview."""
+        plot_args = {
+            'color': 'orange',
+            'lw': 1.5,
+        }
         self._clear_artists(self.hover_artists)
 
         if self.mode == "replace":
@@ -296,11 +300,6 @@ class SiteSelector:
             temp_mask = self.selected_bins.difference(bins)
         else:
             temp_mask = self.selected_bins.union(bins)
-
-        plot_args = {
-            'color': 'orange',
-            'lw': 1.5,
-        }
 
         self.hover_artists.extend(
             self._draw_outer_edges(temp_mask, **plot_args)

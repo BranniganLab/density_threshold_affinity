@@ -278,6 +278,7 @@ def validate_path(path, file=False):
     return path
 
 
+# pylint: disable=no-else-return
 def bin_in_theta_arc(theta_start, theta_end, bin_start, bin_end):
     """Determine if theta arc contains a particular bin.
 
