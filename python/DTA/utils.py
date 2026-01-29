@@ -312,9 +312,13 @@ def theta_in_bin(theta_start, theta_end, bin_start, bin_end):
     theta_start = theta_start % TWO_PI
     theta_end = theta_start + dtheta
 
-    # Bin edges: DO NOT modulo bin_end if it is exactly 2π
+    # Bin edges
     bin_start_n = bin_start % TWO_PI
-    bin_end_n = bin_end if bin_end <= TWO_PI else bin_end % TWO_PI
+    if bin_end <= TWO_PI:
+        # DO NOT modulo bin_end if it is exactly 2π (or less)
+        bin_end_n = bin_end
+    else:
+        bin_end_n = bin_end % TWO_PI
 
     if dtheta >= 0:
         # CCW arc
