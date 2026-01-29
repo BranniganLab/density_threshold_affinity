@@ -299,7 +299,7 @@ class SiteSelector:
         """
         if abs(theta1 - theta0) < 1e-8 and abs(r1 - r0) < 1e-8:
             # treat this as a single click, not a drag
-            idx = self.grid.convert_coord_to_idx(r1, theta1)
+            idx = self.grid.map_coord_to_idx(r1, theta1)
             return [idx] if idx else []
 
         return self.grid.bins_in_region(r0, theta0, r1, theta1)

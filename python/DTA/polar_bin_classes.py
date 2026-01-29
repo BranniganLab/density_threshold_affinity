@@ -62,7 +62,7 @@ class PolarBinGrid:
         self.n_t = len(theta_edges) - 1
         self.n_r = len(r_edges) - 1
 
-    def convert_coord_to_idx(self, r, theta):
+    def map_coord_to_idx(self, r, theta):
         """
         Return the bin containing a point.
 
