@@ -243,10 +243,10 @@ class SiteSelector:
             "right":  not mask[ri, (ti + 1) % n_t],
         }
 
-    def _plot_edge(self, coords, color, lw):
+    def _plot_edge(self, line, color, lw):
         """Plot a single polar edge line."""
-        theta, r = coords
-        return self.ax.plot(theta, r, color=color, lw=lw, zorder=10)[0]
+        theta_vals, r_vals = line
+        return self.ax.plot(theta_vals, r_vals, color=color, lw=lw, zorder=10)[0]
 
     def _get_bins_from_drag(self, theta_start, r_start, theta_end, r_end):
         """
