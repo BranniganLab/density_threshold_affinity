@@ -175,23 +175,36 @@ class SiteSelector:
         """
         n_r, n_t = mask.shape
         edges = self._bin_edges(ri, ti)
-        neighbors = self._bin_neighbors(mask, ri, ti)
+        draw = self._determine_if_edges_exposed(mask, ri, ti)
 
         artists = []
 
-        if neighbors["top"]:
+        if draw["top"]:
             artists.append(self._plot_edge(edges["top"], color, lw))
-        if neighbors["bottom"]:
+        if draw["bottom"]:
             artists.append(self._plot_edge(edges["bottom"], color, lw))
-        if neighbors["left"]:
+        if draw["left"]:
             artists.append(self._plot_edge(edges["left"], color, lw))
-        if neighbors["right"]:
+        if draw["right"]:
             artists.append(self._plot_edge(edges["right"], color, lw))
 
         return artists
 
     def _bin_edges(self, ri, ti):
-        """Return the polar line segments corresponding to a bin's edges."""
+        """
+        Return the polar line segments corresponding to a bin's edges.
+
+        Parameters
+        ----------
+        ri : int
+            r index of bin.
+        ti : int
+            Theta index of bin.
+
+        Returns
+        -------
+        Dictionary of line segments, one for each edge of the bin.
+        """
         t0 = self.theta_edges[ti]
         t1 = self.theta_edges[(ti + 1) % (len(self.theta_edges) - 1)]
         r0 = self.r_edges[ri]
@@ -204,8 +217,23 @@ class SiteSelector:
             "right":  ([t1, t1], [r0, r1]),
         }
 
-    def _bin_neighbors(self, mask, ri, ti):
-        """Determine which edges of a bin are exposed (i.e., neighbor not selected)."""
+    def _determine_if_edges_exposed(self, mask, ri, ti):
+        """
+        Determine which edges of a bin are exposed (i.e., neighbor not selected).
+
+        Parameters
+        ----------
+        mask : ndarray
+            2D boolean array of selected bins.
+        ri : int
+            r index of bin.
+        ti : int
+            Theta index of bin.
+
+        Returns
+        -------
+        Dictionary of booleans, one for each edge of the bin.
+        """
         n_r, n_t = mask.shape
 
         return {
