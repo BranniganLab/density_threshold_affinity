@@ -5,6 +5,9 @@ Created on Thu Jan 29 16:22:10 2026.
 
 @author: js2746
 """
+
+import numpy as np
+import matplotlib.pyplot as plt
 from DTA.utils import unwrap_theta
 from DTA.polar_bin_classes import PolarBinGrid, PolarBinRenderer
 
@@ -300,3 +303,99 @@ class SiteSelector:
             return [idx] if idx else []
 
         return self.grid.bins_in_region(r0, theta0, r1, theta1)
+
+
+def example_usage():
+    """
+    Example demonstrating two independent SiteSelectors
+    on two different Axes objects within the same Figure.
+
+    The example creates:
+    - A figure with two polar Axes
+    - One pcolormesh per Axes
+    - One SiteSelector per Axes
+    - A shared SiteSelectorManager
+
+    Users can interact with each Axes independently.
+    """
+
+    # ------------------------------------------------------------------
+    # Create bin edges
+    # ------------------------------------------------------------------
+    n_theta = 48
+    n_r = 20
+
+    theta_edges = np.linspace(0, 2 * np.pi, n_theta + 1)
+    r_edges = np.linspace(0.0, 1.0, n_r + 1)
+
+    # Meshgrid for pcolormesh (matplotlib wants theta, r)
+    Theta, R = np.meshgrid(theta_edges, r_edges)
+
+    # Example data for each axes
+    Z1 = np.random.rand(n_r, n_theta)
+    Z2 = np.random.rand(n_r, n_theta)
+
+    # ------------------------------------------------------------------
+    # Create figure and axes
+    # ------------------------------------------------------------------
+    fig, (ax1, ax2) = plt.subplots(
+        1, 2,
+        subplot_kw={"projection": "polar"},
+        figsize=(10, 5),
+        constrained_layout=True,
+    )
+
+    # ------------------------------------------------------------------
+    # Draw pcolormeshes
+    # ------------------------------------------------------------------
+    pcm1 = ax1.pcolormesh(
+        Theta, R, Z1,
+        shading="auto",
+        cmap="viridis",
+    )
+    ax1.set_title("Dataset A")
+
+    pcm2 = ax2.pcolormesh(
+        Theta, R, Z2,
+        shading="auto",
+        cmap="plasma",
+    )
+    ax2.set_title("Dataset B")
+
+    # Optional colorbars
+    fig.colorbar(pcm1, ax=ax1, pad=0.1)
+    fig.colorbar(pcm2, ax=ax2, pad=0.1)
+
+    # ------------------------------------------------------------------
+    # Create SiteSelectors
+    # ------------------------------------------------------------------
+    selector1 = SiteSelector(
+        ax1,
+        theta_edges=theta_edges,
+        r_edges=r_edges,
+        color="red",
+        lw=2.5,
+        zorder=20,
+    )
+
+    selector2 = SiteSelector(
+        ax2,
+        theta_edges=theta_edges,
+        r_edges=r_edges,
+        color="cyan",
+        lw=2.5,
+        zorder=20,
+    )
+
+    # ------------------------------------------------------------------
+    # Create and configure the manager
+    # ------------------------------------------------------------------
+    manager = SiteSelectorManager(fig)
+
+    manager.register(selector1, active=True)
+    manager.register(selector2, active=True)
+
+    # ------------------------------------------------------------------
+    # Show
+    # ------------------------------------------------------------------
+    return fig, (ax1, ax2), manager
