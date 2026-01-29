@@ -278,33 +278,60 @@ def validate_path(path, file=False):
     return path
 
 
-def theta_in_bin(t0, t1, t_low, t_high):
+def theta_in_bin(theta_start, theta_end, bin_start, bin_end):
     """
-    Do something.
+    Determine if theta arc contains a particular bin.
 
-    Parameters
-    ----------
-    t0 : TYPE
-        DESCRIPTION.
-    t1 : TYPE
-        DESCRIPTION.
-    t_low : TYPE
-        DESCRIPTION.
-    t_high : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    TYPE
-        DESCRIPTION.
-
+    Return True if the bin [bin_start, bin_end] intersects the directed angular
+    interval from theta_start to theta_end.
     """
-    dt = (t1 - t0) % (2 * np.pi)
-    theta_val = t0
-    if dt > np.pi:
-        dt = (t0 - t1) % (2 * np.pi)
-        theta_val = t1
-    condition1 = (t_low - theta_val) % (2 * np.pi)
-    condition2 = (t_high - theta_val) % (2 * np.pi)
-    condition3 = (theta_val - t_low) % (2 * np.pi)
-    return ((condition1 < dt) or (condition2 < dt) or (condition3 < (t_high - t_low)))
+    TWO_PI = 2 * np.pi
+
+    # Directed arc length
+    dtheta = theta_end - theta_start
+
+    # Full circle selects everything
+    if abs(dtheta) >= TWO_PI:
+        return True
+
+    # Normalize arc start only
+    theta_start = theta_start % TWO_PI
+    theta_end = theta_start + dtheta
+
+    # Bin edges: DO NOT modulo bin_end if it is exactly 2π
+    bin_start_n = bin_start % TWO_PI
+    bin_end_n = bin_end if bin_end <= TWO_PI else bin_end % TWO_PI
+
+    if dtheta >= 0:
+        # CCW arc
+        if theta_end <= TWO_PI:
+            # no wrap
+            return not (bin_end_n <= theta_start or bin_start_n >= theta_end)
+        else:
+            # wraps past 2π
+            return not (
+                (bin_end_n <= theta_start) and
+                (bin_start_n >= (theta_end - TWO_PI))
+            )
+    else:
+        # CW arc
+        if theta_end >= 0:
+            # no wrap
+            return not (bin_end_n <= theta_end or bin_start_n >= theta_start)
+        else:
+            # wraps below 0
+            return not (
+                (bin_end_n <= (theta_end + TWO_PI)) and
+                (bin_start_n >= theta_start)
+            )
+
+
+def unwrap_theta(prev, curr):
+    if prev is None:
+        return curr
+    d = curr - prev
+    if d > np.pi:
+        curr -= 2 * np.pi
+    elif d < -np.pi:
+        curr += 2 * np.pi
+    return curr

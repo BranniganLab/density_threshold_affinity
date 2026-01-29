@@ -7,7 +7,7 @@ Created on Fri Jan 16 13:02:14 2026.
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from DTA.utils import theta_in_bin
+from DTA.utils import theta_in_bin, unwrap_theta
 
 
 # pylint: disable=too-many-instance-attributes
@@ -47,6 +47,7 @@ class SiteSelector:
         self.hover_artists = []
         self.selected_artists = []
         self.drag_start = None
+        self._last_theta = None
         self.mode = "replace"
 
         # Connect events
@@ -88,10 +89,7 @@ class SiteSelector:
         artists.clear()
 
     def _bins_in_region(self, theta_start, theta_end, r_start, r_end):
-        """Find all bins within a polar selection region."""
         r_start, r_end = sorted([r_start, r_end])
-        theta_start = theta_start % (2 * np.pi)
-        theta_end = theta_end % (2 * np.pi)
 
         bins = []
         for ti in range(len(self.theta_edges) - 1):
@@ -217,6 +215,7 @@ class SiteSelector:
             return
 
         self.drag_start = (event.xdata, event.ydata)
+        self._last_theta = event.xdata
 
         if event.key == "shift":
             self.mode = "add"
@@ -234,9 +233,12 @@ class SiteSelector:
         if event.xdata is None or event.ydata is None:
             return
 
+        theta = unwrap_theta(self._last_theta, event.xdata)
+        self._last_theta = theta
+
         bins = self._get_bins_from_drag(
             self.drag_start[0], self.drag_start[1],
-            event.xdata, event.ydata
+            theta, event.ydata
         )
         self._update_hover_display(bins)
 
@@ -246,11 +248,14 @@ class SiteSelector:
             return
         if event.xdata is None or event.ydata is None:
             self.drag_start = None
+            self._last_theta = None
             return
+
+        theta = unwrap_theta(self._last_theta, event.xdata)
 
         bins = self._get_bins_from_drag(
             self.drag_start[0], self.drag_start[1],
-            event.xdata, event.ydata
+            theta, event.ydata
         )
 
         if self.mode == "replace":
@@ -263,6 +268,7 @@ class SiteSelector:
         self._update_selected_display()
         self._clear_artists(self.hover_artists)
         self.drag_start = None
+        self._last_theta = None
 
     def _disconnect(self):
         """Disconnect all event handlers."""
