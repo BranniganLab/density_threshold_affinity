@@ -285,7 +285,7 @@ class SiteSelector:
         return self._bins_in_region(theta_start, theta_end, r_start, r_end)
 
     def _update_hover_display(self, bins):
-        """Update hover preview."""
+        """Update drawn region as mouse drags."""
         plot_args = {
             'color': 'orange',
             'lw': 1.5,
@@ -337,6 +337,8 @@ class SiteSelector:
 
     def _on_motion(self, event):
         """Handle mouse motion event."""
+        if event.button != 1:
+            return
         if self.drag_start is None or event.inaxes != self.ax:
             return
         if event.xdata is None or event.ydata is None:
