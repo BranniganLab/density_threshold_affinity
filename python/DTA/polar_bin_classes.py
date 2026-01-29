@@ -14,7 +14,7 @@ from DTA.utils import bin_in_theta_arc
 @dataclass(frozen=True)
 class BinEdge:
     """
-    Geometry for a single exposed bin edge.
+    Holds start and end points for a single bin edge.
 
     Parameters
     ----------
@@ -22,12 +22,8 @@ class BinEdge:
         Radial coordinates of the edge endpoints.
     theta : tuple[float, float]
         Angular coordinates of the edge endpoints.
-
-    Notes
-    -----
-    Internally stored as (r, theta) for consistency.
-    Converted to (theta, r) only at draw time.
     """
+
     r: tuple
     theta: tuple
 
@@ -66,7 +62,7 @@ class PolarBinGrid:
         self.n_t = len(theta_edges) - 1
         self.n_r = len(r_edges) - 1
 
-    def bin_at(self, r, theta):
+    def convert_coord_to_idx(self, r, theta):
         """
         Return the bin containing a point.
 
