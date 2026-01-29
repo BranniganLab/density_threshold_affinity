@@ -8,8 +8,31 @@ Created on Thu Jan 29 16:22:10 2026.
 
 import numpy as np
 import matplotlib.pyplot as plt
+from dataclasses import dataclass, field
+from typing import Set
 from DTA.utils import unwrap_theta
 from DTA.polar_bin_classes import PolarBinGrid, PolarBinRenderer
+
+
+@dataclass
+class SelectorState:
+    """
+    Save the state for each SiteSelector.
+
+    Parameters
+    ----------
+    r : tuple[float, float]
+        Radial coordinates of the edge endpoints.
+    theta : tuple[float, float]
+        Angular coordinates of the edge endpoints.
+    """
+
+    selected_bins: Set[tuple] = field(default_factory=set)
+    selected_artists: list = field(default_factory=list)
+    hover_artists: list = field(default_factory=list)
+    drag_start: tuple = None
+    last_theta: float = None
+    mode: str = "replace"
 
 
 class SiteSelectorManager:
@@ -123,14 +146,7 @@ class SiteSelector:
         self.grid = PolarBinGrid(theta_edges, r_edges)
         self.renderer = PolarBinRenderer(ax)
         self.plotting_args = plotting_args
-
-        self.selected_bins = set()
-        self.selected_artists = []
-        self.hover_artists = []
-
-        self.drag_start = None
-        self._last_theta = None
-        self.mode = "replace"
+        self.state = SelectorState()
 
     def on_activate(self):
         """
@@ -139,8 +155,8 @@ class SiteSelector:
         This method prepares the selector to receive
         mouse events. No selection state is modified.
         """
-        self.drag_start = None
-        self._last_theta = None
+        self.state.drag_start = None
+        self.state.last_theta = None
 
     def on_deactivate(self):
         """
@@ -148,9 +164,9 @@ class SiteSelector:
 
         Clears only transient hover and drag state.
         """
-        self.drag_start = None
-        self._last_theta = None
-        self._clear_artists(self.hover_artists)
+        self.state.drag_start = None
+        self.state.last_theta = None
+        self._clear_artists(self.state.hover_artists)
 
     def get_selected_bins(self):
         """
@@ -160,13 +176,13 @@ class SiteSelector:
         -------
         list[tuple[int, int]]
         """
-        return sorted(self.selected_bins)
+        return sorted(self.state.selected_bins)
 
     def clear_selection(self):
         """Clear all selected bins and their artists."""
-        self.selected_bins.clear()
-        self._clear_artists(self.selected_artists)
-        self._clear_artists(self.hover_artists)
+        self.state.selected_bins.clear()
+        self._clear_artists(self.state.selected_artists)
+        self._clear_artists(self.state.hover_artists)
         self.ax.figure.canvas.draw_idle()
 
     def _clear_artists(self, artists):
@@ -183,9 +199,9 @@ class SiteSelector:
 
     def _draw_committed(self):
         """Draw committed (confirmed) selection outlines."""
-        self._clear_artists(self.selected_artists)
-        edges = self.grid.exposed_edges(self.selected_bins)
-        self.selected_artists.extend(
+        self._clear_artists(self.state.selected_artists)
+        edges = self.grid.exposed_edges(self.state.selected_bins)
+        self.state.selected_artists.extend(
             self.renderer.draw_edges(
                 edges,
                 **self.plotting_args
@@ -205,9 +221,9 @@ class SiteSelector:
             "lw": 1.5,
             "zorder": self.plotting_args["zorder"] + 1,
         }
-        self._clear_artists(self.hover_artists)
+        self._clear_artists(self.state.hover_artists)
         edges = self.grid.exposed_edges(bins)
-        self.hover_artists.extend(
+        self.state.hover_artists.extend(
             self.renderer.draw_edges(
                 edges,
                 **plotting_args
@@ -216,64 +232,64 @@ class SiteSelector:
 
     def on_press(self, event):
         """Handle mouse press event."""
-        self.drag_start = (event.ydata, event.xdata)
-        self._last_theta = event.xdata
+        self.state.drag_start = (event.ydata, event.xdata)
+        self.state.last_theta = event.xdata
 
         if event.key == "shift":
-            self.mode = "add"
+            self.state.mode = "add"
         elif event.key == "control":
-            self.mode = "subtract"
+            self.state.mode = "subtract"
         else:
-            self.mode = "replace"
-            self.selected_bins.clear()
-            self._clear_artists(self.selected_artists)
+            self.state.mode = "replace"
+            self.state.selected_bins.clear()
+            self._clear_artists(self.state.selected_artists)
 
     def on_motion(self, event):
         """Handle mouse drag event."""
-        if self.drag_start is None:
+        if self.state.drag_start is None:
             return
 
-        theta = unwrap_theta(self._last_theta, event.xdata)
-        self._last_theta = theta
+        theta = unwrap_theta(self.state.last_theta, event.xdata)
+        self.state.last_theta = theta
 
         bins = self._get_bins_from_drag(
-            self.drag_start[0], self.drag_start[1],
+            self.state.drag_start[0], self.state.drag_start[1],
             event.ydata, theta
         )
 
         bins = set(bins)
-        if self.mode == "replace":
+        if self.state.mode == "replace":
             temp = bins
-        elif self.mode == "add":
-            temp = self.selected_bins | bins
+        elif self.state.mode == "add":
+            temp = self.state.selected_bins | bins
         else:
-            temp = self.selected_bins - bins
+            temp = self.state.selected_bins - bins
 
         self._draw_hover(temp)
         self.ax.figure.canvas.draw_idle()
 
     def on_release(self, event):
         """Handle mouse release event."""
-        if self.drag_start is None:
+        if self.state.drag_start is None:
             return
 
-        theta = unwrap_theta(self._last_theta, event.xdata)
+        theta = unwrap_theta(self.state.last_theta, event.xdata)
 
         bins = set(self._get_bins_from_drag(
-            self.drag_start[0], self.drag_start[1],
+            self.state.drag_start[0], self.state.drag_start[1],
             event.ydata, theta
         ))
 
-        if self.mode in ("replace", "add"):
-            self.selected_bins.update(bins)
+        if self.state.mode in ("replace", "add"):
+            self.state.selected_bins.update(bins)
         else:
-            self.selected_bins.difference_update(bins)
+            self.state.selected_bins.difference_update(bins)
 
         self._draw_committed()
-        self._clear_artists(self.hover_artists)
+        self._clear_artists(self.state.hover_artists)
 
-        self.drag_start = None
-        self._last_theta = None
+        self.state.drag_start = None
+        self.state.last_theta = None
         self.ax.figure.canvas.draw_idle()
 
     def _get_bins_from_drag(self, r0, theta0, r1, theta1):
