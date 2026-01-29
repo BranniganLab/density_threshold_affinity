@@ -279,11 +279,25 @@ def validate_path(path, file=False):
 
 
 def theta_in_bin(theta_start, theta_end, bin_start, bin_end):
-    """
-    Determine if theta arc contains a particular bin.
+    """Determine if theta arc contains a particular bin.
 
     Return True if the bin [bin_start, bin_end] intersects the directed angular
     interval from theta_start to theta_end.
+
+    Parameters
+    ----------
+    theta_start : float
+        The starting value for the theta arc.
+    theta_end : float
+        The ending value for the theta arc.
+    bin_start : float
+        The starting value for the bin in question.
+    bin_end : float
+        The ending value for the bin in question.
+
+    Returns
+    -------
+    Boolean
     """
     TWO_PI = 2 * np.pi
 
@@ -326,12 +340,36 @@ def theta_in_bin(theta_start, theta_end, bin_start, bin_end):
             )
 
 
-def unwrap_theta(prev, curr):
-    if prev is None:
-        return curr
-    d = curr - prev
-    if d > np.pi:
-        curr -= 2 * np.pi
-    elif d < -np.pi:
-        curr += 2 * np.pi
-    return curr
+def unwrap_theta(previous_theta, current_theta):
+    """
+    Unwrap a circular angle measurement to produce a continuous angular sequence.
+
+    This function resolves the discontinuity at 0 / 2π by adjusting the current
+    angle by ±2π when necessary so that the change relative to the previous angle
+    is minimal.
+
+    Parameters
+    ----------
+    previous_theta : float or None
+        The previous angle in the sequence, expressed in radians. If None,
+        no unwrapping is performed and current_theta is returned unchanged.
+    current_theta : float
+        The current angle measurement in radians, typically constrained to
+        the interval [0, 2π).
+
+    Returns
+    -------
+    float
+        The unwrapped angle in radians, continuous with previous_theta.
+    """
+    if previous_theta is None:
+        return current_theta
+
+    delta = current_theta - previous_theta
+
+    if delta > np.pi:
+        return current_theta - 2 * np.pi
+    if delta < -np.pi:
+        return current_theta + 2 * np.pi
+
+    return current_theta
