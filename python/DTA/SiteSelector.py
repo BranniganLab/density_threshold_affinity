@@ -103,7 +103,7 @@ class SiteSelector:
                         bins.append((ti, ri))
         return bins
 
-    def _draw_outer_edges(self, mask_bins, color, lw):
+    def _draw_outer_edges(self, mask_bins, **plotting_args):
         """
         Draw an outline around the outer boundary of a set of selected polar bins.
 
@@ -118,7 +118,7 @@ class SiteSelector:
 
         for ri, ti in zip(*np.where(mask)):
             artists.extend(
-                self._draw_bin_edges(mask, ri, ti, color, lw)
+                self._draw_bin_edges(mask, ri, ti, **plotting_args)
             )
 
         return artists
@@ -134,7 +134,7 @@ class SiteSelector:
 
         return mask
 
-    def _draw_bin_edges(self, mask, ri, ti, color, lw):
+    def _draw_bin_edges(self, mask, ri, ti, **plotting_args):
         """
         Draw the visible (outer) edges of a single selected bin.
 
@@ -179,13 +179,13 @@ class SiteSelector:
         artists = []
 
         if draw["top"]:
-            artists.append(self._plot_edge(edges["top"], color, lw))
+            artists.append(self._plot_edge(edges["top"], **plotting_args))
         if draw["bottom"]:
-            artists.append(self._plot_edge(edges["bottom"], color, lw))
+            artists.append(self._plot_edge(edges["bottom"], **plotting_args))
         if draw["left"]:
-            artists.append(self._plot_edge(edges["left"], color, lw))
+            artists.append(self._plot_edge(edges["left"], **plotting_args))
         if draw["right"]:
-            artists.append(self._plot_edge(edges["right"], color, lw))
+            artists.append(self._plot_edge(edges["right"], **plotting_args))
 
         return artists
 
@@ -242,10 +242,10 @@ class SiteSelector:
             "right":  not mask[ri, (ti + 1) % n_t],
         }
 
-    def _plot_edge(self, line, color, lw):
+    def _plot_edge(self, line, **plotting_args):
         """Plot a single polar edge line."""
         theta_vals, r_vals = line
-        return self.ax.plot(theta_vals, r_vals, color=color, lw=lw, zorder=10)[0]
+        return self.ax.plot(theta_vals, r_vals, **plotting_args, zorder=10)[0]
 
     def _get_bins_from_drag(self, theta_start, r_start, theta_end, r_end):
         """
@@ -297,16 +297,25 @@ class SiteSelector:
         else:
             temp_mask = self.selected_bins.union(bins)
 
+        plot_args = {
+            'color': 'orange',
+            'lw': 1.5,
+        }
+
         self.hover_artists.extend(
-            self._draw_outer_edges(temp_mask, 'orange', 1.5)
+            self._draw_outer_edges(temp_mask, **plot_args)
         )
         self.fig.canvas.draw_idle()
 
     def _update_selected_display(self):
         """Update confirmed selection display."""
+        plot_args = {
+            'color': 'red',
+            'lw': 2,
+        }
         self._clear_artists(self.selected_artists)
         self.selected_artists.extend(
-            self._draw_outer_edges(self.selected_bins, 'red', 2)
+            self._draw_outer_edges(self.selected_bins, **plot_args)
         )
         self.fig.canvas.draw_idle()
 
