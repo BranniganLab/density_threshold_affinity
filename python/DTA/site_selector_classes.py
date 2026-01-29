@@ -301,8 +301,7 @@ class SiteSelector:
 
 def example_usage():
     """
-    Example demonstrating two independent SiteSelectors
-    on two different Axes objects within the same Figure.
+    Demonstrate two SiteSelectors on two different Axes objects in same Figure.
 
     The example creates:
     - A figure with two polar Axes
@@ -312,21 +311,17 @@ def example_usage():
 
     Users can interact with each Axes independently.
     """
-
     # ------------------------------------------------------------------
-    # Create bin edges
+    # Create bin edges (20 x 48)
     # ------------------------------------------------------------------
-    n_theta = 48
-    n_r = 20
-
-    theta_edges = np.linspace(0, 2 * np.pi, n_theta + 1)
-    r_edges = np.linspace(0.0, 1.0, n_r + 1)
+    theta_edges = np.linspace(0, 2 * np.pi, 49)
+    r_edges = np.linspace(0.0, 1.0, 21)
 
     # Meshgrid for pcolormesh (matplotlib wants theta, r)
     theta, r = np.meshgrid(theta_edges, r_edges)
 
     # Example data for each axes
-    z = np.random.rand(n_r, n_theta)
+    z = np.random.rand(20, 48)
 
     # ------------------------------------------------------------------
     # Create figure and axes
