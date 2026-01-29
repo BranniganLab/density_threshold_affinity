@@ -22,4 +22,5 @@ from .SymmetricSite import *
 from .utils import *
 from .density import *
 from .plotting import *
-from .SiteSelector import *
+from .site_selector_classes import *
+from .polar_bin_classes import *
