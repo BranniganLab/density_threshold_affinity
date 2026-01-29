@@ -7,7 +7,7 @@ Created on Fri Jan 16 13:02:14 2026.
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from DTA.utils import theta_in_bin, unwrap_theta
+from DTA.utils import bin_in_theta_arc, unwrap_theta
 
 
 # pylint: disable=too-many-instance-attributes
@@ -95,7 +95,7 @@ class SiteSelector:
         for ti in range(len(self.theta_edges) - 1):
             t_low = self.theta_edges[ti]
             t_high = self.theta_edges[ti + 1]
-            if theta_in_bin(theta_start, theta_end, t_low, t_high):
+            if bin_in_theta_arc(theta_start, theta_end, t_low, t_high):
                 for ri in range(len(self.r_edges) - 1):
                     r_low = self.r_edges[ri]
                     r_high = self.r_edges[ri + 1]

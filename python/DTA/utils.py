@@ -278,7 +278,7 @@ def validate_path(path, file=False):
     return path
 
 
-def theta_in_bin(theta_start, theta_end, bin_start, bin_end):
+def bin_in_theta_arc(theta_start, theta_end, bin_start, bin_end):
     """Determine if theta arc contains a particular bin.
 
     Return True if the bin [bin_start, bin_end] intersects the directed angular
