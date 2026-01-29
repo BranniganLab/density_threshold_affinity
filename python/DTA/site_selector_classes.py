@@ -106,7 +106,7 @@ class SiteSelector:
     - Can be activated or deactivated without losing state
     """
 
-    def __init__(self, ax, theta_edges, r_edges, *, color="red", lw=2, zorder=10):
+    def __init__(self, ax, theta_edges, r_edges, **plotting_args):
         """
         Create a SiteSelector.
 
@@ -116,20 +116,13 @@ class SiteSelector:
             Polar axes to attach to.
         theta_edges, r_edges : array-like
             Bin edges.
-        color : str
-            Color for committed selections.
-        lw : float
-            Line width for committed selections.
-        zorder : int
-            Z-order for committed selections.
+        plotting_args : dict
+            Dictionary of matplotlib-recognized keywords for use with ax.plot.
         """
         self.ax = ax
         self.grid = PolarBinGrid(theta_edges, r_edges)
         self.renderer = PolarBinRenderer(ax)
-
-        self.color = color
-        self.lw = lw
-        self.zorder = zorder
+        self.plotting_args = plotting_args
 
         self.selected_bins = set()
         self.selected_artists = []
@@ -195,9 +188,7 @@ class SiteSelector:
         self.selected_artists.extend(
             self.renderer.draw_edges(
                 edges,
-                color=self.color,
-                lw=self.lw,
-                zorder=self.zorder,
+                **self.plotting_args
             )
         )
 
@@ -209,14 +200,17 @@ class SiteSelector:
         ----------
         bins : iterable of (ri, ti)
         """
+        plotting_args = {
+            "color": "orange",
+            "lw": 1.5,
+            "zorder": self.plotting_args["zorder"] + 1,
+        }
         self._clear_artists(self.hover_artists)
         edges = self.grid.exposed_edges(bins)
         self.hover_artists.extend(
             self.renderer.draw_edges(
                 edges,
-                color="orange",
-                lw=1.5,
-                zorder=self.zorder + 1,
+                **plotting_args
             )
         )
 
@@ -329,11 +323,10 @@ def example_usage():
     r_edges = np.linspace(0.0, 1.0, n_r + 1)
 
     # Meshgrid for pcolormesh (matplotlib wants theta, r)
-    Theta, R = np.meshgrid(theta_edges, r_edges)
+    theta, r = np.meshgrid(theta_edges, r_edges)
 
     # Example data for each axes
-    Z1 = np.random.rand(n_r, n_theta)
-    Z2 = np.random.rand(n_r, n_theta)
+    z = np.random.rand(n_r, n_theta)
 
     # ------------------------------------------------------------------
     # Create figure and axes
@@ -349,18 +342,24 @@ def example_usage():
     # Draw pcolormeshes
     # ------------------------------------------------------------------
     pcm1 = ax1.pcolormesh(
-        Theta, R, Z1,
+        theta, r, z,
         shading="auto",
         cmap="viridis",
     )
     ax1.set_title("Dataset A")
 
     pcm2 = ax2.pcolormesh(
-        Theta, R, Z2,
+        theta, r, z,
         shading="auto",
         cmap="plasma",
     )
     ax2.set_title("Dataset B")
+
+    plotting_args = {
+        "color": "red",
+        "lw": 2.5,
+        "zorder": 20,
+    }
 
     # Optional colorbars
     fig.colorbar(pcm1, ax=ax1, pad=0.1)
@@ -373,18 +372,14 @@ def example_usage():
         ax1,
         theta_edges=theta_edges,
         r_edges=r_edges,
-        color="red",
-        lw=2.5,
-        zorder=20,
+        **plotting_args
     )
 
     selector2 = SiteSelector(
         ax2,
         theta_edges=theta_edges,
         r_edges=r_edges,
-        color="cyan",
-        lw=2.5,
-        zorder=20,
+        **plotting_args
     )
 
     # ------------------------------------------------------------------
