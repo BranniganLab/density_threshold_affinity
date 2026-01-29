@@ -173,7 +173,6 @@ class SiteSelector:
         -------
         list of matplotlib artists to draw.
         """
-        n_r, n_t = mask.shape
         edges = self._bin_edges(ri, ti)
         draw = self._determine_if_edges_exposed(mask, ri, ti)
 
