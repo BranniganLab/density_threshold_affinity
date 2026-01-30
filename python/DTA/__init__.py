@@ -13,7 +13,8 @@ __all__=['Site',
         'utils',
         'plotting',
         'density',
-        'SiteSelector']
+        'site_selector_classes',
+        'polar_bin_classes']
 
 
 from .Site import *
