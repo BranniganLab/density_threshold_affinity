@@ -246,7 +246,6 @@ class PolarBinRenderer:
 
     def shade_interior_region(self):
         """Hold space for future method."""
-        pass
 
 
 class BinSelectionModel:

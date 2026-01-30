@@ -5,9 +5,9 @@ Created on Thu Jan 29 16:22:10 2026.
 
 @author: js2746
 """
+from enum import Enum
 import numpy as np
 import matplotlib.pyplot as plt
-from enum import Enum
 from DTA.utils import unwrap_theta
 from DTA.polar_bin_classes import PolarBinGrid, PolarBinRenderer, BinSelectionModel
 
@@ -29,7 +29,7 @@ class SiteSelector:
     committed selections.
     """
 
-    def __init__(self, ax, theta_edges, r_edges, *, color="red", lw=2, zorder=10):
+    def __init__(self, ax, theta_edges, r_edges, **plot_kwargs):
         """
         Create a SiteSelector object.
 
@@ -51,10 +51,7 @@ class SiteSelector:
         self.renderer = PolarBinRenderer(ax)
         self.model = BinSelectionModel()
 
-        self.color = color
-        self.lw = lw
-        self.zorder = zorder
-
+        self.plot_kwargs = plot_kwargs
         self._hover_artists = []
         self._selected_artists = []
 
@@ -171,9 +168,11 @@ class SiteSelector:
         r1, t1 = end
 
         if abs(r1 - r0) < 1e-8 and abs(t1 - t0) < 1e-8:
+            # treat as single click, not drag event
             idx = self.grid.bin_at(r1, t1)
             return {idx} if idx is not None else set()
 
+        # else: treat as drag event
         return set(self.grid.bins_in_region(r0, t0, r1, t1))
 
     def _apply_preview(self, bins):
@@ -207,12 +206,16 @@ class SiteSelector:
         self._clear_artists(self._hover_artists)
         edges = self.grid.exposed_edges(bins)
 
+        hover_kwargs = {
+            "color": "orange",
+            "lw": 1.5,
+            "zorder": self.plot_kwargs['zorder'] + 1
+        }
+
         self._hover_artists.extend(
             self.renderer.draw_edges(
                 edges,
-                color="orange",
-                lw=1.5,
-                zorder=self.zorder + 1,
+                **hover_kwargs
             )
         )
 
@@ -224,9 +227,7 @@ class SiteSelector:
         self._selected_artists.extend(
             self.renderer.draw_edges(
                 edges,
-                color=self.color,
-                lw=self.lw,
-                zorder=self.zorder,
+                **self.plot_kwargs
             )
         )
 
@@ -251,7 +252,6 @@ class SiteSelector:
         after : frozenset
             Selection state after the operation.
         """
-        pass
 
 
 class SiteSelectorManager:
@@ -324,20 +324,16 @@ def example_usage():
     selection of polar bins on its associated Axes.
     """
     # ------------------------------------------------------------------
-    # Define polar bin edges
+    # Define polar bin edges (20x48 lattice bins)
     # ------------------------------------------------------------------
-    n_theta = 48
-    n_r = 20
-
-    theta_edges = np.linspace(0.0, 2.0 * np.pi, n_theta + 1)
-    r_edges = np.linspace(0.0, 1.0, n_r + 1)
+    theta_edges = np.linspace(0.0, 2.0 * np.pi, 49)
+    r_edges = np.linspace(0.0, 1.0, 21)
 
     # Meshgrid required by pcolormesh (theta, r ordering)
-    Theta, R = np.meshgrid(theta_edges, r_edges)
+    theta, r = np.meshgrid(theta_edges, r_edges)
 
     # Example data for each plot
-    data_a = np.random.rand(n_r, n_theta)
-    data_b = np.random.rand(n_r, n_theta)
+    data = np.random.rand(20, 48)
 
     # ------------------------------------------------------------------
     # Create figure and Axes
@@ -353,9 +349,9 @@ def example_usage():
     # Draw pcolormesh plots
     # ------------------------------------------------------------------
     pcm1 = ax1.pcolormesh(
-        Theta,
-        R,
-        data_a,
+        theta,
+        r,
+        data,
         shading="auto",
         cmap="viridis",
     )
@@ -363,9 +359,9 @@ def example_usage():
     fig.colorbar(pcm1, ax=ax1, pad=0.1)
 
     pcm2 = ax2.pcolormesh(
-        Theta,
-        R,
-        data_b,
+        theta,
+        r,
+        data,
         shading="auto",
         cmap="plasma",
     )
@@ -375,22 +371,26 @@ def example_usage():
     # ------------------------------------------------------------------
     # Create SiteSelectors (one per Axes)
     # ------------------------------------------------------------------
+    plotting_kwargs = {
+        "color": "red",
+        "lw": 2.0,
+        "zorder": 20
+    }
+
     selector_a = SiteSelector(
         ax1,
         theta_edges=theta_edges,
         r_edges=r_edges,
-        color="red",
-        lw=2.0,
-        zorder=20,
+        **plotting_kwargs
     )
+
+    plotting_kwargs['color'] = 'cyan'
 
     selector_b = SiteSelector(
         ax2,
         theta_edges=theta_edges,
         r_edges=r_edges,
-        color="cyan",
-        lw=2.0,
-        zorder=20,
+        **plotting_kwargs
     )
 
     # ------------------------------------------------------------------
