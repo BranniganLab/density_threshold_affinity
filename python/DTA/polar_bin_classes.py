@@ -221,12 +221,17 @@ class PolarBinRenderer:
         ax : matplotlib.axes.Axes
             Polar axes used for drawing.
         plot_kwargs : dict
-            matplotlib.pyplot keywords for drawing bin edges.
+            Dictionary of matplotlib.pyplot keywords for drawing bin edges.
         """
         self.ax = ax
-        self.plot_kwargs = plot_kwargs
+        default_plot_kwargs = {
+            "color": "red",
+            "lw": 2.0,
+            "zorder": 20
+        }
+        self.plot_kwargs = default_plot_kwargs | plot_kwargs
 
-    def draw_edges(self, edges, **plot_kwargs):
+    def draw_edges(self, edges, plot_kwargs={}):
         """
         Draw a collection of bin edges.
 
@@ -234,7 +239,7 @@ class PolarBinRenderer:
         ----------
         edges : iterable of BinEdge
             Edges to draw.
-        **plot_kwargs
+        plot_kwargs : dict
             Keyword arguments passed to ``Axes.plot``.
 
         Returns
@@ -243,6 +248,7 @@ class PolarBinRenderer:
             Matplotlib artist objects created.
         """
         artists = []
+        plot_kwargs = self.plot_kwargs | plot_kwargs
         for edge in edges:
             artists.append(self.ax.plot(edge.theta_endpoints, edge.r_endpoints, **plot_kwargs)[0])
         return artists

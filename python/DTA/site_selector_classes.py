@@ -46,7 +46,7 @@ class SiteSelector:
     committed selections.
     """
 
-    def __init__(self, ax, theta_edges, r_edges, **plot_kwargs):
+    def __init__(self, ax, theta_edges, r_edges, plot_kwargs={}):
         """
         Create a SiteSelector object.
 
@@ -56,12 +56,8 @@ class SiteSelector:
             Polar axes used for interaction and drawing.
         theta_edges, r_edges : array-like
             Bin edge definitions.
-        color : str
-            Color used to draw committed selections.
-        lw : float
-            Line width used to draw committed selections.
-        zorder : int
-            Drawing order for committed selections.
+        plot_kwargs : dict, OPTIONAL
+            Dictionary of matplotlib plotting keywords for drawing bin edges.
         """
         self.ax = ax
         self.grid = PolarBinGrid(theta_edges, r_edges)
@@ -227,7 +223,7 @@ class SiteSelector:
         self.draw_tracker.hover_artists.extend(
             self.renderer.draw_edges(
                 edges,
-                **hover_kwargs
+                hover_kwargs
             )
         )
 
@@ -238,8 +234,7 @@ class SiteSelector:
 
         self.draw_tracker.selected_artists.extend(
             self.renderer.draw_edges(
-                edges,
-                **self.renderer.plot_kwargs
+                edges
             )
         )
 
@@ -393,7 +388,7 @@ def example_usage():
         ax1,
         theta_edges=theta_edges,
         r_edges=r_edges,
-        **plotting_kwargs
+        plot_kwargs=plotting_kwargs,
     )
 
     plotting_kwargs['color'] = 'cyan'
@@ -402,7 +397,7 @@ def example_usage():
         ax2,
         theta_edges=theta_edges,
         r_edges=r_edges,
-        **plotting_kwargs
+        plot_kwargs=plotting_kwargs,
     )
 
     # ------------------------------------------------------------------
