@@ -28,6 +28,7 @@ class SelectorDragState:
     drag_start: tuple[float, float] | None = None
     last_theta: float | None = None
     last_preview_bins: set[tuple[int, int]] | None = None
+    mods: frozenset[str] = field(default_factory=frozenset)
 
 
 @dataclass
@@ -48,18 +49,6 @@ class SiteSelector:
     """
 
     def __init__(self, ax, theta_edges, r_edges, plot_kwargs=None):
-        """
-        Create a SiteSelector object.
-
-        Parameters
-        ----------
-        ax : matplotlib.axes.Axes
-            Polar axes used for interaction and drawing.
-        theta_edges, r_edges : array-like
-            Bin edge definitions.
-        plot_kwargs : dict, OPTIONAL
-            Dictionary of matplotlib plotting keywords for drawing bin edges.
-        """
         self.ax = ax
         self.grid = PolarBinGrid(theta_edges, r_edges)
         self.renderer = PolarBinRenderer(ax, plot_kwargs)
@@ -73,28 +62,23 @@ class SiteSelector:
     # ------------------------------------------------------------------
 
     def on_activate(self):
-        """
-        Prepare the selector to receive user input.
-
-        This does not modify the current selection.
-        """
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
         self.drag_tracker.last_preview_bins = None
+        self.drag_tracker.mods = frozenset()
 
     def on_deactivate(self):
-        """Disable interaction without modifying the selection."""
         self._clear_artists(self.draw_tracker.hover_artists)
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
         self.drag_tracker.last_preview_bins = None
+        self.drag_tracker.mods = frozenset()
 
     # ------------------------------------------------------------------
     # Event handlers
     # ------------------------------------------------------------------
 
     def on_press(self, event):
-        """Begin a selection gesture."""
         if event.inaxes is not self.ax:
             return
 
@@ -102,7 +86,7 @@ class SiteSelector:
         self.drag_tracker.last_theta = event.xdata
         self.drag_tracker.last_preview_bins = None
 
-        mods = getattr(self, "_mods", frozenset())
+        mods = self.drag_tracker.mods
 
         if "shift" in mods:
             self.operation = SelectionOperation.ADD
@@ -111,7 +95,6 @@ class SiteSelector:
         else:
             self.operation = SelectionOperation.REPLACE
 
-        # Optional: prime a click-preview immediately if xdata/ydata are valid
         if event.xdata is not None and event.ydata is not None:
             start = (event.ydata, event.xdata)
             bins = self._bins_from_drag(start, start)
@@ -121,11 +104,9 @@ class SiteSelector:
             self.ax.figure.canvas.draw_idle()
 
     def on_motion(self, event):
-        """Update the hover preview while dragging."""
         if self.drag_tracker.drag_start is None:
             return
 
-        # If we're outside the axes (or outside data), do not update the hover.
         if event.inaxes is not self.ax:
             return
         if event.xdata is None or event.ydata is None:
@@ -139,33 +120,24 @@ class SiteSelector:
         )
 
         preview_bins = self._apply_preview(bins)
-
-        # Cache exactly what we drew, so release can commit the same set.
         self.drag_tracker.last_preview_bins = preview_bins
 
         self._draw_hover(preview_bins)
         self.ax.figure.canvas.draw_idle()
 
     def on_release(self, _event):
-        """Finalize a selection gesture and commit the result."""
         if self.drag_tracker.drag_start is None:
             return
 
         before = self.model.snapshot()
-
         preview_bins = self.drag_tracker.last_preview_bins
 
         if preview_bins is None:
-            # No hover was ever drawn (e.g., click with no motion or first motion invalid).
-            # Fall back to click-at-press using the press coordinates.
             r0, t0 = self.drag_tracker.drag_start
             idx = self.grid.map_coord_to_bin_idx(r0, t0)
             bins = {idx} if idx is not None else set()
-
-            # Here bins is a delta for the current operation, so use the delta-commit path.
             self._apply_commit(bins)
         else:
-            # preview_bins is already the FINAL desired selection. Commit it as-is.
             self._commit_preview_selection(preview_bins)
 
         after = self.model.snapshot()
@@ -177,7 +149,7 @@ class SiteSelector:
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
         self.drag_tracker.last_preview_bins = None
-        self._mods = frozenset()
+        self.drag_tracker.mods = frozenset()
         self.ax.figure.canvas.draw_idle()
 
     # ------------------------------------------------------------------
@@ -185,34 +157,16 @@ class SiteSelector:
     # ------------------------------------------------------------------
 
     def _bins_from_drag(self, start, end):
-        """
-        Determine which bins are covered by a click or drag gesture.
-
-        Parameters
-        ----------
-        start : tuple[float, float]
-            (r, theta) of the drag start.
-        end : tuple[float, float]
-            (r, theta) of the drag end.
-
-        Returns
-        -------
-        set[tuple[int, int]]
-            Selected bin indices.
-        """
         r0, t0 = start
         r1, t1 = end
 
         if abs(r1 - r0) < 1e-8 and abs(t1 - t0) < 1e-8:
-            # treat as single click, not drag event
             idx = self.grid.map_coord_to_bin_idx(r1, t1)
             return {idx} if idx is not None else set()
 
-        # else: treat as drag event
         return set(self.grid.bins_in_region(r0, t0, r1, t1))
 
     def _apply_preview(self, bins):
-        """Compute the preview selection without mutating the model."""
         current = self.model.bins()
 
         if self.operation is SelectionOperation.REPLACE:
@@ -225,7 +179,6 @@ class SiteSelector:
         return current
 
     def _apply_commit(self, bins):
-        """Apply the selection operation to the model."""
         if self.operation is SelectionOperation.REPLACE:
             self.model.set(bins)
         elif self.operation is SelectionOperation.ADD:
@@ -233,13 +186,7 @@ class SiteSelector:
         elif self.operation is SelectionOperation.SUBTRACT:
             self.model.remove(bins)
 
-    def _commit_preview_selection(self, preview_bins: set[tuple[int, int]]):
-        """
-        Commit a *final selection set* (not a delta).
-
-        This is required when on_release commits the last hover preview, because
-        preview_bins already includes the effect of ADD/SUBTRACT/REPLACE.
-        """
+    def _commit_preview_selection(self, preview_bins):
         self.model.set(preview_bins)
 
     # ------------------------------------------------------------------
@@ -247,37 +194,27 @@ class SiteSelector:
     # ------------------------------------------------------------------
 
     def _draw_hover(self, bins):
-        """Draw a temporary hover preview for a set of bins."""
         self._clear_artists(self.draw_tracker.hover_artists)
         edges = self.grid.exposed_edges(bins)
 
         hover_kwargs = {
             "color": "orange",
             "lw": 1.5,
-            "zorder": self.renderer.plot_kwargs['zorder'] + 1
+            "zorder": self.renderer.plot_kwargs["zorder"] + 1,
         }
 
         self.draw_tracker.hover_artists.extend(
-            self.renderer.draw_edges(
-                edges,
-                hover_kwargs
-            )
+            self.renderer.draw_edges(edges, hover_kwargs)
         )
 
     def _draw_committed(self):
-        """Draw the committed selection."""
         self._clear_artists(self.draw_tracker.selected_artists)
         edges = self.grid.exposed_edges(self.model.bins())
-
         self.draw_tracker.selected_artists.extend(
-            self.renderer.draw_edges(
-                edges,
-                self.renderer.plot_kwargs
-            )
+            self.renderer.draw_edges(edges, self.renderer.plot_kwargs)
         )
 
     def _clear_artists(self, artists):
-        """Remove matplotlib artists from the Axes and clear the list."""
         for artist in artists:
             artist.remove()
         artists.clear()
@@ -287,28 +224,12 @@ class SiteSelector:
     # ------------------------------------------------------------------
 
     def on_selection_committed(self, before, after):
-        """
-        Save space for future implementation of 'undo' logic.
-
-        Parameters
-        ----------
-        before : frozenset
-            Selection state before the operation.
-        after : frozenset
-            Selection state after the operation.
-        """
+        pass
 
 
 class SiteSelectorManager:
     """
     Event router that manages multiple SiteSelectors within a Figure.
-
-    Exactly one selector per Axes is active at a time.
-
-    ipympl / widget backend note:
-    - MouseEvent.key is unreliable.
-    - key_press/key_release are unreliable.
-    - The most reliable modifier info is in event.guiEvent (often dict-like).
     """
 
     def __init__(self, fig):
@@ -340,13 +261,6 @@ class SiteSelectorManager:
         selector.on_activate()
 
     def _mods_from_mouse_event(self, event) -> set[str]:
-        """
-        Extract modifiers from the mouse event itself.
-
-        In ipympl, event.guiEvent may be a dict but sometimes lacks modifier fields.
-        Only return early if we actually found something in guiEvent; otherwise
-        fall back to event.key.
-        """
         mods: set[str] = set()
         ge = getattr(event, "guiEvent", None)
 
@@ -355,21 +269,17 @@ class SiteSelectorManager:
                 return bool(obj.get(key, False))
             return bool(getattr(obj, key, False))
 
-        # Try guiEvent first (works only if it actually includes modifier flags)
         if ge is not None:
             try:
                 if get_bool(ge, "shiftKey"):
                     mods.add("shift")
                 if get_bool(ge, "ctrlKey") or get_bool(ge, "metaKey"):
                     mods.add("control")
-                # IMPORTANT: do NOT return unless we found something
                 if mods:
                     return mods
             except Exception:
-                # If guiEvent isn't shaped as expected, fall back below
                 pass
 
-        # Fallback: event.key string (often the only thing available in widget backend)
         k = (getattr(event, "key", None) or "").lower()
         if "shift" in k:
             mods.add("shift")
@@ -380,12 +290,10 @@ class SiteSelectorManager:
 
     def _dispatch(self, method):
         def handler(event):
-            # If a drag is in progress, always route motion/release to drag owner.
             if self._drag_owner is not None and method in ("on_motion", "on_release"):
                 getattr(self._drag_owner, method)(event)
                 if method == "on_release":
-                    # reset latch after the gesture ends
-                    self._drag_owner._mods = frozenset()
+                    self._drag_owner.drag_tracker.mods = frozenset()
                     self._drag_owner = None
                 return
 
@@ -396,7 +304,7 @@ class SiteSelectorManager:
             if method == "on_press":
                 self._drag_owner = selector
                 mods = self._mods_from_mouse_event(event)
-                selector._mods = frozenset(mods)
+                selector.drag_tracker.mods = frozenset(mods)
 
             getattr(selector, method)(event)
 
