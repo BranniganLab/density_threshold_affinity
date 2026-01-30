@@ -8,7 +8,6 @@ Created on Thu Jan 29 16:22:10 2026.
 
 from dataclasses import dataclass
 import numpy as np
-from DTA.utils import bin_in_theta_arc
 
 
 @dataclass(frozen=True)
@@ -105,13 +104,12 @@ class PolarBinGrid:
         for ti in range(self.n_t):
             t_low = self.theta_edges[ti]
             t_high = self.theta_edges[ti + 1]
-            if bin_in_theta_arc(theta0, theta1, t_low, t_high):
+            if self.bin_in_theta_arc(theta0, theta1, t_low, t_high):
                 for ri in range(self.n_r):
                     r_low = self.r_edges[ri]
                     r_high = self.r_edges[ri + 1]
                     if r_high >= r_min and r_low <= r_max:
                         bins.append((ri, ti))
-
         return bins
 
     def exposed_edges(self, bins):
@@ -202,6 +200,72 @@ class PolarBinGrid:
             return BinEdge((r0, r1), (t1, t1))
 
         raise ValueError(f"Unknown edge type: {side}")
+
+    # pylint: disable=no-else-return
+    def bin_in_theta_arc(self, theta_start, theta_end, bin_start, bin_end):
+        """Determine if theta arc contains a particular bin.
+
+        Return True if the bin [bin_start, bin_end] intersects the directed angular
+        interval from theta_start to theta_end.
+
+        Parameters
+        ----------
+        theta_start : float
+            The starting value for the theta arc.
+        theta_end : float
+            The ending value for the theta arc.
+        bin_start : float
+            The starting value for the bin in question.
+        bin_end : float
+            The ending value for the bin in question.
+
+        Returns
+        -------
+        Boolean
+        """
+        TWO_PI = 2 * np.pi
+
+        # Directed arc length
+        dtheta = theta_end - theta_start
+
+        # Full circle selects everything
+        if abs(dtheta) >= TWO_PI:
+            return True
+
+        # Normalize arc start only
+        theta_start = theta_start % TWO_PI
+        theta_end = theta_start + dtheta
+
+        # Bin edges
+        bin_start_n = bin_start % TWO_PI
+        if bin_end <= TWO_PI:
+            # DO NOT modulo bin_end if it is exactly 2π (or less)
+            bin_end_n = bin_end
+        else:
+            bin_end_n = bin_end % TWO_PI
+
+        if dtheta >= 0:
+            # CCW arc
+            if theta_end <= TWO_PI:
+                # no wrap
+                return not (bin_end_n <= theta_start or bin_start_n >= theta_end)
+            else:
+                # wraps past 2π
+                return not (
+                    (bin_end_n <= theta_start) and
+                    (bin_start_n >= (theta_end - TWO_PI))
+                )
+        else:
+            # CW arc
+            if theta_end >= 0:
+                # no wrap
+                return not (bin_end_n <= theta_end or bin_start_n >= theta_start)
+            else:
+                # wraps below 0
+                return not (
+                    (bin_end_n <= (theta_end + TWO_PI)) and
+                    (bin_start_n >= theta_start)
+                )
 
 
 class PolarBinRenderer:
