@@ -146,7 +146,7 @@ class SiteSelector:
         self._draw_hover(preview_bins)
         self.ax.figure.canvas.draw_idle()
 
-    def on_release(self, event):
+    def on_release(self, _event):
         """Finalize a selection gesture and commit the result."""
         if self.drag_tracker.drag_start is None:
             return
