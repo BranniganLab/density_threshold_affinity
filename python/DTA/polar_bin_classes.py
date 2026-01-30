@@ -212,7 +212,7 @@ class PolarBinRenderer:
     coordinate order expected by matplotlib polar plots.
     """
 
-    def __init__(self, ax, plot_kwargs):
+    def __init__(self, ax, plot_kwargs=None):
         """
         Create a PolarBinRenderer object and tie it to an Axes instance.
 
@@ -229,9 +229,12 @@ class PolarBinRenderer:
             "lw": 2.0,
             "zorder": 20
         }
-        self.plot_kwargs = default_plot_kwargs | plot_kwargs
+        if plot_kwargs is None:
+            self.plot_kwargs = default_plot_kwargs
+        else:
+            self.plot_kwargs = default_plot_kwargs | plot_kwargs
 
-    def draw_edges(self, edges, plot_kwargs={}):
+    def draw_edges(self, edges, plot_kwargs=None):
         """
         Draw a collection of bin edges.
 
@@ -248,7 +251,10 @@ class PolarBinRenderer:
             Matplotlib artist objects created.
         """
         artists = []
-        plot_kwargs = self.plot_kwargs | plot_kwargs
+        kwargs = dict(self.plot_kwargs)
+        if plot_kwargs:
+            kwargs.update(plot_kwargs)
+
         for edge in edges:
             artists.append(self.ax.plot(edge.theta_endpoints, edge.r_endpoints, **plot_kwargs)[0])
         return artists

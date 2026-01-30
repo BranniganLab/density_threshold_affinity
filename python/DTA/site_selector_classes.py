@@ -47,7 +47,7 @@ class SiteSelector:
     committed selections.
     """
 
-    def __init__(self, ax, theta_edges, r_edges, plot_kwargs={}):
+    def __init__(self, ax, theta_edges, r_edges, plot_kwargs=None):
         """
         Create a SiteSelector object.
 
@@ -271,7 +271,8 @@ class SiteSelector:
 
         self.draw_tracker.selected_artists.extend(
             self.renderer.draw_edges(
-                edges
+                edges,
+                self.renderer.plot_kwargs
             )
         )
 
