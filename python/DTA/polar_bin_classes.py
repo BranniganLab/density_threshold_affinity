@@ -14,14 +14,14 @@ from DTA.utils import bin_in_theta_arc
 @dataclass(frozen=True)
 class BinEdge:
     """
-    Holds start and end points for a single bin edge.
+    Geometric description of a single visible bin edge in polar coordinates.
 
-    Parameters
+    Attributes
     ----------
     r : tuple[float, float]
         Radial coordinates of the edge endpoints.
     theta : tuple[float, float]
-        Angular coordinates of the edge endpoints.
+        Angular coordinates (radians) of the edge endpoints.
     """
 
     r: tuple
@@ -30,30 +30,24 @@ class BinEdge:
 
 class PolarBinGrid:
     """
-    Pure topology and geometry for a polar bin grid.
+    Geometry and topology of a polar bin grid.
 
-    This class is responsible for:
+    This class provides purely computational functionality:
     - Mapping points to bins
-    - Determining bins intersecting a drag region
-    - Computing exposed bin edges
+    - Determining which bins intersect a polar region
+    - Computing which bin edges are externally visible
 
-    It contains *no* matplotlib or interaction logic.
-
-    Conventions
-    -----------
-    - Coordinates: (r, theta)
-    - Bin indices: (ri, ti)
-    - Masks: mask[ri, ti]
+    It contains no rendering logic and no mutable selection state.
     """
 
     def __init__(self, theta_edges, r_edges):
         """
-        Create a PolarBinGrid.
+        Create a polar bin grid.
 
         Parameters
         ----------
         theta_edges : array-like
-            Angular bin edges (radians).
+            Angular bin edges in radians.
         r_edges : array-like
             Radial bin edges.
         """
@@ -62,130 +56,116 @@ class PolarBinGrid:
         self.n_t = len(theta_edges) - 1
         self.n_r = len(r_edges) - 1
 
-    def map_coord_to_idx(self, r, theta):
+    def bin_at(self, r, theta):
         """
-        Return the bin containing a point.
+        Determine which bin contains a given polar coordinate.
 
         Parameters
         ----------
         r : float
             Radial coordinate.
         theta : float
-            Angular coordinate (radians).
+            Angular coordinate in radians.
 
         Returns
         -------
         tuple[int, int] or None
-            Bin index (ri, ti), or None if out of bounds.
+            The (radial index, angular index) of the bin,
+            or None if the point lies outside the grid.
         """
-        ti = np.searchsorted(
-            self.theta_edges, theta % (2 * np.pi), side="right"
-        ) - 1
+        ti = np.searchsorted(self.theta_edges, theta % (2 * np.pi), side="right") - 1
         ri = np.searchsorted(self.r_edges, r, side="right") - 1
 
         if 0 <= ri < self.n_r and 0 <= ti < self.n_t:
             return ri, ti
         return None
 
-    def bins_in_region(self, r_start, theta_start, r_end, theta_end):
+    def bins_in_region(self, r0, theta0, r1, theta1):
         """
         Return all bins intersecting a dragged polar region.
 
-        Angular wraparound (0 / 2π) is handled correctly.
+        The region is defined by two polar coordinates. Angular wraparound
+        across 0 / 2π is handled correctly.
 
         Parameters
         ----------
-        r_start, r_end : float
-            Radial drag endpoints.
-        theta_start, theta_end : float
-            Angular drag endpoints (radians).
+        r0, theta0 : float
+            First corner of the region.
+        r1, theta1 : float
+            Opposite corner of the region.
 
         Returns
         -------
         list[tuple[int, int]]
-            List of (ri, ti) bin indices.
+            All bin indices intersecting the region.
         """
-        r0, r1 = sorted([r_start, r_end])
+        r_min, r_max = sorted((r0, r1))
         bins = []
 
         for ti in range(self.n_t):
             t_low = self.theta_edges[ti]
             t_high = self.theta_edges[ti + 1]
-            if bin_in_theta_arc(theta_start, theta_end, t_low, t_high):
+            if bin_in_theta_arc(theta0, theta1, t_low, t_high):
                 for ri in range(self.n_r):
                     r_low = self.r_edges[ri]
                     r_high = self.r_edges[ri + 1]
-                    if r_high >= r0 and r_low <= r1:
+                    if r_high >= r_min and r_low <= r_max:
                         bins.append((ri, ti))
 
         return bins
 
-    def build_mask(self, bins):
+    def exposed_edges(self, bins):
         """
-        Build a boolean mask from a set of bins.
+        Compute all externally visible edges of a set of bins.
+
+        Internal edges shared by adjacent bins are omitted.
 
         Parameters
         ----------
-        bins : iterable of (ri, ti)
-
-        Returns
-        -------
-        ndarray
-            Boolean array of shape (n_r, n_t).
-        """
-        mask = np.zeros((self.n_r, self.n_t), dtype=bool)
-        for ri, ti in bins:
-            mask[ri, ti] = True
-        return mask
-
-    def exposed_edges(self, selected_bins):
-        """
-        Compute all externally visible edges of a bin set.
-
-        Internal edges shared by adjacent selected bins
-        are omitted.
-
-        Parameters
-        ----------
-        selected_bins : iterable of (ri, ti)
+        bins : iterable of (int, int)
+            Bin indices.
 
         Returns
         -------
         list[BinEdge]
+            Visible boundary edges.
         """
-        if not selected_bins:
+        if not bins:
             return []
 
-        mask = self.build_mask(selected_bins)
-        edges = []
+        mask = np.zeros((self.n_r, self.n_t), dtype=bool)
+        for ri, ti in bins:
+            mask[ri, ti] = True
 
+        edges = []
         for ri, ti in zip(*np.where(mask)):
-            edges.extend(self._exposed_edges_for_bin(mask, ri, ti))
+            edges.extend(self._edges_for_bin(mask, ri, ti))
 
         return edges
 
-    def _exposed_edges_for_bin(self, mask, ri, ti):
+    def _edges_for_bin(self, mask, ri, ti):
         """
-        Determine which edges of a single bin are exposed.
+        Determine which edges of a bin are exposed.
 
         Parameters
         ----------
         mask : ndarray
-            Selection mask.
+            Boolean array indicating selected bins.
         ri, ti : int
             Bin indices.
 
         Returns
         -------
         list[BinEdge]
+            Exposed edges for the bin.
         """
         edges = []
         n_r, n_t = mask.shape
 
         if ri == n_r - 1 or not mask[ri + 1, ti]:
-            edges.append(self._edge_geometry(ri, ti, "top"))
+            edges.append(self._edge_geometry(ri, ti, "outer"))
         if ri == 0 or not mask[ri - 1, ti]:
-            edges.append(self._edge_geometry(ri, ti, "bottom"))
+            edges.append(self._edge_geometry(ri, ti, "inner"))
         if not mask[ri, (ti - 1) % n_t]:
             edges.append(self._edge_geometry(ri, ti, "left"))
         if not mask[ri, (ti + 1) % n_t]:
@@ -195,71 +175,145 @@ class PolarBinGrid:
 
     def _edge_geometry(self, ri, ti, side):
         """
-        Return geometry for a single bin edge.
+        Construct the geometry for a specific edge of a bin.
 
         Parameters
         ----------
         ri, ti : int
             Bin indices.
-        side : {'top', 'bottom', 'left', 'right'}
+        side : {'outer', 'inner', 'left', 'right'}
 
         Returns
         -------
         BinEdge
+            Edge geometry.
         """
+        r0, r1 = self.r_edges[ri], self.r_edges[ri + 1]
         t0 = self.theta_edges[ti]
         t1 = self.theta_edges[(ti + 1) % self.n_t]
-        r0 = self.r_edges[ri]
-        r1 = self.r_edges[ri + 1]
 
-        if side == "top":
+        if side == "outer":
             return BinEdge((r1, r1), (t0, t1))
-        if side == "bottom":
+        if side == "inner":
             return BinEdge((r0, r0), (t0, t1))
         if side == "left":
             return BinEdge((r0, r1), (t0, t0))
         if side == "right":
             return BinEdge((r0, r1), (t1, t1))
 
-        raise ValueError(f"Unknown edge side: {side}")
+        raise ValueError(f"Unknown edge type: {side}")
 
 
 class PolarBinRenderer:
     """
-    Matplotlib renderer for polar bin edges.
+    Renderer for drawing polar bin edges on a matplotlib Axes.
 
-    Converts internal (r, theta) geometry into
-    matplotlib's (theta, r) plotting convention.
+    This class converts internal (r, theta) geometry into the
+    coordinate order expected by matplotlib polar plots.
     """
 
     def __init__(self, ax):
         """
-        Create a PolarBinRenderer.
+        Create a PolarBinRenderer object and tie it to an Axes instance.
 
         Parameters
         ----------
         ax : matplotlib.axes.Axes
-            Polar axes to draw on.
+            Polar axes used for drawing.
         """
         self.ax = ax
 
-    def draw_edges(self, edges, **plot_args):
+    def draw_edges(self, edges, **plot_kwargs):
         """
         Draw a collection of bin edges.
 
         Parameters
         ----------
         edges : iterable of BinEdge
-        **plot_args
-            Passed to ``Axes.plot``.
+            Edges to draw.
+        **plot_kwargs
+            Keyword arguments passed to ``Axes.plot``.
 
         Returns
         -------
-        list of matplotlib.artist.Artist
+        list
+            Matplotlib artist objects created.
         """
         artists = []
         for edge in edges:
-            artists.append(
-                self.ax.plot(edge.theta, edge.r, **plot_args)[0]
-            )
+            artists.append(self.ax.plot(edge.theta, edge.r, **plot_kwargs)[0])
         return artists
+
+    def shade_interior_region(self):
+        """Hold space for future method."""
+        pass
+
+
+class BinSelectionModel:
+    """
+    Mutable domain model representing a set of selected bins.
+
+    This class contains no rendering logic and no interaction logic.
+    All selection mutations are centralized here to enable future
+    undo/redo support.
+    """
+
+    def __init__(self):
+        """Initialize an empty selection."""
+        self._bins = set()
+
+    def snapshot(self):
+        """
+        Capture the current selection state.
+
+        Returns
+        -------
+        frozenset
+            Immutable snapshot of selected bins.
+        """
+        return frozenset(self._bins)
+
+    def set(self, bins):
+        """
+        Replace the current selection.
+
+        Parameters
+        ----------
+        bins : iterable of (int, int)
+            New selection.
+        """
+        self._bins = set(bins)
+
+    def add(self, bins):
+        """
+        Add bins to the current selection.
+
+        Parameters
+        ----------
+        bins : iterable of (int, int)
+        """
+        self._bins |= set(bins)
+
+    def remove(self, bins):
+        """
+        Remove bins from the current selection.
+
+        Parameters
+        ----------
+        bins : iterable of (int, int)
+        """
+        self._bins -= set(bins)
+
+    def clear(self):
+        """Clear the selection."""
+        self._bins.clear()
+
+    def bins(self):
+        """
+        Return the current selection.
+
+        Returns
+        -------
+        set[tuple[int, int]]
+        """
+        return set(self._bins)
