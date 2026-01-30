@@ -474,7 +474,6 @@ class SiteSelector:
         The default implementation is a no-op. Subclasses may override this to
         implement undo/redo stacks, logging, or notifications.
         """
-        pass
 
 
 class SiteSelectorManager:
@@ -601,7 +600,8 @@ class SiteSelectorManager:
                     mods.add("control")
                 if mods:
                     return mods
-            except Exception:
+            except (AttributeError, KeyError, TypeError):
+                # guiEvent is present but does not expose usable modifier state
                 pass
 
         # Fallback: parse string representation from Matplotlib.
