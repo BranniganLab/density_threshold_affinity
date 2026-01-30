@@ -23,6 +23,7 @@ jobs:
         pip install matplotlib
         pip install pytest
         pip install ./python/
+        pip install pillow
     - name: Analysing the code with pylint
       run: |
         export PYLINTRC=./.github/workflows/.pylintrc
