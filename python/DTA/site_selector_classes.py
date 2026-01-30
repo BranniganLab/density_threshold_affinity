@@ -461,7 +461,7 @@ class SiteSelector:
 
     def on_selection_committed(self, before, after):
         """
-        Hook called after a selection gesture commits.
+        Hold this space for a future implementation of 'undo' logic.
 
         Parameters
         ----------
