@@ -103,6 +103,8 @@ class SiteSelector:
             self._operation = SelectionOperation.SUBTRACT
         else:
             self._operation = SelectionOperation.REPLACE
+            self._clear_artists(self._selected_artists)
+            self.model.clear()
 
     def on_motion(self, event):
         """Update the hover preview while dragging."""
