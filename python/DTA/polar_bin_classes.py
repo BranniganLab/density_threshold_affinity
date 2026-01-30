@@ -139,11 +139,11 @@ class PolarBinGrid:
 
         edges = []
         for ri, ti in zip(*np.where(mask)):
-            edges.extend(self._edges_for_bin(mask, ri, ti))
+            edges.extend(self._determine_exposed_edges(mask, ri, ti))
 
         return edges
 
-    def _edges_for_bin(self, mask, ri, ti):
+    def _determine_exposed_edges(self, mask, ri, ti):
         """
         Determine which edges of a bin are exposed.
 
