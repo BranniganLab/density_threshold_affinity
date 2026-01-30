@@ -6,6 +6,7 @@ Created on Thu Jan 29 16:22:10 2026.
 @author: js2746
 """
 from enum import Enum
+from dataclasses import dataclass, field
 import numpy as np
 import matplotlib.pyplot as plt
 from DTA.utils import unwrap_theta
@@ -18,6 +19,23 @@ class SelectionOperation(Enum):
     REPLACE = "replace"
     ADD = "add"
     SUBTRACT = "subtract"
+
+
+@dataclass
+class SelectorInteractionState:
+    """Transient controller state for an interaction session."""
+
+    drag_start: tuple[float, float] | None = None
+    last_theta: float | None = None
+
+
+@dataclass
+class SelectorViewState:
+    """View-owned matplotlib artists."""
+
+    plot_kwargs: dict
+    selected_artists: list = field(default_factory=list)
+    hover_artists: list = field(default_factory=list)
 
 
 class SiteSelector:
@@ -50,14 +68,9 @@ class SiteSelector:
         self.grid = PolarBinGrid(theta_edges, r_edges)
         self.renderer = PolarBinRenderer(ax)
         self.model = BinSelectionModel()
-
-        self.plot_kwargs = plot_kwargs
-        self._hover_artists = []
-        self._selected_artists = []
-
-        self._drag_start = None
-        self._last_theta = None
-        self._operation = SelectionOperation.REPLACE
+        self.view_state = SelectorViewState(plot_kwargs)
+        self.selection_state = SelectorInteractionState()
+        self.operation = SelectionOperation.REPLACE
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -69,14 +82,14 @@ class SiteSelector:
 
         This does not modify the current selection.
         """
-        self._drag_start = None
-        self._last_theta = None
+        self.selection_state.drag_start = None
+        self.selection_state.last_theta = None
 
     def on_deactivate(self):
         """Disable interaction without modifying the selection."""
-        self._clear_artists(self._hover_artists)
-        self._drag_start = None
-        self._last_theta = None
+        self._clear_artists(self.view_state.hover_artists)
+        self.selection_state.drag_start = None
+        self.selection_state.last_theta = None
 
     # ------------------------------------------------------------------
     # Event handlers
@@ -91,28 +104,28 @@ class SiteSelector:
         - Shift: add
         - Control: subtract
         """
-        self._drag_start = (event.ydata, event.xdata)
-        self._last_theta = event.xdata
+        self.selection_state.drag_start = (event.ydata, event.xdata)
+        self.selection_state.last_theta = event.xdata
 
         if event.key == "shift":
-            self._operation = SelectionOperation.ADD
+            self.operation = SelectionOperation.ADD
         elif event.key == "control":
-            self._operation = SelectionOperation.SUBTRACT
+            self.operation = SelectionOperation.SUBTRACT
         else:
-            self._operation = SelectionOperation.REPLACE
-            self._clear_artists(self._selected_artists)
+            self.operation = SelectionOperation.REPLACE
+            self._clear_artists(self.view_state.selected_artists)
             self.model.clear()
 
     def on_motion(self, event):
         """Update the hover preview while dragging."""
-        if self._drag_start is None:
+        if self.selection_state.drag_start is None:
             return
 
-        theta = unwrap_theta(self._last_theta, event.xdata)
-        self._last_theta = theta
+        theta = unwrap_theta(self.selection_state.last_theta, event.xdata)
+        self.selection_state.last_theta = theta
 
         bins = self._bins_from_drag(
-            self._drag_start, (event.ydata, theta)
+            self.selection_state.drag_start, (event.ydata, theta)
         )
 
         preview_bins = self._apply_preview(bins)
@@ -122,14 +135,14 @@ class SiteSelector:
 
     def on_release(self, event):
         """Finalize a selection gesture and commit the result."""
-        if self._drag_start is None:
+        if self.selection_state.drag_start is None:
             return
 
         before = self.model.snapshot()
 
-        theta = unwrap_theta(self._last_theta, event.xdata)
+        theta = unwrap_theta(self.selection_state.last_theta, event.xdata)
         bins = self._bins_from_drag(
-            self._drag_start, (event.ydata, theta)
+            self.selection_state.drag_start, (event.ydata, theta)
         )
 
         self._apply_commit(bins)
@@ -138,10 +151,10 @@ class SiteSelector:
         self.on_selection_committed(before, after)
 
         self._draw_committed()
-        self._clear_artists(self._hover_artists)
+        self._clear_artists(self.view_state.hover_artists)
 
-        self._drag_start = None
-        self._last_theta = None
+        self.selection_state.drag_start = None
+        self.selection_state.last_theta = None
         self.ax.figure.canvas.draw_idle()
 
     # ------------------------------------------------------------------
@@ -179,22 +192,22 @@ class SiteSelector:
         """Compute the preview selection without mutating the model."""
         current = self.model.bins()
 
-        if self._operation is SelectionOperation.REPLACE:
+        if self.operation is SelectionOperation.REPLACE:
             return bins
-        if self._operation is SelectionOperation.ADD:
+        if self.operation is SelectionOperation.ADD:
             return current | bins
-        if self._operation is SelectionOperation.SUBTRACT:
+        if self.operation is SelectionOperation.SUBTRACT:
             return current - bins
 
         return current
 
     def _apply_commit(self, bins):
         """Apply the selection operation to the model."""
-        if self._operation is SelectionOperation.REPLACE:
+        if self.operation is SelectionOperation.REPLACE:
             self.model.set(bins)
-        elif self._operation is SelectionOperation.ADD:
+        elif self.operation is SelectionOperation.ADD:
             self.model.add(bins)
-        elif self._operation is SelectionOperation.SUBTRACT:
+        elif self.operation is SelectionOperation.SUBTRACT:
             self.model.remove(bins)
 
     # ------------------------------------------------------------------
@@ -203,16 +216,16 @@ class SiteSelector:
 
     def _draw_hover(self, bins):
         """Draw a temporary hover preview for a set of bins."""
-        self._clear_artists(self._hover_artists)
+        self._clear_artists(self.view_state.hover_artists)
         edges = self.grid.exposed_edges(bins)
 
         hover_kwargs = {
             "color": "orange",
             "lw": 1.5,
-            "zorder": self.plot_kwargs['zorder'] + 1
+            "zorder": self.view_state.plot_kwargs['zorder'] + 1
         }
 
-        self._hover_artists.extend(
+        self.view_state.hover_artists.extend(
             self.renderer.draw_edges(
                 edges,
                 **hover_kwargs
@@ -221,13 +234,13 @@ class SiteSelector:
 
     def _draw_committed(self):
         """Draw the committed selection."""
-        self._clear_artists(self._selected_artists)
+        self._clear_artists(self.view_state.selected_artists)
         edges = self.grid.exposed_edges(self.model.bins())
 
-        self._selected_artists.extend(
+        self.view_state.selected_artists.extend(
             self.renderer.draw_edges(
                 edges,
-                **self.plot_kwargs
+                **self.view_state.plot_kwargs
             )
         )
 
