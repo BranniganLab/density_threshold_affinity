@@ -252,11 +252,11 @@ class PolarBinRenderer:
         """
         artists = []
         kwargs = dict(self.plot_kwargs)
-        if plot_kwargs:
+        if plot_kwargs is not None:
             kwargs.update(plot_kwargs)
 
         for edge in edges:
-            artists.append(self.ax.plot(edge.theta_endpoints, edge.r_endpoints, **plot_kwargs)[0])
+            artists.append(self.ax.plot(edge.theta_endpoints, edge.r_endpoints, **kwargs)[0])
         return artists
 
     def shade_interior_region(self):
