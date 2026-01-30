@@ -27,6 +27,7 @@ class SelectorDragState:
 
     drag_start: tuple[float, float] | None = None
     last_theta: float | None = None
+    last_preview_bins: set[tuple[int, int]] | None = None
 
 
 @dataclass
@@ -79,41 +80,55 @@ class SiteSelector:
         """
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
+        self.drag_tracker.last_preview_bins = None
 
     def on_deactivate(self):
         """Disable interaction without modifying the selection."""
         self._clear_artists(self.draw_tracker.hover_artists)
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
+        self.drag_tracker.last_preview_bins = None
 
     # ------------------------------------------------------------------
     # Event handlers
     # ------------------------------------------------------------------
 
     def on_press(self, event):
-        """
-        Begin a selection gesture.
+        """Begin a selection gesture."""
+        if event.inaxes is not self.ax:
+            return
 
-        Modifier keys determine how the selection will be applied:
-        - no modifier: replace
-        - Shift: add
-        - Control: subtract
-        """
         self.drag_tracker.drag_start = (event.ydata, event.xdata)
         self.drag_tracker.last_theta = event.xdata
+        self.drag_tracker.last_preview_bins = None
 
-        if event.key == "shift":
+        mods = getattr(self, "_mods", frozenset())
+
+        if "shift" in mods:
             self.operation = SelectionOperation.ADD
-        elif event.key == "control":
+        elif "control" in mods:
             self.operation = SelectionOperation.SUBTRACT
         else:
             self.operation = SelectionOperation.REPLACE
-            self._clear_artists(self.draw_tracker.selected_artists)
-            self.model.clear()
+
+        # Optional: prime a click-preview immediately if xdata/ydata are valid
+        if event.xdata is not None and event.ydata is not None:
+            start = (event.ydata, event.xdata)
+            bins = self._bins_from_drag(start, start)
+            preview_bins = self._apply_preview(bins)
+            self.drag_tracker.last_preview_bins = preview_bins
+            self._draw_hover(preview_bins)
+            self.ax.figure.canvas.draw_idle()
 
     def on_motion(self, event):
         """Update the hover preview while dragging."""
         if self.drag_tracker.drag_start is None:
+            return
+
+        # If we're outside the axes (or outside data), do not update the hover.
+        if event.inaxes is not self.ax:
+            return
+        if event.xdata is None or event.ydata is None:
             return
 
         theta = unwrap_theta(self.drag_tracker.last_theta, event.xdata)
@@ -124,8 +139,11 @@ class SiteSelector:
         )
 
         preview_bins = self._apply_preview(bins)
-        self._draw_hover(preview_bins)
 
+        # Cache exactly what we drew, so release can commit the same set.
+        self.drag_tracker.last_preview_bins = preview_bins
+
+        self._draw_hover(preview_bins)
         self.ax.figure.canvas.draw_idle()
 
     def on_release(self, event):
@@ -135,14 +153,22 @@ class SiteSelector:
 
         before = self.model.snapshot()
 
-        theta = unwrap_theta(self.drag_tracker.last_theta, event.xdata)
-        bins = self._bins_from_drag(
-            self.drag_tracker.drag_start, (event.ydata, theta)
-        )
+        preview_bins = self.drag_tracker.last_preview_bins
 
-        self._apply_commit(bins)
+        if preview_bins is None:
+            # No hover was ever drawn (e.g., click with no motion or first motion invalid).
+            # Fall back to click-at-press using the press coordinates.
+            r0, t0 = self.drag_tracker.drag_start
+            idx = self.grid.bin_at(r0, t0)
+            bins = {idx} if idx is not None else set()
+
+            # Here bins is a delta for the current operation, so use the delta-commit path.
+            self._apply_commit(bins)
+        else:
+            # preview_bins is already the FINAL desired selection. Commit it as-is.
+            self._commit_preview_selection(preview_bins)
+
         after = self.model.snapshot()
-
         self.on_selection_committed(before, after)
 
         self._draw_committed()
@@ -150,6 +176,8 @@ class SiteSelector:
 
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
+        self.drag_tracker.last_preview_bins = None
+        self._mods = frozenset()
         self.ax.figure.canvas.draw_idle()
 
     # ------------------------------------------------------------------
@@ -204,6 +232,15 @@ class SiteSelector:
             self.model.add(bins)
         elif self.operation is SelectionOperation.SUBTRACT:
             self.model.remove(bins)
+
+    def _commit_preview_selection(self, preview_bins: set[tuple[int, int]]):
+        """
+        Commit a *final selection set* (not a delta).
+
+        This is required when on_release commits the last hover preview, because
+        preview_bins already includes the effect of ADD/SUBTRACT/REPLACE.
+        """
+        self.model.set(preview_bins)
 
     # ------------------------------------------------------------------
     # Rendering
@@ -266,19 +303,18 @@ class SiteSelectorManager:
     Event router that manages multiple SiteSelectors within a Figure.
 
     Exactly one selector per Axes is active at a time.
+
+    ipympl / widget backend note:
+    - MouseEvent.key is unreliable.
+    - key_press/key_release are unreliable.
+    - The most reliable modifier info is in event.guiEvent (often dict-like).
     """
 
     def __init__(self, fig):
-        """
-        Create a SiteSelectorManager and tie it to a Matplotlib Figure.
-
-        Parameters
-        ----------
-        fig : matplotlib.figure.Figure
-        """
         self.fig = fig
         self._selectors = {}
         self._active = {}
+        self._drag_owner = None
 
         self._cids = [
             fig.canvas.mpl_connect("button_press_event", self._dispatch("on_press")),
@@ -287,39 +323,82 @@ class SiteSelectorManager:
         ]
 
     def register(self, selector, *, active=False):
-        """
-        Register a selector with the manager.
-
-        Parameters
-        ----------
-        selector : SiteSelector
-        active : bool
-            Whether this selector should initially receive input.
-        """
         ax = selector.ax
         self._selectors.setdefault(ax, []).append(selector)
         if active or ax not in self._active:
             self.set_active(selector)
 
     def set_active(self, selector):
-        """Activate a selector for its Axes."""
         ax = selector.ax
         current = self._active.get(ax)
         if current is selector:
             return
-
         if current:
             current.on_deactivate()
-
         self._active[ax] = selector
         selector.on_activate()
 
+    def _mods_from_mouse_event(self, event) -> set[str]:
+        """
+        Extract modifiers from the mouse event itself.
+
+        In ipympl, event.guiEvent may be a dict but sometimes lacks modifier fields.
+        Only return early if we actually found something in guiEvent; otherwise
+        fall back to event.key.
+        """
+        mods: set[str] = set()
+        ge = getattr(event, "guiEvent", None)
+
+        def get_bool(obj, key: str) -> bool:
+            if isinstance(obj, dict):
+                return bool(obj.get(key, False))
+            return bool(getattr(obj, key, False))
+
+        # Try guiEvent first (works only if it actually includes modifier flags)
+        if ge is not None:
+            try:
+                if get_bool(ge, "shiftKey"):
+                    mods.add("shift")
+                if get_bool(ge, "ctrlKey") or get_bool(ge, "metaKey"):
+                    mods.add("control")
+                # IMPORTANT: do NOT return unless we found something
+                if mods:
+                    return mods
+            except Exception:
+                # If guiEvent isn't shaped as expected, fall back below
+                pass
+
+        # Fallback: event.key string (often the only thing available in widget backend)
+        k = (getattr(event, "key", None) or "").lower()
+        if "shift" in k:
+            mods.add("shift")
+        if "control" in k or "ctrl" in k or "meta" in k:
+            mods.add("control")
+
+        return mods
+
     def _dispatch(self, method):
-        """Create an event handler that forwards events to the active selector."""
         def handler(event):
-            selector = self._active.get(event.inaxes)
-            if selector:
-                getattr(selector, method)(event)
+            # If a drag is in progress, always route motion/release to drag owner.
+            if self._drag_owner is not None and method in ("on_motion", "on_release"):
+                getattr(self._drag_owner, method)(event)
+                if method == "on_release":
+                    # reset latch after the gesture ends
+                    self._drag_owner._mods = frozenset()
+                    self._drag_owner = None
+                return
+
+            selector = self._active.get(getattr(event, "inaxes", None))
+            if not selector:
+                return
+
+            if method == "on_press":
+                self._drag_owner = selector
+                mods = self._mods_from_mouse_event(event)
+                selector._mods = frozenset(mods)
+
+            getattr(selector, method)(event)
+
         return handler
 
 
