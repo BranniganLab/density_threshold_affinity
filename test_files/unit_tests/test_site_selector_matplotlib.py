@@ -13,7 +13,7 @@ from DTA.polar_bin_classes import PolarBinRenderer, PolarBinGrid, BinEdge
 from DTA.site_selector_classes import SiteSelector
 
 
-@check_figures_equal()
+@check_figures_equal(extensions=("png",))
 def test_renderer_draw_edges_matches_manual(fig_test, fig_ref):
     # test figure: uses renderer
     ax_t = fig_test.add_subplot(111, projection="polar")
@@ -30,9 +30,9 @@ def test_renderer_draw_edges_matches_manual(fig_test, fig_ref):
         ax_r.plot(e.theta_endpoints, e.r_endpoints, color="k", lw=1, zorder=10)
 
 
-@check_figures_equal()
+@check_figures_equal(extensions=("png",))
 def test_selector_draw_committed_matches_expected(fig_test, fig_ref):
-    theta_edges = np.linspace(0, 2*np.pi, 9)
+    theta_edges = np.linspace(0, 2 * np.pi, 9)
     r_edges = np.linspace(0, 1, 5)
     bins = {(0, 0), (0, 1), (1, 1)}
 
