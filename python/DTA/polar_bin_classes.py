@@ -18,14 +18,14 @@ class BinEdge:
 
     Attributes
     ----------
-    r : tuple[float, float]
+    r_endpoints : tuple[float, float]
         Radial coordinates of the edge endpoints.
-    theta : tuple[float, float]
+    theta_endpoints : tuple[float, float]
         Angular coordinates (radians) of the edge endpoints.
     """
 
-    r: tuple
-    theta: tuple
+    r_endpoints: tuple
+    theta_endpoints: tuple
 
 
 class PolarBinGrid:
@@ -244,7 +244,7 @@ class PolarBinRenderer:
         """
         artists = []
         for edge in edges:
-            artists.append(self.ax.plot(edge.theta, edge.r, **plot_kwargs)[0])
+            artists.append(self.ax.plot(edge.theta_endpoints, edge.r_endpoints, **plot_kwargs)[0])
         return artists
 
     def shade_interior_region(self):
