@@ -12,7 +12,7 @@ import pytest
 from DTA.polar_bin_classes import PolarBinGrid, BinSelectionModel, PolarBinRenderer, BinEdge
 
 
-def test_bin_at_basic_and_wrap():
+def test_map_coord_to_bin_idx_basic_and_wrap():
     grid = PolarBinGrid(
         theta_edges=np.linspace(0.0, 2.0 * np.pi, 5),  # 4 bins
         r_edges=np.linspace(0.0, 1.0, 3),              # 2 bins
@@ -21,42 +21,42 @@ def test_bin_at_basic_and_wrap():
     r = 0.25
     theta = 0.25 * np.pi
 
-    assert grid.bin_at(r, theta) == (0, 0)
-    assert grid.bin_at(r, theta + 2.0 * np.pi) == (0, 0)
+    assert grid.map_coord_to_bin_idx(r, theta) == (0, 0)
+    assert grid.map_coord_to_bin_idx(r, theta + 2.0 * np.pi) == (0, 0)
 
     # outside radius
-    assert grid.bin_at(2.0, theta) is None
+    assert grid.map_coord_to_bin_idx(2.0, theta) is None
 
     # exactly on outer edge is outside
-    assert grid.bin_at(1.0, theta) is None
+    assert grid.map_coord_to_bin_idx(1.0, theta) is None
 
 
-def test_bin_at_boundaries_theta_and_r():
+def test_map_coord_to_bin_idx_boundaries_theta_and_r():
     theta_edges = np.array([0.0, 1.0, 2.0])  # 2 theta bins: [0,1), [1,2)
     r_edges = np.array([0.0, 1.0, 2.0])      # 2 r bins: [0,1), [1,2)
     grid = PolarBinGrid(theta_edges, r_edges)
 
     # theta exactly on interior edge goes to the bin on the "right"
-    assert grid.bin_at(0.5, 1.0) == (0, 1)
+    assert grid.map_coord_to_bin_idx(0.5, 1.0) == (0, 1)
 
     # theta=0.0 maps to first bin
-    assert grid.bin_at(0.5, 0.0) == (0, 0)
+    assert grid.map_coord_to_bin_idx(0.5, 0.0) == (0, 0)
 
     # theta at the last *grid edge* is outside (since this grid does not span 2π)
-    assert grid.bin_at(0.5, 2.0) is None
+    assert grid.map_coord_to_bin_idx(0.5, 2.0) is None
 
     # actual angular wraparound happens at 2π
-    assert grid.bin_at(0.5, 2.0 * np.pi) == (0, 0)
+    assert grid.map_coord_to_bin_idx(0.5, 2.0 * np.pi) == (0, 0)
 
     # r exactly on interior edge goes to bin on the "right"
-    assert grid.bin_at(1.0, 0.5) == (1, 0)
+    assert grid.map_coord_to_bin_idx(1.0, 0.5) == (1, 0)
 
     # r at outer edge is out of range
-    assert grid.bin_at(2.0, 0.5) is None
+    assert grid.map_coord_to_bin_idx(2.0, 0.5) is None
 
 
 def test_bins_in_region_nonempty_and_indices_valid():
-    theta_edges = np.linspace(0, 2*np.pi, 9)  # 8 bins
+    theta_edges = np.linspace(0, 2 * np.pi, 9)  # 8 bins
     r_edges = np.linspace(0, 1, 5)           # 4 bins
     grid = PolarBinGrid(theta_edges, r_edges)
 
@@ -67,21 +67,21 @@ def test_bins_in_region_nonempty_and_indices_valid():
 
 
 def test_bins_in_region_wraparound_includes_zero_angle_bin():
-    theta_edges = np.linspace(0, 2*np.pi, 9)  # 8 bins
+    theta_edges = np.linspace(0, 2 * np.pi, 9)  # 8 bins
     r_edges = np.linspace(0, 1, 3)            # 2 bins
     grid = PolarBinGrid(theta_edges, r_edges)
 
     # Cross 2pi boundary: near 2pi down to small angle
-    bins = set(grid.bins_in_region(0.0, 1.9*np.pi, 1.0, 0.1*np.pi))
+    bins = set(grid.bins_in_region(0.0, 1.9 * np.pi, 1.0, 0.1 * np.pi))
     assert len(bins) > 0
 
     # Must include a bin near theta ~ 0
-    assert grid.bin_at(0.5, 0.01) in bins
+    assert grid.map_coord_to_bin_idx(0.5, 0.01) in bins
 
 
 def test_exposed_edges_single_bin_has_four():
     grid = PolarBinGrid(
-        theta_edges=np.linspace(0, 2*np.pi, 5),
+        theta_edges=np.linspace(0, 2 * np.pi, 5),
         r_edges=np.linspace(0, 1, 3),
     )
     edges = grid.exposed_edges({(0, 0)})
@@ -90,7 +90,7 @@ def test_exposed_edges_single_bin_has_four():
 
 def test_exposed_edges_two_adjacent_bins_share_internal_edge():
     grid = PolarBinGrid(
-        theta_edges=np.linspace(0, 2*np.pi, 5),  # 4 theta bins
+        theta_edges=np.linspace(0, 2 * np.pi, 5),  # 4 theta bins
         r_edges=np.linspace(0, 1, 3),            # 2 r bins
     )
 

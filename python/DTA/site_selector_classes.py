@@ -159,7 +159,7 @@ class SiteSelector:
             # No hover was ever drawn (e.g., click with no motion or first motion invalid).
             # Fall back to click-at-press using the press coordinates.
             r0, t0 = self.drag_tracker.drag_start
-            idx = self.grid.bin_at(r0, t0)
+            idx = self.grid.map_coord_to_bin_idx(r0, t0)
             bins = {idx} if idx is not None else set()
 
             # Here bins is a delta for the current operation, so use the delta-commit path.
@@ -205,7 +205,7 @@ class SiteSelector:
 
         if abs(r1 - r0) < 1e-8 and abs(t1 - t0) < 1e-8:
             # treat as single click, not drag event
-            idx = self.grid.bin_at(r1, t1)
+            idx = self.grid.map_coord_to_bin_idx(r1, t1)
             return {idx} if idx is not None else set()
 
         # else: treat as drag event

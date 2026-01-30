@@ -56,7 +56,7 @@ class PolarBinGrid:
         self.n_t = len(theta_edges) - 1
         self.n_r = len(r_edges) - 1
 
-    def bin_at(self, r, theta):
+    def map_coord_to_bin_idx(self, r, theta):
         """
         Determine which bin contains a given polar coordinate.
 
