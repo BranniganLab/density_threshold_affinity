@@ -36,17 +36,19 @@ def test_bin_at_boundaries_theta_and_r():
     r_edges = np.array([0.0, 1.0, 2.0])      # 2 r bins: [0,1), [1,2)
     grid = PolarBinGrid(theta_edges, r_edges)
 
-    # theta exactly on edge goes to the bin on the "right" due to searchsorted(..., side="right")
-    # theta=1.0 should map to theta bin index 1 (second bin)
+    # theta exactly on interior edge goes to the bin on the "right"
     assert grid.bin_at(0.5, 1.0) == (0, 1)
 
     # theta=0.0 maps to first bin
     assert grid.bin_at(0.5, 0.0) == (0, 0)
 
-    # theta=2.0 wraps to 0.0 => first bin
-    assert grid.bin_at(0.5, 2.0) == (0, 0)
+    # theta at the last *grid edge* is outside (since this grid does not span 2π)
+    assert grid.bin_at(0.5, 2.0) is None
 
-    # r exactly on edge goes to bin on the "right"
+    # actual angular wraparound happens at 2π
+    assert grid.bin_at(0.5, 2.0 * np.pi) == (0, 0)
+
+    # r exactly on interior edge goes to bin on the "right"
     assert grid.bin_at(1.0, 0.5) == (1, 0)
 
     # r at outer edge is out of range
