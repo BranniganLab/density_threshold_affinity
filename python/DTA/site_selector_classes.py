@@ -584,9 +584,9 @@ class SiteSelectorManager:
         ``event.guiEvent`` first and falls back to parsing ``event.key``.
         """
         mods: set[str] = set()
-        
+
         ge = getattr(event, "guiEvent", None)
-        
+
         # Fast path: only attempt guiEvent if it looks like it actually has modifier fields.
         if isinstance(ge, dict) and (
         "shiftKey" in ge or "ctrlKey" in ge or "metaKey" in ge
@@ -597,7 +597,7 @@ class SiteSelectorManager:
                 mods.add("control")
             if mods:
                 return mods
-        
+
         if ge is not None and not isinstance(ge, dict):
             # Object-style guiEvent (rare in some backends)
             try:
@@ -609,7 +609,7 @@ class SiteSelectorManager:
                     return mods
             except (AttributeError, TypeError):
                 pass
-        
+
         # Fallback: parse string representation from Matplotlib
         k = (getattr(event, "key", None) or "").lower()
         if "shift" in k:
