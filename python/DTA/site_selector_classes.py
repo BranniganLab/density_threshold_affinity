@@ -596,7 +596,7 @@ class SiteSelectorManager:
             if ge.get("ctrlKey", False) or ge.get("metaKey", False):
                 mods.add("control")
             if mods:
-               return mods
+                return mods
         
         if ge is not None and not isinstance(ge, dict):
             # Object-style guiEvent (rare in some backends)
