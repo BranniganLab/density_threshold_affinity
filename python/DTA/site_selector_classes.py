@@ -584,33 +584,38 @@ class SiteSelectorManager:
         ``event.guiEvent`` first and falls back to parsing ``event.key``.
         """
         mods: set[str] = set()
+        
         ge = getattr(event, "guiEvent", None)
-
-        def get_bool(obj, key: str) -> bool:
-            if isinstance(obj, dict):
-                return bool(obj.get(key, False))
-            return bool(getattr(obj, key, False))
-
-        # Try guiEvent first, but only return if it yields a non-empty result.
-        if ge is not None:
+        
+        # Fast path: only attempt guiEvent if it looks like it actually has modifier fields.
+        if isinstance(ge, dict) and (
+        "shiftKey" in ge or "ctrlKey" in ge or "metaKey" in ge
+        ):
+            if ge.get("shiftKey", False):
+                mods.add("shift")
+            if ge.get("ctrlKey", False) or ge.get("metaKey", False):
+                mods.add("control")
+            if mods:
+               return mods
+        
+        if ge is not None and not isinstance(ge, dict):
+            # Object-style guiEvent (rare in some backends)
             try:
-                if get_bool(ge, "shiftKey"):
+                if getattr(ge, "shiftKey", False):
                     mods.add("shift")
-                if get_bool(ge, "ctrlKey") or get_bool(ge, "metaKey"):
+                if getattr(ge, "ctrlKey", False) or getattr(ge, "metaKey", False):
                     mods.add("control")
                 if mods:
                     return mods
-            except (AttributeError, KeyError, TypeError):
-                # guiEvent is present but does not expose usable modifier state
+            except (AttributeError, TypeError):
                 pass
-
-        # Fallback: parse string representation from Matplotlib.
+        
+        # Fallback: parse string representation from Matplotlib
         k = (getattr(event, "key", None) or "").lower()
         if "shift" in k:
             mods.add("shift")
         if "control" in k or "ctrl" in k or "meta" in k:
             mods.add("control")
-
         return mods
 
     def _dispatch(self, method):
