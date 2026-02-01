@@ -210,3 +210,15 @@ sequenceDiagram
     Sel->>Canvas: draw_idle()
     Mgr->>Mgr: clear drag owner
 
+```
+| If you want to change…                     | Edit this class                                |
+| ------------------------------------------ | ---------------------------------------------- |
+| Which bins are selected by a drag          | `PolarBinGrid`                                 |
+| How angular wraparound works               | `PolarBinGrid.bin_in_theta_arc`                |
+| How selection state is stored              | `BinSelectionModel`                            |
+| How outlines are drawn                     | `PolarBinRenderer`                             |
+| Selection semantics (replace/add/subtract) | `SiteSelector`                                 |
+| Modifier-key behavior                      | `SiteSelectorManager._mods_from_mouse_event`   |
+| Drag ownership / event routing             | `SiteSelectorManager`                          |
+| Hover vs committed rendering               | `SiteSelector`                                 |
+| Undo/redo behavior                         | Override `SiteSelector.on_selection_committed` |
