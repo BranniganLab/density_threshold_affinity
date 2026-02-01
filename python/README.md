@@ -174,7 +174,10 @@ SiteSelectorManager o-- SiteSelector : routes events
 classDef model fill:#E8F5E9,stroke:#2E7D32,stroke-width:1px,color:#1B5E20;
 classDef view fill:#E3F2FD,stroke:#1565C0,stroke-width:1px,color:#0D47A1;
 classDef controller fill:#FFF3E0,stroke:#EF6C00,stroke-width:1px,color:#E65100;
+```
 
+## Sequence Diagram Depicting User Actions and Code Response
+```mermaid
 sequenceDiagram
     autonumber
     actor User
