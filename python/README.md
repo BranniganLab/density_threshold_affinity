@@ -174,3 +174,36 @@ SiteSelectorManager o-- SiteSelector : routes events
 classDef model fill:#E8F5E9,stroke:#2E7D32,stroke-width:1px,color:#1B5E20;
 classDef view fill:#E3F2FD,stroke:#1565C0,stroke-width:1px,color:#0D47A1;
 classDef controller fill:#FFF3E0,stroke:#EF6C00,stroke-width:1px,color:#E65100;
+
+sequenceDiagram
+    autonumber
+    actor User
+    participant Canvas as Matplotlib Figure Canvas
+    participant Mgr as SiteSelectorManager
+    participant Sel as SiteSelector
+    participant Model as BinSelectionModel
+
+    note over User,Canvas: Mouse press inside Axes
+    User->>Canvas: button_press_event
+    Canvas->>Mgr: event(inaxes=Axes)
+    Mgr->>Mgr: set drag owner\nlatch modifier keys
+    Mgr->>Sel: on_press(event)
+    Sel->>Sel: initialize drag state\ncompute initial preview
+    Sel->>Canvas: draw_idle()
+
+    note over User,Canvas: Mouse drag
+    User->>Canvas: motion_notify_event
+    Canvas->>Mgr: event
+    Mgr->>Sel: on_motion(event)
+    Sel->>Sel: update preview\n(unless cursor left Axes)
+    Sel->>Canvas: draw_idle()
+
+    note over User,Canvas: Mouse release (anywhere)
+    User->>Canvas: button_release_event
+    Canvas->>Mgr: event
+    Mgr->>Sel: on_release(event)
+    Sel->>Model: commit last preview selection
+    Sel->>Sel: clear hover state\nreset drag state
+    Sel->>Canvas: draw_idle()
+    Mgr->>Mgr: clear drag owner
+
