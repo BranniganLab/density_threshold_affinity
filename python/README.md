@@ -189,16 +189,16 @@ sequenceDiagram
     note over User,Canvas: Mouse press inside Axes
     User->>Canvas: button_press_event
     Canvas->>Mgr: event(inaxes=Axes)
-    Mgr->>Mgr: set drag owner\nlatch modifier keys
+    Mgr->>Mgr: set drag owner<br/>latch modifier keys
     Mgr->>Sel: on_press(event)
-    Sel->>Sel: initialize drag state\ncompute initial preview
+    Sel->>Sel: initialize drag state<br/>compute initial preview
     Sel->>Canvas: draw_idle()
 
     note over User,Canvas: Mouse drag
     User->>Canvas: motion_notify_event
     Canvas->>Mgr: event
     Mgr->>Sel: on_motion(event)
-    Sel->>Sel: update preview\n(unless cursor left Axes)
+    Sel->>Sel: update preview<br/>(unless cursor left Axes)
     Sel->>Canvas: draw_idle()
 
     note over User,Canvas: Mouse release (anywhere)
@@ -206,7 +206,7 @@ sequenceDiagram
     Canvas->>Mgr: event
     Mgr->>Sel: on_release(event)
     Sel->>Model: commit last preview selection
-    Sel->>Sel: clear hover state\nreset drag state
+    Sel->>Sel: clear hover state<br/>reset drag state
     Sel->>Canvas: draw_idle()
     Mgr->>Mgr: clear drag owner
 
