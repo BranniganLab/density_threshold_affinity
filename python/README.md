@@ -211,6 +211,7 @@ sequenceDiagram
     Mgr->>Mgr: clear drag owner
 
 ```
+## Where to change what
 | If you want to change…                     | Edit this class                                |
 | ------------------------------------------ | ---------------------------------------------- |
 | Which bins are selected by a drag          | `PolarBinGrid`                                 |
