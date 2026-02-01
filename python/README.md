@@ -41,6 +41,10 @@ To support this reliably, the code is organized using a **Model–View–Control
 ```mermaid
 classDiagram
 
+%% =========================
+%% MVC Stereotypes
+%% =========================
+
 class BinSelectionModel:::model
 class PolarBinGrid:::model
 
@@ -65,47 +69,108 @@ class SelectionOperation:::controller
 <<Controller>> SelectorDrawState
 <<Controller>> SelectionOperation
 
+
+%% =========================
+%% Model
+%% =========================
 class BinSelectionModel {
-    -_bins: Set[(int,int)]
-    +snapshot()
-    +bins()
-    +set(bins)
-    +add(bins)
-    +remove(bins)
+    -_bins: Set<(int,int)>
+    +snapshot(): FrozenSet<(int,int)>
+    +bins(): Set<(int,int)>
+    +set(bins: Set<(int,int)>)
+    +add(bins: Set<(int,int)>)
+    +remove(bins: Set<(int,int)>)
     +clear()
 }
 
 class PolarBinGrid {
-    +map_coord_to_bin_idx(r, theta)
-    +bins_in_region(r0, t0, r1, t1)
-    +exposed_edges(bins)
-    +bin_in_theta_arc(theta_start, theta_end, bin_start, bin_end)
+    -theta_edges: ndarray
+    -r_edges: ndarray
+    -n_t: int
+    -n_r: int
+    +map_coord_to_bin_idx(r: float, theta: float): (int, int) | None
+    +bins_in_region(r0: float, t0: float, r1: float, t1: float): Iterable<(int,int)>
+    +exposed_edges(bins: Set<(int,int)>): List<BinEdge>
+    +bin_in_theta_arc(theta_start: float, theta_end: float, bin_start: float, bin_end: float): bool
+}
+
+%% =========================
+%% View
+%% =========================
+class BinEdge {
+    +theta_endpoints: (float, float)
+    +r_endpoints: (float, float)
 }
 
 class PolarBinRenderer {
-    +draw_edges(edges, plot_kwargs)
+    -ax: Axes
+    +plot_kwargs: dict
+    +draw_edges(edges: List<BinEdge>, plot_kwargs: dict | None): List<Artist>
+}
+
+%% =========================
+%% Controller
+%% =========================
+class SelectionOperation {
+    <<enumeration>>
+    REPLACE
+    ADD
+    SUBTRACT
+}
+
+class SelectorDragState {
+    <<dataclass>>
+    +drag_start: (float,float) | None
+    +last_theta: float | None
+    +last_preview_bins: Set<(int,int)> | None
+    +mods: FrozenSet<string>
+}
+
+class SelectorDrawState {
+    <<dataclass>>
+    +selected_artists: List
+    +hover_artists: List
 }
 
 class SiteSelector {
+    +ax: Axes
+    +grid: PolarBinGrid
+    +renderer: PolarBinRenderer
+    +model: BinSelectionModel
+    +draw_tracker: SelectorDrawState
+    +drag_tracker: SelectorDragState
+    +operation: SelectionOperation
     +on_press(event)
     +on_motion(event)
     +on_release(event)
 }
 
 class SiteSelectorManager {
-    +register(selector)
+    -fig: Figure
+    -_drag_owner: SiteSelector | None
+    +register(selector, active=False)
     +set_active(selector)
 }
 
-SiteSelector --> PolarBinGrid
-SiteSelector --> BinSelectionModel
-SiteSelector --> PolarBinRenderer
-SiteSelector *-- SelectorDragState
-SiteSelector *-- SelectorDrawState
-SiteSelector --> SelectionOperation
+%% =========================
+%% Relationships
+%% =========================
 
-SiteSelectorManager o-- SiteSelector
+PolarBinGrid --> BinEdge : produces
+PolarBinRenderer --> BinEdge : renders
 
-classDef model fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20;
-classDef view fill:#E3F2FD,stroke:#1565C0,color:#0D47A1;
-classDef controller fill:#FFF3E0,stroke:#EF6C00,color:#E65100;
+SiteSelector --> PolarBinGrid : queries geometry
+SiteSelector --> BinSelectionModel : updates selection
+SiteSelector --> PolarBinRenderer : renders outlines
+SiteSelector *-- SelectorDragState : owns
+SiteSelector *-- SelectorDrawState : owns
+SiteSelector --> SelectionOperation : mode
+
+SiteSelectorManager o-- SiteSelector : routes events
+
+%% =========================
+%% Styling (MVC color coding)
+%% =========================
+classDef model fill:#E8F5E9,stroke:#2E7D32,stroke-width:1px,color:#1B5E20;
+classDef view fill:#E3F2FD,stroke:#1565C0,stroke-width:1px,color:#0D47A1;
+classDef controller fill:#FFF3E0,stroke:#EF6C00,stroke-width:1px,color:#E65100;
