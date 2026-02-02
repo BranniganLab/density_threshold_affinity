@@ -23,7 +23,7 @@ from .state import SelectionOperation, SelectorDragState, SelectorDrawState
 from .renderers import PolarBinRenderer
 from DTA.core.geometry.polar_grid import PolarBinGrid
 from DTA.core.utils.angles import unwrap_theta
-from DTA.core.selection.selection_model import BinSelectionModel
+from DTA.core.selection import BinSelection
 
 
 class SiteSelectorManager:
@@ -255,7 +255,7 @@ class SiteSelector:
         self.ax = ax
         self.grid = PolarBinGrid(theta_edges, r_edges)
         self.renderer = PolarBinRenderer(ax, plot_kwargs)
-        self.model = BinSelectionModel()
+        self.bins = BinSelection()
         self.draw_tracker = SelectorDrawState()
         self.drag_tracker = SelectorDragState()
         self.operation = SelectionOperation.REPLACE
@@ -269,7 +269,7 @@ class SiteSelector:
         Activate the selector for interaction.
 
         This method resets transient drag/preview state, but does not modify the
-        committed selection stored in the model.
+        committed selection.
         """
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
@@ -281,7 +281,7 @@ class SiteSelector:
         Deactivate the selector and clear hover preview visuals.
 
         This method removes hover artists from the Axes and resets transient
-        drag/preview state. It does not modify the committed selection model.
+        drag/preview state. It does not modify the committed selection.
         """
         self._clear_artists(self.draw_tracker.hover_artists)
         self.drag_tracker.drag_start = None
@@ -390,7 +390,7 @@ class SiteSelector:
 
         Side Effects
         ------------
-        - Commits the selection to the model.
+        - Commits the selection.
         - Calls :meth:`on_selection_committed` with pre/post snapshots.
         - Redraws committed selection edges and clears hover edges.
         - Resets gesture state (including latched modifiers).
@@ -398,7 +398,7 @@ class SiteSelector:
         if self.drag_tracker.drag_start is None:
             return
 
-        before = self.model.snapshot()
+        before = self.bins.snapshot()
         preview_bins = self.drag_tracker.last_preview_bins
 
         if preview_bins is None:
@@ -411,7 +411,7 @@ class SiteSelector:
             # The preview bins represent the final desired selection.
             self._commit_preview_selection(preview_bins)
 
-        after = self.model.snapshot()
+        after = self.bins.snapshot()
         self.on_selection_committed(before, after)
 
         self._draw_committed()
@@ -478,7 +478,7 @@ class SiteSelector:
         - ``ADD``: preview is ``current ∪ bins``.
         - ``SUBTRACT``: preview is ``current \\ bins``.
         """
-        current = self.model.get_bins()
+        current = self.bins.get_bins()
 
         if self.operation is SelectionOperation.REPLACE:
             return bins
@@ -491,21 +491,21 @@ class SiteSelector:
 
     def _apply_commit(self, bins):
         """
-        Apply the latched selection operation to the committed selection model.
+        Apply the latched selection operation to the committed selection.
 
         Parameters
         ----------
         bins : set[tuple[int, int]]
             The bin set implied by the gesture region. For ``REPLACE`` this is
             the final selection; for ``ADD``/``SUBTRACT`` this is the delta
-            applied to the current model.
+            applied to the current selection.
         """
         if self.operation is SelectionOperation.REPLACE:
-            self.model.set(bins)
+            self.bins.set(bins)
         elif self.operation is SelectionOperation.ADD:
-            self.model.add(bins)
+            self.bins.add(bins)
         elif self.operation is SelectionOperation.SUBTRACT:
-            self.model.remove(bins)
+            self.bins.remove(bins)
 
     def _commit_preview_selection(self, preview_bins):
         """
@@ -514,15 +514,15 @@ class SiteSelector:
         Parameters
         ----------
         preview_bins : set[tuple[int, int]]
-            Final selection bins to store in the selection model.
+            Final selection bins to store in the selection.
 
         Notes
         -----
         This method is used when the hover preview already represents the full
-        desired final selection (for example, after combining the current model
+        desired final selection (for example, after combining the current
         selection with a delta under ADD/SUBTRACT).
         """
-        self.model.set(preview_bins)
+        self.bins.set(preview_bins)
 
     # ------------------------------------------------------------------
     # Rendering
@@ -562,10 +562,10 @@ class SiteSelector:
         Side Effects
         ------------
         - Removes any previous committed selection artists.
-        - Draws the boundary edges of the committed model selection.
+        - Draws the boundary edges of the committed selection.
         """
         self._clear_artists(self.draw_tracker.selected_artists)
-        edges = self.grid.exposed_edges(self.model.get_bins())
+        edges = self.grid.exposed_edges(self.bins.get_bins())
         self.draw_tracker.selected_artists.extend(
             self.renderer.draw_edges(edges, self.renderer.plot_kwargs)
         )

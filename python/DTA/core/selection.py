@@ -17,7 +17,7 @@ visualization is handled by renderers.
 """
 
 
-class BinSelectionModel:
+class BinSelection:
     """
     Mutable domain model representing a set of selected bins.
 
