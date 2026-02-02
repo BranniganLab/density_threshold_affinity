@@ -74,13 +74,13 @@ class SelectionOperation:::controller
 %% Model
 %% =========================
 class BinSelectionModel {
-    -_bins: Set<(int,int)>
-    +snapshot(): FrozenSet<(int,int)>
-    +bins(): Set<(int,int)>
-    +set(bins: Set<(int,int)>)
-    +add(bins: Set<(int,int)>)
-    +remove(bins: Set<(int,int)>)
+    -_bins : Set
+    +set(bins: Set)
+    +add(bins: Set)
+    +remove(bins: Set)
     +clear()
+    +snapshot() FrozenSet
+    +get_bins() Set
 }
 
 class PolarBinGrid {
