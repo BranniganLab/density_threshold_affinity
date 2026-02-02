@@ -386,7 +386,7 @@ class BinSelectionModel:
         """Clear the selection."""
         self._bins.clear()
 
-    def bins(self):
+    def get_bins(self):
         """
         Return the current selection.
 
