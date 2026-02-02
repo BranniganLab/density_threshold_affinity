@@ -124,10 +124,10 @@ def test_selection_model_ops():
     assert m.snapshot() == frozenset({(0, 0), (1, 2)})
 
     m.add({(2, 3)})
-    assert (2, 3) in m.bins()
+    assert (2, 3) in m.get_bins()
 
     m.remove({(0, 0)})
-    assert (0, 0) not in m.bins()
+    assert (0, 0) not in m.get_bins()
 
     m.clear()
-    assert m.bins() == set()
+    assert m.get_bins() == set()

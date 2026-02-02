@@ -92,7 +92,7 @@ def test_add_and_subtract_semantics_across_multiple_drags():
     assert preview_sub is not None
 
     sel.on_release(FakeMouseEvent(inaxes=None, xdata=None, ydata=None, buttons=None))
-    committed_after_sub = set(sel.model.bins())
+    committed_after_sub = set(sel.model.get_bins())
 
     # The committed selection should equal the subtract preview exactly
     assert committed_after_sub == set(preview_sub)
@@ -105,7 +105,7 @@ def test_add_and_subtract_semantics_across_multiple_drags():
     assert preview_add is not None
 
     sel.on_release(FakeMouseEvent(inaxes=None, xdata=None, ydata=None, buttons=None))
-    committed_after_add = set(sel.model.bins())
+    committed_after_add = set(sel.model.get_bins())
 
     # The committed selection should equal the add preview exactly
     assert committed_after_add == set(preview_add)
