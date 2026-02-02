@@ -47,9 +47,9 @@ classDiagram
 
 class BinSelectionModel:::model
 class PolarBinGrid:::model
+class BinEdge:::model
 
 class PolarBinRenderer:::view
-class BinEdge:::view
 
 class SiteSelector:::controller
 class SiteSelectorManager:::controller
@@ -59,9 +59,9 @@ class SelectionOperation:::controller
 
 <<Model>> BinSelectionModel
 <<Model>> PolarBinGrid
+<<Model>> BinEdge
 
 <<View>> PolarBinRenderer
-<<View>> BinEdge
 
 <<Controller>> SiteSelector
 <<Controller>> SiteSelectorManager
@@ -94,14 +94,14 @@ class PolarBinGrid {
     +bin_in_theta_arc(theta_start: float, theta_end: float, bin_start: float, bin_end: float): bool
 }
 
-%% =========================
-%% View
-%% =========================
 class BinEdge {
     +theta_endpoints: (float, float)
     +r_endpoints: (float, float)
 }
 
+%% =========================
+%% View
+%% =========================
 class PolarBinRenderer {
     -ax: Axes
     +plot_kwargs: dict
