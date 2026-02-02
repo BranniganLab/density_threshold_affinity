@@ -45,7 +45,7 @@ classDiagram
 %% MVC Stereotypes
 %% =========================
 
-class BinSelectionModel:::model
+class BinSelection:::model
 class PolarBinGrid:::model
 class BinEdge:::model
 class BinAddress:::model
@@ -58,7 +58,7 @@ class SelectorDragState:::controller
 class SelectorDrawState:::controller
 class SelectionOperation:::controller
 
-<<Model>> BinSelectionModel
+<<Model>> BinSelection
 <<Model>> PolarBinGrid
 <<Model>> BinEdge
 <<Model>> BinAddress
@@ -75,7 +75,8 @@ class SelectionOperation:::controller
 %% =========================
 %% Model
 %% =========================
-class BinSelectionModel {
+namespace DTA.core.selection {
+class BinSelection {
     -bins : Set~BinAddress~
     +set(bins: Set~BinAddress~)
     +add(bins: Set~BinAddress~)
@@ -84,7 +85,9 @@ class BinSelectionModel {
     +snapshot() FrozenSet~BinAddress~
     +get_bins() Set~BinAddress~
 }
+}
 
+namespace DTA.core.geometry.polar_grid {
 class PolarBinGrid {
     -r_edges: ndarray
     -theta_edges: ndarray
@@ -96,7 +99,9 @@ class PolarBinGrid {
     +bin_in_theta_arc(theta_start: float, theta_end: float, bin_start: float, bin_end: float) bool
     -_edge_geometry(ri: int, ti: int, side: str) BinEdge
 }
+}
 
+namespace DTA.core.geometry.utils {
 class BinEdge {
     +r_endpoints: float, float
     +theta_endpoints: float, float
@@ -106,20 +111,24 @@ class BinAddress {
     +r_index: Int
     +theta_index: Int
 }
+}
 
 %% =========================
 %% View
 %% =========================
+namespace DTA.gui.matplotlib.renderers {
 class PolarBinRenderer {
     -ax: Axes
     +plot_kwargs : dict
     +draw_edges(edges: List~BinEdge~, plot_kwargs: dict | None) List~Artist~
     +shade_interior_region()*
 }
+}
 
 %% =========================
 %% Controller
 %% =========================
+namespace DTA.gui.matplotlib.state {
 class SelectionOperation {
     <<enumeration>>
     REPLACE
@@ -140,10 +149,12 @@ class SelectorDrawState {
     +selected_artists: List~Artist~
     +hover_artists: List~Artist~
 }
+}
 
+namespace DTA.gui.matplotlib.selectors {
 class SiteSelector {
     +ax: Axes
-    +model: BinSelectionModel
+    +model: BinSelection
     +grid: PolarBinGrid
     +renderer: PolarBinRenderer
     +drag_tracker: SelectorDragState
@@ -170,20 +181,13 @@ class SiteSelectorManager {
     +register(selector: SiteSelector, active: Bool)
     +set_active(selector: SiteSelector)
 }
-
+}
 %% =========================
 %% Relationships
 %% =========================
 
-PolarBinRenderer --> BinEdge : renders
-PolarBinGrid --> BinEdge : produces
-
-PolarBinGrid --> BinAddress : uses
-BinSelectionModel --> BinAddress : uses
-SelectorDragState --> BinAddress : uses
-
 SiteSelector o-- PolarBinGrid : queries geometry
-SiteSelector o-- BinSelectionModel : updates bin selection
+SiteSelector o-- BinSelection : updates bin selection
 SiteSelector o-- PolarBinRenderer : renders
 SiteSelector *-- SelectorDragState : state
 SiteSelector *-- SelectorDrawState : state
