@@ -178,6 +178,7 @@ classDef controller fill:#FFF3E0,stroke:#EF6C00,stroke-width:1px,color:#E65100;
 
 ## Sequence Diagram Depicting User Actions and Code Response
 ```mermaid
+%% Self-messages require a trailing <br/> to avoid label/loop overlap (Mermaid limitation)
 %%{init: {
   "sequence": {
     "messageMargin": 150,
