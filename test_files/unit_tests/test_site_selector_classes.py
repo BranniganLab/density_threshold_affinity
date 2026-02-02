@@ -11,8 +11,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from DTA.site_selector_classes import SiteSelector, SiteSelectorManager
-from DTA.polar_bin_classes import PolarBinGrid
+from DTA.gui import SiteSelector, SiteSelectorManager
 
 
 @dataclass
@@ -26,7 +25,7 @@ class FakeMouseEvent:
 
 
 def _make_selector(ax):
-    theta_edges = np.linspace(0, 2*np.pi, 9)  # 8 bins
+    theta_edges = np.linspace(0, 2 * np.pi, 9)  # 8 bins
     r_edges = np.linspace(0, 1, 5)            # 4 bins
     return SiteSelector(ax, theta_edges, r_edges, plot_kwargs={"zorder": 20})
 
