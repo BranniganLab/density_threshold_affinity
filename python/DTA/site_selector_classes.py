@@ -345,7 +345,7 @@ class SiteSelector:
         - ``ADD``: preview is ``current ∪ bins``.
         - ``SUBTRACT``: preview is ``current \\ bins``.
         """
-        current = self.model.bins()
+        current = self.model.get_bins()
 
         if self.operation is SelectionOperation.REPLACE:
             return bins
@@ -432,7 +432,7 @@ class SiteSelector:
         - Draws the boundary edges of the committed model selection.
         """
         self._clear_artists(self.draw_tracker.selected_artists)
-        edges = self.grid.exposed_edges(self.model.bins())
+        edges = self.grid.exposed_edges(self.model.get_bins())
         self.draw_tracker.selected_artists.extend(
             self.renderer.draw_edges(edges, self.renderer.plot_kwargs)
         )
