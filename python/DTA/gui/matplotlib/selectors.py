@@ -21,9 +21,9 @@ Jupyter widget backends) where modifier keys may not be reported consistently.
 
 from .state import SelectionOperation, SelectorDragState, SelectorDrawState
 from .renderers import PolarBinRenderer
-from dta.core.geometry.polar_grid import PolarBinGrid
-from dta.core.utils.angles import unwrap_theta
-from dta.core.selection.selection_model import BinSelectionModel
+from DTA.core.geometry.polar_grid import PolarBinGrid
+from DTA.core.utils.angles import unwrap_theta
+from DTA.core.selection.selection_model import BinSelectionModel
 
 
 class SiteSelectorManager:
