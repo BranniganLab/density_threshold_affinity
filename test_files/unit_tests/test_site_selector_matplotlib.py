@@ -9,8 +9,9 @@ Created on Fri Jan 30 16:02:37 2026
 import numpy as np
 from matplotlib.testing.decorators import check_figures_equal
 
-from DTA.polar_bin_classes import PolarBinRenderer, PolarBinGrid, BinEdge
-from DTA.site_selector_classes import SiteSelector
+from DTA.core import PolarBinGrid, BinEdge
+from DTA.gui import SiteSelector
+from DTA.gui.matplotlib import PolarBinRenderer
 
 
 @check_figures_equal(extensions=("png",))
