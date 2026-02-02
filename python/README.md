@@ -74,29 +74,30 @@ class SelectionOperation:::controller
 %% Model
 %% =========================
 class BinSelectionModel {
-    -_bins : Set
-    +set(bins: Set)
-    +add(bins: Set)
-    +remove(bins: Set)
+    -_bins : Set~BinAddress~
+    +set(bins: Set~BinAddress~)
+    +add(bins: Set~BinAddress~)
+    +remove(bins: Set~BinAddress~)
     +clear()
-    +snapshot() FrozenSet
-    +get_bins() Set
+    +snapshot() FrozenSet~BinAddress~
+    +get_bins() Set~BinAddress~
 }
 
 class PolarBinGrid {
-    -theta_edges: ndarray
     -r_edges: ndarray
-    -n_t: int
+    -theta_edges: ndarray
     -n_r: int
-    +map_coord_to_bin_idx(r: float, theta: float): (int, int) | None
-    +bins_in_region(r0: float, t0: float, r1: float, t1: float): Iterable<(int,int)>
-    +exposed_edges(bins: Set<(int,int)>): List<BinEdge>
-    +bin_in_theta_arc(theta_start: float, theta_end: float, bin_start: float, bin_end: float): bool
+    -n_t: int
+    +map_coord_to_bin_idx(r: float, theta: float) BinAddress | None
+    +bins_in_region(r0: float, t0: float, r1: float, t1: float) Set
+    +exposed_edges(bins: Set~BinAddress) List~BinEdge~
+    +bin_in_theta_arc(theta_start: float, theta_end: float, bin_start: float, bin_end: float) bool
+    -_edge_geometry(ri: int, ti: int, side: str) BinEdge
 }
 
 class BinEdge {
-    +theta_endpoints: (float, float)
     +r_endpoints: (float, float)
+    +theta_endpoints: (float, float)
 }
 
 %% =========================
@@ -104,8 +105,9 @@ class BinEdge {
 %% =========================
 class PolarBinRenderer {
     -ax: Axes
-    +plot_kwargs: dict
-    +draw_edges(edges: List<BinEdge>, plot_kwargs: dict | None): List<Artist>
+    +plot_kwargs : dict
+    +draw_edges(edges: List~BinEdge~, plot_kwargs: dict | None) List~Artist~
+    +shade_interior_region()*
 }
 
 %% =========================
@@ -120,25 +122,25 @@ class SelectionOperation {
 
 class SelectorDragState {
     <<dataclass>>
-    +drag_start: (float,float) | None
+    +drag_start: float,float | None
     +last_theta: float | None
-    +last_preview_bins: Set<(int,int)> | None
-    +mods: FrozenSet<string>
+    +last_preview_bins: Set~BinAddress~ | None
+    +mods: FrozenSet~string~
 }
 
 class SelectorDrawState {
     <<dataclass>>
-    +selected_artists: List
-    +hover_artists: List
+    +selected_artists: List~Artist~
+    +hover_artists: List~Artist~
 }
 
 class SiteSelector {
     +ax: Axes
+    +model: BinSelectionModel
     +grid: PolarBinGrid
     +renderer: PolarBinRenderer
-    +model: BinSelectionModel
-    +draw_tracker: SelectorDrawState
     +drag_tracker: SelectorDragState
+    +draw_tracker: SelectorDrawState
     +operation: SelectionOperation
     +on_press(event)
     +on_motion(event)
@@ -148,8 +150,8 @@ class SiteSelector {
 class SiteSelectorManager {
     -fig: Figure
     -_drag_owner: SiteSelector | None
-    +register(selector, active=False)
-    +set_active(selector)
+    +register(selector: SiteSelector, active: Bool)
+    +set_active(selector: SiteSelector)
 }
 
 %% =========================
@@ -159,12 +161,12 @@ class SiteSelectorManager {
 PolarBinGrid --> BinEdge : produces
 PolarBinRenderer --> BinEdge : renders
 
-SiteSelector --> PolarBinGrid : queries geometry
-SiteSelector --> BinSelectionModel : updates selection
-SiteSelector --> PolarBinRenderer : renders outlines
-SiteSelector *-- SelectorDragState : owns
-SiteSelector *-- SelectorDrawState : owns
-SiteSelector --> SelectionOperation : mode
+SiteSelector o-- PolarBinGrid : queries geometry
+SiteSelector o-- BinSelectionModel : updates bin selection
+SiteSelector o-- PolarBinRenderer : renders
+SiteSelector *-- SelectorDragState : state
+SiteSelector *-- SelectorDrawState : state
+SiteSelector ..> SelectionOperation : define allowed modes
 
 SiteSelectorManager o-- SiteSelector : routes events
 
