@@ -276,38 +276,3 @@ def validate_path(path, file=False):
         if not path.is_file():
             raise FileNotFoundError(f"The specified file '{path}' is not recognized as a file. Please ensure the path is correct.")
     return path
-
-
-def unwrap_theta(previous_theta, current_theta):
-    """
-    Unwrap a circular angle measurement to produce a continuous angular sequence.
-
-    This function resolves the discontinuity at 0 / 2π by adjusting the current
-    angle by ±2π when necessary so that the change relative to the previous angle
-    is minimal.
-
-    Parameters
-    ----------
-    previous_theta : float or None
-        The previous angle in the sequence, expressed in radians. If None,
-        no unwrapping is performed and current_theta is returned unchanged.
-    current_theta : float
-        The current angle measurement in radians, typically constrained to
-        the interval [0, 2π).
-
-    Returns
-    -------
-    float
-        The unwrapped angle in radians, continuous with previous_theta.
-    """
-    if previous_theta is None:
-        return current_theta
-
-    delta = current_theta - previous_theta
-
-    if delta > np.pi:
-        return current_theta - 2 * np.pi
-    if delta < -np.pi:
-        return current_theta + 2 * np.pi
-
-    return current_theta
