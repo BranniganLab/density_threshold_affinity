@@ -1,6 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Transient GUI interaction state for Matplotlib-based site selection.
+
+This module defines lightweight, short-lived state objects used by
+Matplotlib controllers to track the lifecycle of selection gestures
+(mouse press, drag, and release).
+
+The classes here:
+- represent user intent (replace/add/remove) derived from modifier keys,
+- capture per-gesture drag state and preview geometry,
+- exist only during active interactions.
+
+They do not perform rendering or modify persistent selection state.
+All drawing is handled by renderers, and all committed selection state
+lives in dta.core.selection.
+
+These objects are internal to the Matplotlib GUI layer and are not part
+of the public analysis or core APIs.
 """
 
 from enum import Enum
