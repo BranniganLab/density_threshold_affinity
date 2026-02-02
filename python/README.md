@@ -178,6 +178,14 @@ classDef controller fill:#FFF3E0,stroke:#EF6C00,stroke-width:1px,color:#E65100;
 
 ## Sequence Diagram Depicting User Actions and Code Response
 ```mermaid
+%%{init: {
+  "sequence": {
+    "messageMargin": 150,
+    "rightAngles": true,
+    "wrap": false,
+    "messageAlign": "center"
+  }
+}}%%
 sequenceDiagram
     autonumber
     actor User
@@ -189,16 +197,16 @@ sequenceDiagram
     note over User,Canvas: Mouse press inside Axes
     User->>Canvas: button_press_event
     Canvas->>Mgr: event(inaxes=Axes)
-    Mgr->>Mgr: set drag owner<br/>latch modifier keys
+    Mgr->>Mgr: set drag owner<br/>latch modifier keys<br/> 
     Mgr->>Sel: on_press(event)
-    Sel->>Sel: initialize drag state<br/>compute initial preview
+    Sel->>Sel: initialize drag state<br/>compute initial preview<br/> 
     Sel->>Canvas: draw_idle()
 
     note over User,Canvas: Mouse drag
     User->>Canvas: motion_notify_event
     Canvas->>Mgr: event
     Mgr->>Sel: on_motion(event)
-    Sel->>Sel: update preview<br/>(unless cursor left Axes)
+    Sel->>Sel: update preview<br/>(unless cursor left Axes)<br/> 
     Sel->>Canvas: draw_idle()
 
     note over User,Canvas: Mouse release (anywhere)
@@ -206,9 +214,9 @@ sequenceDiagram
     Canvas->>Mgr: event
     Mgr->>Sel: on_release(event)
     Sel->>Model: commit last preview selection
-    Sel->>Sel: clear hover state<br/>reset drag state
+    Sel->>Sel: clear hover state<br/>reset drag state<br/> 
     Sel->>Canvas: draw_idle()
-    Mgr->>Mgr: clear drag owner
+    Mgr->>Mgr: clear drag owner<br/> 
 
 ```
 ## Where to change what
