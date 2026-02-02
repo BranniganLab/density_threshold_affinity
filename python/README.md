@@ -48,6 +48,7 @@ classDiagram
 class BinSelectionModel:::model
 class PolarBinGrid:::model
 class BinEdge:::model
+class BinAddress:::model
 
 class PolarBinRenderer:::view
 
@@ -60,6 +61,7 @@ class SelectionOperation:::controller
 <<Model>> BinSelectionModel
 <<Model>> PolarBinGrid
 <<Model>> BinEdge
+<<Model>> BinAddress
 
 <<View>> PolarBinRenderer
 
@@ -74,7 +76,7 @@ class SelectionOperation:::controller
 %% Model
 %% =========================
 class BinSelectionModel {
-    -_bins : Set~BinAddress~
+    -bins : Set~BinAddress~
     +set(bins: Set~BinAddress~)
     +add(bins: Set~BinAddress~)
     +remove(bins: Set~BinAddress~)
@@ -89,15 +91,20 @@ class PolarBinGrid {
     -n_r: int
     -n_t: int
     +map_coord_to_bin_idx(r: float, theta: float) BinAddress | None
-    +bins_in_region(r0: float, t0: float, r1: float, t1: float) Set
+    +bins_in_region(r0: float, t0: float, r1: float, t1: float) Set~BinAddress~
     +exposed_edges(bins: Set~BinAddress) List~BinEdge~
     +bin_in_theta_arc(theta_start: float, theta_end: float, bin_start: float, bin_end: float) bool
     -_edge_geometry(ri: int, ti: int, side: str) BinEdge
 }
 
 class BinEdge {
-    +r_endpoints: (float, float)
-    +theta_endpoints: (float, float)
+    +r_endpoints: float, float
+    +theta_endpoints: float, float
+}
+
+class BinAddress {
+    +r_index: Int
+    +theta_index: Int
 }
 
 %% =========================
@@ -142,14 +149,24 @@ class SiteSelector {
     +drag_tracker: SelectorDragState
     +draw_tracker: SelectorDrawState
     +operation: SelectionOperation
+    +on_activate()
+    +on_deactivate()
     +on_press(event)
     +on_motion(event)
     +on_release(event)
+    -bins_from_drag(start: tuple, end: tuple) Set~BinAddress~ | BinAddress | None
+    -apply_preview(bins: Set~BinAddress~) Set~BinAddress~
+    -apply_commit(bins: Set~BinAddress~)
+    -commit_preview_selection(preview_bins: Set~BinAddress)
+    -draw_hover(bins: Set~BinAddress~)
+    -draw_committed()
+    -clear_artists(artists: List~Artist~
+    -on_selection_committed(before: Set~BinAddress~, after: Set~BinAddress~)*
 }
 
 class SiteSelectorManager {
     -fig: Figure
-    -_drag_owner: SiteSelector | None
+    -drag_owner: SiteSelector | None
     +register(selector: SiteSelector, active: Bool)
     +set_active(selector: SiteSelector)
 }
@@ -158,8 +175,12 @@ class SiteSelectorManager {
 %% Relationships
 %% =========================
 
-PolarBinGrid --> BinEdge : produces
 PolarBinRenderer --> BinEdge : renders
+PolarBinGrid --> BinEdge : produces
+
+PolarBinGrid --> BinAddress : uses
+BinSelectionModel --> BinAddress : uses
+SelectorDragState --> BinAddress : uses
 
 SiteSelector o-- PolarBinGrid : queries geometry
 SiteSelector o-- BinSelectionModel : updates bin selection
