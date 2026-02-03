@@ -9,7 +9,7 @@ Created on Fri Jan 30 16:01:23 2026
 import numpy as np
 import pytest
 
-from DTA.core import PolarBinGrid, BinSelectionModel, BinEdge
+from DTA.core import PolarBinGrid, BinSelection, BinEdge
 from DTA.gui.matplotlib import PolarBinRenderer
 
 
@@ -118,8 +118,8 @@ def test_renderer_draw_edges_creates_artists():
     assert all(a.axes is ax for a in artists)
 
 
-def test_selection_model_ops():
-    m = BinSelectionModel()
+def test_selection_ops():
+    m = BinSelection()
 
     m.set({(0, 0), (1, 2)})
     assert m.snapshot() == frozenset({(0, 0), (1, 2)})
