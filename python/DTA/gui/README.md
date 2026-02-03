@@ -156,10 +156,10 @@ class SiteSelector {
     +ax: Axes
     +model: BinSelection
     +grid: PolarBinGrid
-    +renderer: PolarBinRenderer
+    +renderer: SelectionRenderer
     +drag_tracker: SelectorDragState
     +draw_tracker: SelectorDrawState
-    +operation: SelectionOperation
+    +operation: SelectorOperations
     +on_activate()
     +on_deactivate()
     +on_press(event)
@@ -168,7 +168,7 @@ class SiteSelector {
     -bins_from_drag(start: tuple, end: tuple) Set~BinAddress~ | BinAddress | None
     -apply_preview(bins: Set~BinAddress~) Set~BinAddress~
     -apply_commit(bins: Set~BinAddress~)
-    -commit_preview_selection(preview_bins: Set~BinAddress)
+    -commit_preview_selection(preview_bins: Set~BinAddress~)
     -draw_hover(bins: Set~BinAddress~)
     -draw_committed()
     -clear_artists(artists: List~Artist~
@@ -186,14 +186,14 @@ class SiteSelectorManager {
 %% Relationships
 %% =========================
 
-SiteSelector o-- PolarBinGrid : queries geometry
-SiteSelector o-- BinSelection : updates bin selection
-SiteSelector o-- SelectionRenderer : renders
-SiteSelector *-- SelectorDragState : state
-SiteSelector *-- SelectorDrawState : state
-SiteSelector ..> SelectorOperations : define allowed modes
+SiteSelector o-- PolarBinGrid : defines polar lattice logic
+SiteSelector o-- BinSelection : holds & updates bin selection
+SiteSelector o-- SelectionRenderer : draws things
+SiteSelector *-- SelectorDragState : keeps track of mouse drags and key-press modifiers
+SiteSelector *-- SelectorDrawState : keeps track of what is currently drawn
+SiteSelector ..> SelectorOperations : enumerates allowed modes
 
-SiteSelectorManager o-- SiteSelector : routes events
+SiteSelectorManager o-- SiteSelector : coordinates behavior for one Axes
 
 %% =========================
 %% Styling (MVC color coding)
