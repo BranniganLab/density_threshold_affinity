@@ -55,7 +55,7 @@ def test_release_commits_last_preview_exactly():
     sel = _make_selector(ax)
 
     # seed committed selection
-    sel.model.set({(0, 0), (1, 1)})
+    sel.bins.set({(0, 0), (1, 1)})
 
     # latch subtract
     sel._mods = frozenset({"control"})
@@ -69,7 +69,7 @@ def test_release_commits_last_preview_exactly():
     # release outside data coords (xdata/ydata None is fine)
     sel.on_release(FakeMouseEvent(inaxes=None, xdata=None, ydata=None, buttons=None))
 
-    assert sel.model.snapshot() == frozenset(preview)
+    assert sel.bins.snapshot() == frozenset(preview)
 
 
 def test_add_and_subtract_semantics_across_multiple_drags():
@@ -81,7 +81,7 @@ def test_add_and_subtract_semantics_across_multiple_drags():
 
     # Start with some committed bins
     initial = {(0, 0), (0, 1), (1, 1)}
-    sel.model.set(initial)
+    sel.bins.set(initial)
 
     # --- SUBTRACT gesture: ctrl drag ---
     sel._mods = frozenset({"control"})
@@ -91,7 +91,7 @@ def test_add_and_subtract_semantics_across_multiple_drags():
     assert preview_sub is not None
 
     sel.on_release(FakeMouseEvent(inaxes=None, xdata=None, ydata=None, buttons=None))
-    committed_after_sub = set(sel.model.get_bins())
+    committed_after_sub = set(sel.bins.get_bins())
 
     # The committed selection should equal the subtract preview exactly
     assert committed_after_sub == set(preview_sub)
@@ -104,7 +104,7 @@ def test_add_and_subtract_semantics_across_multiple_drags():
     assert preview_add is not None
 
     sel.on_release(FakeMouseEvent(inaxes=None, xdata=None, ydata=None, buttons=None))
-    committed_after_add = set(sel.model.get_bins())
+    committed_after_add = set(sel.bins.get_bins())
 
     # The committed selection should equal the add preview exactly
     assert committed_after_add == set(preview_add)
@@ -142,4 +142,4 @@ def test_integration_freeze_outside_axes_but_commit_on_release_outside():
     assert selA.drag_tracker.drag_start is None
 
     # Commit should equal last preview from A
-    assert selA.model.snapshot() == frozenset(preview_before)
+    assert selA.bins.snapshot() == frozenset(preview_before)

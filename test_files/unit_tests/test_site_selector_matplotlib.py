@@ -40,7 +40,7 @@ def test_selector_draw_committed_matches_expected(fig_test, fig_ref):
     # test figure: selector draws committed selection
     ax_t = fig_test.add_subplot(111, projection="polar")
     sel = SiteSelector(ax_t, theta_edges, r_edges, plot_kwargs={"color": "r", "lw": 2, "zorder": 20})
-    sel.model.set(bins)
+    sel.bins.set(bins)
     sel._draw_committed()
 
     # reference figure: compute edges and draw manually
