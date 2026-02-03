@@ -50,32 +50,32 @@ class PolarBinGrid:::model
 class BinEdge:::model
 class BinAddress:::model
 
-class PolarBinRenderer:::view
+class SelectionRenderer:::view
 
 class SiteSelector:::controller
 class SiteSelectorManager:::controller
 class SelectorDragState:::controller
 class SelectorDrawState:::controller
-class SelectionOperation:::controller
+class SelectorOperations:::controller
 
 <<Model>> BinSelection
 <<Model>> PolarBinGrid
 <<Model>> BinEdge
 <<Model>> BinAddress
 
-<<View>> PolarBinRenderer
+<<View>> SelectionRenderer
 
 <<Controller>> SiteSelector
 <<Controller>> SiteSelectorManager
 <<Controller>> SelectorDragState
 <<Controller>> SelectorDrawState
-<<Controller>> SelectionOperation
+<<Controller>> SelectorOperations
 
 
 %% =========================
 %% Model
 %% =========================
-namespace DTA.core.selection {
+namespace DTA.bin_logic.selection {
 class BinSelection {
     -bins : Set~BinAddress~
     +set(bins: Set~BinAddress~)
@@ -87,7 +87,7 @@ class BinSelection {
 }
 }
 
-namespace DTA.core.geometry.polar_grid {
+namespace DTA.bin_logic.polar_grid {
 class PolarBinGrid {
     -r_edges: ndarray
     -theta_edges: ndarray
@@ -101,7 +101,7 @@ class PolarBinGrid {
 }
 }
 
-namespace DTA.core.geometry.utils {
+namespace DTA.bin_logic.utils {
 class BinEdge {
     +r_endpoints: float, float
     +theta_endpoints: float, float
@@ -116,8 +116,8 @@ class BinAddress {
 %% =========================
 %% View
 %% =========================
-namespace DTA.gui.matplotlib.renderers {
-class PolarBinRenderer {
+namespace DTA.gui.renderers {
+class SelectionRenderer {
     -ax: Axes
     +plot_kwargs : dict
     +draw_edges(edges: List~BinEdge~, plot_kwargs: dict | None) List~Artist~
@@ -128,8 +128,8 @@ class PolarBinRenderer {
 %% =========================
 %% Controller
 %% =========================
-namespace DTA.gui.matplotlib.state {
-class SelectionOperation {
+namespace DTA.gui.selector_state {
+class SelectorOperations {
     <<enumeration>>
     REPLACE
     ADD
@@ -151,7 +151,7 @@ class SelectorDrawState {
 }
 }
 
-namespace DTA.gui.matplotlib.selectors {
+namespace DTA.gui.selectors {
 class SiteSelector {
     +ax: Axes
     +model: BinSelection
@@ -188,10 +188,10 @@ class SiteSelectorManager {
 
 SiteSelector o-- PolarBinGrid : queries geometry
 SiteSelector o-- BinSelection : updates bin selection
-SiteSelector o-- PolarBinRenderer : renders
+SiteSelector o-- SelectionRenderer : renders
 SiteSelector *-- SelectorDragState : state
 SiteSelector *-- SelectorDrawState : state
-SiteSelector ..> SelectionOperation : define allowed modes
+SiteSelector ..> SelectorOperations : define allowed modes
 
 SiteSelectorManager o-- SiteSelector : routes events
 
