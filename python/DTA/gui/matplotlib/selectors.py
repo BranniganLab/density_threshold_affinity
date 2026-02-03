@@ -19,11 +19,11 @@ The implementation is designed to work in interactive backends (including
 Jupyter widget backends) where modifier keys may not be reported consistently.
 """
 
-from .state import SelectionOperation, SelectorDragState, SelectorDrawState
-from .renderers import PolarBinRenderer
 from DTA.core.geometry.polar_grid import PolarBinGrid
 from DTA.core.utils.angles import unwrap_theta
 from DTA.core.selection import BinSelection
+from .state import SelectionOperation, SelectorDragState, SelectorDrawState
+from .renderers import PolarBinRenderer
 
 
 class SiteSelectorManager:
