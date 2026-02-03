@@ -97,7 +97,7 @@ class PolarBinGrid {
     +bins_in_region(r0: float, t0: float, r1: float, t1: float) Set~BinAddress~
     +exposed_edges(bins: Set~BinAddress) List~BinEdge~
     +bin_in_theta_arc(theta_start: float, theta_end: float, bin_start: float, bin_end: float) bool
-    -_edge_geometry(ri: int, ti: int, side: str) BinEdge
+    -_edge_geometry(bin: BinAddress, side: str) BinEdge
 }
 }
 
@@ -180,6 +180,8 @@ class SiteSelectorManager {
     -drag_owner: SiteSelector | None
     +register(selector: SiteSelector, active: Bool)
     +set_active(selector: SiteSelector)
+    -mods_from_mouse_event(event: MouseEvent) Set~str~
+    -dispatch(method: str) callable 
 }
 }
 %% =========================
