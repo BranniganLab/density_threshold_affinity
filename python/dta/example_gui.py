@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import matplotlib.pyplot as plt
-from DTA.gui.matplotlib import SiteSelectorManager, SiteSelector
+from dta.gui import SiteSelectorManager, SiteSelector
 
 
 def example_usage():
