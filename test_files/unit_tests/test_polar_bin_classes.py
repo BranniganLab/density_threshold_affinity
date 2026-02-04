@@ -106,7 +106,7 @@ def test_renderer_draw_edges_creates_artists():
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
-    renderer = PolarBinRenderer(ax, plot_kwargs={"color": "k", "lw": 1})
+    renderer = SelectionRenderer(ax, plot_kwargs={"color": "k", "lw": 1})
 
     edges = [
         BinEdge((0.0, 1.0), (0.0, 0.0)),
