@@ -19,11 +19,11 @@ The implementation is designed to work in interactive backends (including
 Jupyter widget backends) where modifier keys may not be reported consistently.
 """
 
-from DTA.core.geometry.polar_grid import PolarBinGrid
-from DTA.core.utils.angles import unwrap_theta
-from DTA.core.selection import BinSelection
+from dta.core.geometry.polar_grid import PolarBinGrid
+from dta.core.utils.angles import unwrap_theta
+from dta.core.selection import BinSelection
 from .state import SelectionOperation, SelectorDragState, SelectorDrawState
-from .renderers import PolarBinRenderer
+from .renderers import SelectionRenderer
 
 
 class SiteSelectorManager:
@@ -254,7 +254,7 @@ class SiteSelector:
         """
         self.ax = ax
         self.grid = PolarBinGrid(theta_edges, r_edges)
-        self.renderer = PolarBinRenderer(ax, plot_kwargs)
+        self.renderer = SelectionRenderer(ax, plot_kwargs)
         self.bins = BinSelection()
         self.draw_tracker = SelectorDrawState()
         self.drag_tracker = SelectorDragState()
