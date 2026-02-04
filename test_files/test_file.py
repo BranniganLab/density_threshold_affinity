@@ -9,12 +9,12 @@ import pytest
 import numpy as np
 from pathlib import Path
 
-from DTA.utils import load_inclusion_coordinates
-from DTA.density import parse_tcl_dat_file, aggregate_density_enrichment_scores, load_replica_counts, valid_Dimensions
-from DTA.plotting import make_density_enrichment_heatmap, make_custom_colormap, plot_histogram, outline_site, plot_titration_curve
-from DTA.Site import Site
-from DTA.SymmetricSite import SymmetricSite
-from DTA.SiteAcrossReplicas import SiteAcrossReplicas
+from dta.utils import load_inclusion_coordinates
+from dta.density import parse_tcl_dat_file, aggregate_density_enrichment_scores, load_replica_counts, valid_Dimensions
+from dta.plotting import make_density_enrichment_heatmap, make_custom_colormap, plot_histogram, outline_site, plot_titration_curve
+from dta.Site import Site
+from dta.SymmetricSite import SymmetricSite
+from dta.SiteAcrossReplicas import SiteAcrossReplicas
 
 
 def analyze_sample_outputs():
