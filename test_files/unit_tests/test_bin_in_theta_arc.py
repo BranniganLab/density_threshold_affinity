@@ -9,7 +9,7 @@ Created on Fri Jan 30 17:34:25 2026
 import numpy as np
 import pytest
 
-from DTA.core import PolarBinGrid
+from dta.bin_logic import PolarBinGrid
 
 
 TWO_PI = 2.0 * np.pi

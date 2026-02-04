@@ -11,7 +11,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from DTA.gui import SiteSelector, SiteSelectorManager
+from dta.gui import SiteSelector, SiteSelectorManager
 
 
 @dataclass

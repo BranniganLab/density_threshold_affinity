@@ -9,8 +9,8 @@ Created on Fri Jan 30 16:01:23 2026
 import numpy as np
 import pytest
 
-from DTA.core import PolarBinGrid, BinSelection, BinEdge
-from DTA.gui.matplotlib import PolarBinRenderer
+from dta.bin_logic import PolarBinGrid, BinSelection, BinEdge
+from dta.gui import PolarBinRenderer
 
 
 def test_map_coord_to_bin_idx_basic_and_wrap():

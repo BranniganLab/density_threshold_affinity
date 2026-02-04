@@ -9,16 +9,15 @@ Created on Fri Jan 30 16:02:37 2026
 import numpy as np
 from matplotlib.testing.decorators import check_figures_equal
 
-from DTA.core import PolarBinGrid, BinEdge
-from DTA.gui import SiteSelector
-from DTA.gui.matplotlib import PolarBinRenderer
+from dta.bin_logic import PolarBinGrid, BinEdge
+from dta.gui import SiteSelector, SelectionRenderer
 
 
 @check_figures_equal(extensions=("png",))
 def test_renderer_draw_edges_matches_manual(fig_test, fig_ref):
     # test figure: uses renderer
     ax_t = fig_test.add_subplot(111, projection="polar")
-    renderer = PolarBinRenderer(ax_t, plot_kwargs={"color": "k", "lw": 1, "zorder": 10})
+    renderer = SelectionRenderer(ax_t, plot_kwargs={"color": "k", "lw": 1, "zorder": 10})
     edges = [
         BinEdge((0.0, 1.0), (0.0, 0.0)),
         BinEdge((1.0, 1.0), (0.0, np.pi / 2)),
