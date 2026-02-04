@@ -16,3 +16,5 @@ from .SymmetricSite import *
 from .utils import *
 from .density import *
 from .plotting import *
+from .gui import *
+from .bin_logic import *

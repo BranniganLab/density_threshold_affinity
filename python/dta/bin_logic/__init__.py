@@ -1,4 +1,4 @@
-from .geometry.polar_grid import BinEdge, PolarBinGrid
+from .polar_grid import BinEdge, PolarBinGrid
 from .selection import BinSelection
 
 __all__ = [
