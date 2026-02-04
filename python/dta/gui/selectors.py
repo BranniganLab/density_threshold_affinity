@@ -19,9 +19,9 @@ The implementation is designed to work in interactive backends (including
 Jupyter widget backends) where modifier keys may not be reported consistently.
 """
 
-from dta.core.geometry.polar_grid import PolarBinGrid
-from dta.core.utils.angles import unwrap_theta
-from dta.core.selection import BinSelection
+from dta.bin_logic.polar_grid import PolarBinGrid
+from dta.bin_logic.utils import unwrap_theta
+from dta.bin_logic.selection import BinSelection
 from .state import SelectionOperation, SelectorDragState, SelectorDrawState
 from .renderers import SelectionRenderer
 
