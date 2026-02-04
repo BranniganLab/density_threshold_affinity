@@ -18,7 +18,7 @@ state lives in dta.core.selection.
 """
 
 
-class PolarBinRenderer:
+class SelectionRenderer:
     """
     Renderer for drawing polar objects on a matplotlib Axes.
 
@@ -28,7 +28,7 @@ class PolarBinRenderer:
 
     def __init__(self, ax, plot_kwargs=None):
         """
-        Create a PolarBinRenderer object and tie it to an Axes instance.
+        Create a SelectionRenderer object and tie it to an Axes instance.
 
         Parameters
         ----------
