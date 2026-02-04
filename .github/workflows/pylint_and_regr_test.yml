@@ -26,7 +26,7 @@ jobs:
     - name: Analysing the code with pylint
       run: |
         export PYLINTRC=./.github/workflows/.pylintrc
-        pylint $(find ./python/DTA/ -name '*.py') --fail-under=8
+        pylint $(find ./python/dta/ -name '*.py') --fail-under=8
     - name: Running unit tests with pytest
       run: |
         python -m pytest ./test_files/unit_tests/test_*.py
