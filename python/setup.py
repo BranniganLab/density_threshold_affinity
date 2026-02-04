@@ -7,7 +7,7 @@ setup(
     url='https://github.com/BranniganLab/density_threshold_affinity',
     author='Brannigan Lab',
     author_email='grace.brannigan@rutgers.edu',
-    packages=['DTAdta'],
+    packages=['dta'],
     install_requires=['numpy>=2.0.0','pandas>=2.2.2', 'matplotlib>=3.9.1', 'scipy>=1.14.0'],
 
     classifiers=[
