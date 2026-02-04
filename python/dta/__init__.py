@@ -4,10 +4,15 @@ DTA
 Tools for Doing Density-Threshold Affinity analysis
 """
 
-__version__ = "1.0"
-__author__ = 'Brannigan Lab'
-__credits__ = 'Rutgers University - Camden'
-__all__=["__version__"]
+from ._version import __version__
+
+__all__ = ["__version__",
+    "Site",
+    "SiteAcrossReplicas",
+    "SymmetricSite",
+    "utils",
+    "density",
+    "plotting"]
 
 
 from .Site import *
@@ -16,5 +21,4 @@ from .SymmetricSite import *
 from .utils import *
 from .density import *
 from .plotting import *
-from .gui import *
-from .bin_logic import *
+
