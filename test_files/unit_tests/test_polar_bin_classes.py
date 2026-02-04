@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from dta.bin_logic import PolarBinGrid, BinSelection, BinEdge
-from dta.gui import PolarBinRenderer
+from dta.gui import SelectionRenderer
 
 
 def test_map_coord_to_bin_idx_basic_and_wrap():
