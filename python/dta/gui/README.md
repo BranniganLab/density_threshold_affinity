@@ -45,7 +45,6 @@ classDiagram
 %% MVC Stereotypes
 %% =========================
 
-class BinSelection:::model
 class PolarBinGrid:::model
 class BinEdge:::model
 class BinAddress:::model
@@ -57,8 +56,8 @@ class SiteSelectorManager:::controller
 class SelectorDragState:::controller
 class SelectorDrawState:::controller
 class SelectorOperations:::controller
+class BinSelection:::controller
 
-<<Model>> BinSelection
 <<Model>> PolarBinGrid
 <<Model>> BinEdge
 <<Model>> BinAddress
@@ -70,6 +69,7 @@ class SelectorOperations:::controller
 <<Controller>> SelectorDragState
 <<Controller>> SelectorDrawState
 <<Controller>> SelectorOperations
+<<Controller>> BinSelection
 
 
 %% =========================
