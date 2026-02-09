@@ -189,8 +189,8 @@ class SiteSelectorManager {
 %% =========================
 
 SiteSelector o-- PolarBinGrid : defines polar lattice logic
-SiteSelector o-- BinSelection : holds & updates bin selection
 SiteSelector o-- SelectionRenderer : draws things
+SiteSelector o-- BinSelection : holds & updates bin selection
 SiteSelector *-- SelectorDragState : keeps track of mouse drags and key-press modifiers
 SiteSelector *-- SelectorDrawState : keeps track of what is currently drawn
 SiteSelector ..> SelectorOperations : enumerates allowed modes
@@ -222,7 +222,7 @@ sequenceDiagram
     participant Canvas as Matplotlib Figure Canvas
     participant Mgr as SiteSelectorManager
     participant Sel as SiteSelector
-    participant Model as BinSelectionModel
+    participant Model as BinSelection
 
     note over User,Canvas: Mouse press inside Axes
     User->>Canvas: button_press_event
@@ -254,7 +254,7 @@ sequenceDiagram
 | ------------------------------------------ | ---------------------------------------------- |
 | Which bins are selected by a drag          | `PolarBinGrid`                                 |
 | How angular wraparound works               | `PolarBinGrid.bin_in_theta_arc`                |
-| How selection state is stored              | `BinSelectionModel`                            |
+| How selection state is stored              | `BinSelection`                            |
 | How outlines are drawn                     | `PolarBinRenderer`                             |
 | Selection semantics (replace/add/subtract) | `SiteSelector`                                 |
 | Modifier-key behavior                      | `SiteSelectorManager._mods_from_mouse_event`   |
