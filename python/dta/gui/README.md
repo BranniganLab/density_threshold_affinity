@@ -75,17 +75,6 @@ class BinSelection:::controller
 %% =========================
 %% Model
 %% =========================
-namespace DTA.bin_logic.selection {
-class BinSelection {
-    -bins : Set~BinAddress~
-    +set(bins: Set~BinAddress~)
-    +add(bins: Set~BinAddress~)
-    +remove(bins: Set~BinAddress~)
-    +clear()
-    +snapshot() FrozenSet~BinAddress~
-    +get_bins() Set~BinAddress~
-}
-}
 
 namespace DTA.bin_logic.polar_grid {
 class PolarBinGrid {
@@ -128,6 +117,18 @@ class SelectionRenderer {
 %% =========================
 %% Controller
 %% =========================
+namespace DTA.bin_logic.selection {
+class BinSelection {
+    -bins : Set~BinAddress~
+    +set(bins: Set~BinAddress~)
+    +add(bins: Set~BinAddress~)
+    +remove(bins: Set~BinAddress~)
+    +clear()
+    +snapshot() FrozenSet~BinAddress~
+    +get_bins() Set~BinAddress~
+}
+}
+
 namespace DTA.gui.selector_state {
 class SelectorOperations {
     <<enumeration>>
