@@ -189,9 +189,9 @@ class SiteSelectorManager {
 %% Relationships
 %% =========================
 
-SiteSelector o-- PolarBinGrid : defines polar lattice logic
-SiteSelector o-- SelectionRenderer : draws things
-SiteSelector o-- BinSelection : holds & updates bin selection
+SiteSelector *-- PolarBinGrid : defines polar lattice logic
+SiteSelector *-- SelectionRenderer : draws things
+SiteSelector *-- BinSelection : holds & updates bin selection
 SiteSelector *-- SelectorDragState : keeps track of mouse drags and key-press modifiers
 SiteSelector *-- SelectorDrawState : keeps track of what is currently drawn
 SiteSelector ..> SelectorOperations : enumerates allowed modes
@@ -205,6 +205,26 @@ classDef model fill:#E8F5E9,stroke:#2E7D32,stroke-width:1px,color:#1B5E20;
 classDef view fill:#E3F2FD,stroke:#1565C0,stroke-width:1px,color:#0D47A1;
 classDef controller fill:#FFF3E0,stroke:#EF6C00,stroke-width:1px,color:#E65100;
 ```
+
+```mermaid
+classDiagram
+  direction TB
+  namespace Legend {
+    class Owner
+    class Dog
+    class SocialSecurityNumber
+    class Handedness {
+      RIGHTHANDED
+      LEFTHANDED
+      AMBIDEXTROUS
+      NO_HANDS
+    }}
+    Owner o-- Dog : Owner "has a" Dog - they could have multiple dogs
+    Owner *-- SocialSecurityNumber : Owner "has a" SSN - can only have one
+    Owner ..> Handedness : Owner "can be one of these enumerations"
+  
+```
+
 
 ## Sequence Diagram Depicting User Actions and Code Response
 ```mermaid
