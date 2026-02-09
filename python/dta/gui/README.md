@@ -171,7 +171,7 @@ class SiteSelector {
     -commit_preview_selection(preview_bins: Set~BinAddress~)
     -draw_hover(bins: Set~BinAddress~)
     -draw_committed()
-    -clear_artists(artists: List~Artist~
+    -clear_artists(artists: List~Artist~)
     -on_selection_committed(before: Set~BinAddress~, after: Set~BinAddress~)*
 }
 
