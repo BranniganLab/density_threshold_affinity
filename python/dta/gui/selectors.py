@@ -150,7 +150,6 @@ class SiteSelectorManager:
         if updated:
             self.fig.canvas.draw_idle()
 
-        selector.drag_tracker.mods = frozenset()
         self._drag_owner = None
 
     def _mods_from_mouse_event(self, event) -> set[str]:
