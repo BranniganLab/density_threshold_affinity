@@ -54,7 +54,6 @@ class SelectionRenderer:::view
 class SiteSelector:::controller
 class SiteSelectorManager:::controller
 class SelectorDragState:::controller
-class SelectorDrawState:::controller
 class SelectorOperations:::controller
 class BinSelection:::controller
 
@@ -67,7 +66,6 @@ class BinSelection:::controller
 <<Controller>> SiteSelector
 <<Controller>> SiteSelectorManager
 <<Controller>> SelectorDragState
-<<Controller>> SelectorDrawState
 <<Controller>> SelectorOperations
 <<Controller>> BinSelection
 
@@ -109,6 +107,8 @@ namespace DTA.gui.renderers {
 class SelectionRenderer {
     -ax: Axes
     +plot_kwargs : dict
+    +selected_artists: List~Artist~
+    +hover_artists: List~Artist~
     +draw_edges(edges: List~BinEdge~, plot_kwargs: dict | None) List~Artist~
     +shade_interior_region()*
 }
@@ -144,22 +144,14 @@ class SelectorDragState {
     +last_preview_bins: Set~BinAddress~ | None
     +mods: FrozenSet~string~
 }
-
-class SelectorDrawState {
-    <<dataclass>>
-    +selected_artists: List~Artist~
-    +hover_artists: List~Artist~
-}
 }
 
 namespace DTA.gui.selectors {
 class SiteSelector {
-    +ax: Axes
-    +model: BinSelection
+    +selection: BinSelection
     +grid: PolarBinGrid
     +renderer: SelectionRenderer
     +drag_tracker: SelectorDragState
-    +draw_tracker: SelectorDrawState
     +operation: SelectorOperations
     +on_activate()
     +on_deactivate()
@@ -177,12 +169,17 @@ class SiteSelector {
 }
 
 class SiteSelectorManager {
-    -fig: Figure
+    +fig: Figure
+    -selectors: dict
+    -active: dict
     -drag_owner: SiteSelector | None
-    +register(selector: SiteSelector, active: Bool)
+    -cids: List~int~
+    +register(selector: SiteSelector, active: bool)
     +set_active(selector: SiteSelector)
+    -on_press_event(event: MouseEvent)
+    -on_drag_event(event: MouseEvent)
+    -on_release_event(event: MouseEvent)
     -mods_from_mouse_event(event: MouseEvent) Set~str~
-    -dispatch(method: str) callable 
 }
 }
 %% =========================
@@ -190,10 +187,9 @@ class SiteSelectorManager {
 %% =========================
 
 SiteSelector *-- PolarBinGrid : defines polar lattice logic
-SiteSelector *-- SelectionRenderer : draws things
+SiteSelector *-- SelectionRenderer : draws things & keeps track of what's drawn
 SiteSelector *-- BinSelection : holds & updates bin selection
 SiteSelector *-- SelectorDragState : keeps track of mouse drags and key-press modifiers
-SiteSelector *-- SelectorDrawState : keeps track of what is currently drawn
 SiteSelector ..> SelectorOperations : enumerates allowed modes
 
 SiteSelectorManager o-- SiteSelector : coordinates behavior for one Axes
@@ -275,7 +271,7 @@ sequenceDiagram
 | ------------------------------------------ | ---------------------------------------------- |
 | Which bins are selected by a drag          | `PolarBinGrid`                                 |
 | How angular wraparound works               | `PolarBinGrid.bin_in_theta_arc`                |
-| How selection state is stored              | `BinSelection`                            |
+| How selection state is stored              | `BinSelection`                                 |
 | How outlines are drawn                     | `PolarBinRenderer`                             |
 | Selection semantics (replace/add/subtract) | `SiteSelector`                                 |
 | Modifier-key behavior                      | `SiteSelectorManager._mods_from_mouse_event`   |
