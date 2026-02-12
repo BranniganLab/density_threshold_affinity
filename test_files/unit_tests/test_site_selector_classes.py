@@ -126,19 +126,19 @@ def test_integration_freeze_outside_axes_but_commit_on_release_outside():
 
     # Start drag on A via manager
     press = FakeMouseEvent(inaxes=axA, xdata=0.2, ydata=0.2)
-    mgr._dispatch("on_press")(press)
+    mgr._on_press_event(press)
 
     # Move inside A to generate preview
-    mgr._dispatch("on_motion")(FakeMouseEvent(inaxes=axA, xdata=0.5, ydata=0.5))
+    mgr._on_motion_event(FakeMouseEvent(inaxes=axA, xdata=0.5, ydata=0.5))
     preview_before = selA.drag_tracker.last_preview_bins
     assert preview_before is not None
 
     # Move over B — selector A must freeze (no updates)
-    mgr._dispatch("on_motion")(FakeMouseEvent(inaxes=axB, xdata=1.5, ydata=0.9))
+    mgr._on_motion_event(FakeMouseEvent(inaxes=axB, xdata=1.5, ydata=0.9))
     assert selA.drag_tracker.last_preview_bins == preview_before
 
     # Release outside axes — manager routes to drag owner
-    mgr._dispatch("on_release")(FakeMouseEvent(inaxes=None, xdata=None, ydata=None, buttons=None))
+    mgr._on_release_event(FakeMouseEvent(inaxes=None, xdata=None, ydata=None, buttons=None))
     assert selA.drag_tracker.drag_start is None
 
     # Commit should equal last preview from A
