@@ -59,20 +59,3 @@ class SelectorDragState:
     last_theta: float | None = None
     last_preview_bins: set[tuple[int, int]] | None = None
     mods: frozenset[str] = field(default_factory=frozenset)
-
-
-@dataclass
-class SelectorDrawState:
-    """
-    State tracking Matplotlib artists created by the selector.
-
-    Attributes
-    ----------
-    selected_artists
-        Artists representing the committed selection.
-    hover_artists
-        Artists representing the transient hover preview.
-    """
-
-    selected_artists: list = field(default_factory=list)
-    hover_artists: list = field(default_factory=list)

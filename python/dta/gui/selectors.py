@@ -22,7 +22,7 @@ Jupyter widget backends) where modifier keys may not be reported consistently.
 from dta.bin_logic.polar_grid import PolarBinGrid
 from dta.bin_logic.utils import unwrap_theta
 from dta.bin_logic.selection import BinSelection
-from .state import SelectionOperation, SelectorDragState, SelectorDrawState
+from .state import SelectionOperation, SelectorDragState
 from .renderers import SelectionRenderer
 
 
@@ -256,7 +256,6 @@ class SiteSelector:
         self.grid = PolarBinGrid(theta_edges, r_edges)
         self.renderer = SelectionRenderer(ax, plot_kwargs)
         self.bins = BinSelection()
-        self.draw_tracker = SelectorDrawState()
         self.drag_tracker = SelectorDragState()
         self.operation = SelectionOperation.REPLACE
 
@@ -283,7 +282,7 @@ class SiteSelector:
         This method removes hover artists from the Axes and resets transient
         drag/preview state. It does not modify the committed selection.
         """
-        self._clear_artists(self.draw_tracker.hover_artists)
+        self._clear_artists(self.renderer.hover_artists)
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
         self.drag_tracker.last_preview_bins = None
@@ -415,7 +414,7 @@ class SiteSelector:
         self.on_selection_committed(before, after)
 
         self._draw_committed()
-        self._clear_artists(self.draw_tracker.hover_artists)
+        self._clear_artists(self.renderer.hover_artists)
 
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
@@ -542,7 +541,7 @@ class SiteSelector:
         - Removes any previous hover artists.
         - Draws new hover artists on this selector's Axes.
         """
-        self._clear_artists(self.draw_tracker.hover_artists)
+        self._clear_artists(self.renderer.hover_artists)
         edges = self.grid.exposed_edges(bins)
 
         hover_kwargs = {
@@ -551,7 +550,7 @@ class SiteSelector:
             "zorder": self.renderer.plot_kwargs["zorder"] + 1,
         }
 
-        self.draw_tracker.hover_artists.extend(
+        self.renderer.hover_artists.extend(
             self.renderer.draw_edges(edges, hover_kwargs)
         )
 
@@ -564,9 +563,9 @@ class SiteSelector:
         - Removes any previous committed selection artists.
         - Draws the boundary edges of the committed selection.
         """
-        self._clear_artists(self.draw_tracker.selected_artists)
+        self._clear_artists(self.renderer.selected_artists)
         edges = self.grid.exposed_edges(self.bins.get_bins())
-        self.draw_tracker.selected_artists.extend(
+        self.renderer.selected_artists.extend(
             self.renderer.draw_edges(edges, self.renderer.plot_kwargs)
         )
 
