@@ -266,6 +266,45 @@ sequenceDiagram
     Mgr->>Mgr: clear drag owner<br/> 
 
 ```
+```mermaid
+flowchart TD
+    A[Event received by SiteSelectorManager] --> B{Event type?}
+
+    B -->|button_press_event| C[SiteSelectorManager._on_press_event]
+    B -->|motion_notify_event| D[SiteSelectorManager._on_motion_event]
+    B -->|button_release_event| E[SiteSelectorManager._on_release_event]
+
+    %% PRESS FLOW
+    C --> C1{Is MouseEvent inside an Axes?}
+    C1 -->|No| C0
+    C1 -->|Yes| C2{Is there an active SiteSelector assigned to that Axes?}
+    C2 --> |No| C0
+    C2 --> |Yes| C3[self._drag_owner = active SiteSelector]
+    C3 --> C4[Check if shift/ctrl pressed; save to self._drag_owner.drag_tracker.mods ]
+    C4 --> C5[Call self._drag_owner's on_press method] --> C6{Was anything new drawn?}
+    C6 --> |No| C0
+    C6 --> |Yes| C7[self.fig.canvas.draw_idle]
+    C7 --> C0[Return]
+
+    %% MOTION FLOW
+    D --> D1{Is there a self._drag_owner?}
+    D1 -->|No| D0
+    D1 -->|Yes| D2[Call self._drag_owner's on_motion method]
+    D2 --> D6{Was anything new drawn?}
+    D6 --> |No| D0
+    D6 --> |Yes| D7[self.fig.canvas.draw_idle]
+    D7 --> D0[Return]
+
+    %% RELEASE FLOW
+    E --> E1{Is there a self._drag_owner?}
+    E1 --> |No|E0[Return]
+    E1 --> |Yes|E2[Call self._drag_owner's on_release method]
+    E2 --> E3{Was anything new drawn?}
+    E3 --> |No|E6
+    E3 --> |Yes|E4[self.fig.canvas.draw_idle]
+    E4 -->E6[Reset self._drag_owner]
+    E6 --> E0
+```
 ## Where to change what
 | If you want to change…                     | Edit this class                                |
 | ------------------------------------------ | ---------------------------------------------- |
