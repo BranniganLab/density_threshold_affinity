@@ -168,49 +168,91 @@ class SiteSelectorManager:
             mods.add("control")
         return mods
 
-    def _dispatch(self, method):
+    def _dispatch(self, selector_method_name: str):
         """
-        Create a Matplotlib callback that forwards events to selectors.
+        Build a Matplotlib event callback that routes events to the right SiteSelector.
+
+        Matplotlib's ``mpl_connect`` expects a *callable(event)``. We want to reuse the
+        same routing logic for multiple event types (press/motion/release), so this
+        method is a small factory that closes over the name of the selector method
+        we intend to invoke (e.g. ``"on_press"``).
 
         Parameters
         ----------
-        method : str
-            Name of the selector method to call. Expected values are
+        selector_method_name : str
+            Name of the SiteSelector method to invoke. Expected values are
             ``"on_press"``, ``"on_motion"``, or ``"on_release"``.
 
         Returns
         -------
         callable
-            A function suitable for registering as a Matplotlib event callback.
+            A function of signature ``callback(event)`` suitable for ``mpl_connect``.
 
-        Notes
-        -----
-        During an active drag gesture, motion and release events are always
-        routed to the drag owner (the selector that received the initial press),
-        even if the mouse leaves the owner's Axes.
+        Routing rules
+        -------------
+        1) If a drag is in progress, route motion/release to the drag owner (the
+           selector that received the initial press), even if the cursor leaves its Axes.
+        2) Otherwise, route the event to the *active* selector for ``event.inaxes``.
+        3) On press: latch modifier keys into the selector's ``drag_tracker.mods`` and
+           set the drag owner.
+        4) On release: clear drag owner and latched modifiers.
+        5) Schedule a single ``draw_idle()`` if we actually dispatched to a selector.
+           (Selectors should not call draw_idle themselves if you adopt this pattern.)
         """
-        def handler(event):
-            # Route motion/release to drag owner if a drag is in progress.
-            if self._drag_owner is not None and method in ("on_motion", "on_release"):
-                getattr(self._drag_owner, method)(event)
-                if method == "on_release":
-                    self._drag_owner.drag_tracker.mods = frozenset()
+
+        def callback(event):
+            """
+            Matplotlib callback for a single event type.
+
+            This callback selects a target SiteSelector, then invokes the appropriate
+            selector method (on_press/on_motion/on_release) via dynamic dispatch.
+            """
+            updated = False
+
+            # ------------------------------------------------------------------
+            # 1) Drag capture: once a drag starts, motion/release are forced to the
+            #    selector where the press began.
+            # ------------------------------------------------------------------
+            if self._drag_owner is not None and selector_method_name in ("on_motion", "on_release"):
+                selector = self._drag_owner
+                selector_handler = getattr(selector, selector_method_name)
+                selector_handler(event)
+                updated = True
+
+                if selector_method_name == "on_release":
+                    # Gesture ended; clear latched modifiers and drag ownership.
+                    selector.drag_tracker.mods = frozenset()
                     self._drag_owner = None
-                return
 
-            # Otherwise, route to the active selector for the event's Axes.
-            selector = self._active.get(getattr(event, "inaxes", None))
-            if not selector:
-                return
+            else:
+                # ------------------------------------------------------------------
+                # 2) No drag capture: route by which Axes the event occurred in.
+                #    event.inaxes is the Axes under the cursor (or None).
+                # ------------------------------------------------------------------
+                ax = getattr(event, "inaxes", None)
+                selector = self._active.get(ax)
+                if selector is None:
+                    return  # no active selector for this Axes; ignore event
 
-            if method == "on_press":
-                self._drag_owner = selector
-                mods = self._mods_from_mouse_event(event)
-                selector.drag_tracker.mods = frozenset(mods)
+                # ------------------------------------------------------------------
+                # 3) Press starts a gesture: establish drag owner and latch modifiers.
+                # ------------------------------------------------------------------
+                if selector_method_name == "on_press":
+                    self._drag_owner = selector
+                    mods = self._mods_from_mouse_event(event)
+                    selector.drag_tracker.mods = frozenset(mods)
 
-            getattr(selector, method)(event)
+                selector_handler = getattr(selector, selector_method_name)
+                selector_handler(event)
+                updated = True
 
-        return handler
+            # ------------------------------------------------------------------
+            # 4) If anything was updated, redraw
+            # ------------------------------------------------------------------
+            if updated:
+                self.fig.canvas.draw_idle()
+
+        return callback
 
 
 class SiteSelector:
@@ -333,7 +375,6 @@ class SiteSelector:
             preview_bins = self._apply_preview(bins)
             self.drag_tracker.last_preview_bins = preview_bins
             self._draw_hover(preview_bins)
-            self.renderer.ax.figure.canvas.draw_idle()
 
     def on_motion(self, event):
         """
@@ -373,7 +414,6 @@ class SiteSelector:
         self.drag_tracker.last_preview_bins = preview_bins
 
         self._draw_hover(preview_bins)
-        self.renderer.ax.figure.canvas.draw_idle()
 
     def on_release(self, _event):
         """
@@ -419,7 +459,6 @@ class SiteSelector:
         self.drag_tracker.last_theta = None
         self.drag_tracker.last_preview_bins = None
         self.drag_tracker.mods = frozenset()
-        self.renderer.ax.figure.canvas.draw_idle()
 
     # ------------------------------------------------------------------
     # Selection logic
