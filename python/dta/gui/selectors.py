@@ -73,7 +73,7 @@ class SiteSelectorManager:
         ----------
         selector : SiteSelector
             Selector instance to register.
-        active : bool, optional
+        active : bool
             If True, activates this selector for its Axes immediately. If False,
             the selector may still become active if no selector is currently
             active for that Axes.
@@ -83,7 +83,7 @@ class SiteSelectorManager:
         Multiple selectors may be registered for the same Axes, but only one
         selector per Axes is considered active at a time.
         """
-        ax = selector.ax
+        ax = selector.renderer.ax
         self._selectors.setdefault(ax, []).append(selector)
         if active or ax not in self._active:
             self.set_active(selector)
@@ -102,7 +102,7 @@ class SiteSelectorManager:
         - Deactivates the previously active selector for the same Axes (if any).
         - Activates the new selector by calling its :meth:`SiteSelector.on_activate`.
         """
-        ax = selector.ax
+        ax = selector.renderer.ax
         current = self._active.get(ax)
         if current is selector:
             return
@@ -252,10 +252,9 @@ class SiteSelector:
         plot_kwargs : dict, optional
             Default Matplotlib plotting keywords for drawing committed edges.
         """
-        self.ax = ax
         self.grid = PolarBinGrid(theta_edges, r_edges)
         self.renderer = SelectionRenderer(ax, plot_kwargs)
-        self.bins = BinSelection()
+        self.selection = BinSelection()
         self.drag_tracker = SelectorDragState()
         self.operation = SelectionOperation.REPLACE
 
@@ -310,7 +309,7 @@ class SiteSelector:
         - If data coordinates are available, computes an initial preview and
           draws a hover outline.
         """
-        if event.inaxes is not self.ax:
+        if event.inaxes is not self.renderer.ax:
             return
 
         # Store drag start as (r, theta) in that order, matching PolarBinGrid.
@@ -334,7 +333,7 @@ class SiteSelector:
             preview_bins = self._apply_preview(bins)
             self.drag_tracker.last_preview_bins = preview_bins
             self._draw_hover(preview_bins)
-            self.ax.figure.canvas.draw_idle()
+            self.renderer.ax.figure.canvas.draw_idle()
 
     def on_motion(self, event):
         """
@@ -358,7 +357,7 @@ class SiteSelector:
             return
 
         # Freeze hover updates unless the cursor is inside this Axes.
-        if event.inaxes is not self.ax:
+        if event.inaxes is not self.renderer.ax:
             return
         if event.xdata is None or event.ydata is None:
             return
@@ -374,7 +373,7 @@ class SiteSelector:
         self.drag_tracker.last_preview_bins = preview_bins
 
         self._draw_hover(preview_bins)
-        self.ax.figure.canvas.draw_idle()
+        self.renderer.ax.figure.canvas.draw_idle()
 
     def on_release(self, _event):
         """
@@ -397,7 +396,7 @@ class SiteSelector:
         if self.drag_tracker.drag_start is None:
             return
 
-        before = self.bins.snapshot()
+        before = self.selection.snapshot()
         preview_bins = self.drag_tracker.last_preview_bins
 
         if preview_bins is None:
@@ -410,7 +409,7 @@ class SiteSelector:
             # The preview bins represent the final desired selection.
             self._commit_preview_selection(preview_bins)
 
-        after = self.bins.snapshot()
+        after = self.selection.snapshot()
         self.on_selection_committed(before, after)
 
         self._draw_committed()
@@ -420,7 +419,7 @@ class SiteSelector:
         self.drag_tracker.last_theta = None
         self.drag_tracker.last_preview_bins = None
         self.drag_tracker.mods = frozenset()
-        self.ax.figure.canvas.draw_idle()
+        self.renderer.ax.figure.canvas.draw_idle()
 
     # ------------------------------------------------------------------
     # Selection logic
@@ -477,7 +476,7 @@ class SiteSelector:
         - ``ADD``: preview is ``current ∪ bins``.
         - ``SUBTRACT``: preview is ``current \\ bins``.
         """
-        current = self.bins.get_bins()
+        current = self.selection.get_bins()
 
         if self.operation is SelectionOperation.REPLACE:
             return bins
@@ -500,11 +499,11 @@ class SiteSelector:
             applied to the current selection.
         """
         if self.operation is SelectionOperation.REPLACE:
-            self.bins.set(bins)
+            self.selection.set(bins)
         elif self.operation is SelectionOperation.ADD:
-            self.bins.add(bins)
+            self.selection.add(bins)
         elif self.operation is SelectionOperation.SUBTRACT:
-            self.bins.remove(bins)
+            self.selection.remove(bins)
 
     def _commit_preview_selection(self, preview_bins):
         """
@@ -521,7 +520,7 @@ class SiteSelector:
         desired final selection (for example, after combining the current
         selection with a delta under ADD/SUBTRACT).
         """
-        self.bins.set(preview_bins)
+        self.selection.set(preview_bins)
 
     # ------------------------------------------------------------------
     # Rendering
@@ -564,7 +563,7 @@ class SiteSelector:
         - Draws the boundary edges of the committed selection.
         """
         self._clear_artists(self.renderer.selected_artists)
-        edges = self.grid.exposed_edges(self.bins.get_bins())
+        edges = self.grid.exposed_edges(self.selection.get_bins())
         self.renderer.selected_artists.extend(
             self.renderer.draw_edges(edges, self.renderer.plot_kwargs)
         )
