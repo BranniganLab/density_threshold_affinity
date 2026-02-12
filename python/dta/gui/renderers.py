@@ -47,8 +47,8 @@ class SelectionRenderer:
             self.plot_kwargs = default_plot_kwargs
         else:
             self.plot_kwargs = default_plot_kwargs | plot_kwargs
-        selected_artists = []
-        hover_artists = []
+        self.selected_artists = []
+        self.hover_artists = []
 
     def draw_edges(self, edges, plot_kwargs=None):
         """
