@@ -60,9 +60,9 @@ class SiteSelectorManager:
         self._drag_owner = None
 
         self._cids = [
-            fig.canvas.mpl_connect("button_press_event", self._dispatch("on_press")),
-            fig.canvas.mpl_connect("motion_notify_event", self._dispatch("on_motion")),
-            fig.canvas.mpl_connect("button_release_event", self._dispatch("on_release")),
+            fig.canvas.mpl_connect("button_press_event", self._on_press_event),
+            fig.canvas.mpl_connect("motion_notify_event", self._on_motion_event),
+            fig.canvas.mpl_connect("button_release_event", self._on_release_event),
         ]
 
     def register(self, selector, *, active=False):
@@ -110,6 +110,92 @@ class SiteSelectorManager:
             current.on_deactivate()
         self._active[ax] = selector
         selector.on_activate()
+
+    # ------------------------------------------------------------------
+    # Matplotlib callbacks (one per event type)
+    # ------------------------------------------------------------------
+
+    def _on_press_event(self, event):
+        """Matplotlib callback: mouse press."""
+        if self._route_event("on_press", event):
+            self.fig.canvas.draw_idle()
+
+    def _on_motion_event(self, event):
+        """Matplotlib callback: mouse motion."""
+        if self._route_event("on_motion", event):
+            self.fig.canvas.draw_idle()
+
+    def _on_release_event(self, event):
+        """Matplotlib callback: mouse release."""
+        if self._route_event("on_release", event):
+            self.fig.canvas.draw_idle()
+
+    # ------------------------------------------------------------------
+    # Routing logic
+    # ------------------------------------------------------------------
+
+    def _route_event(self, selector_method_name: str, event) -> bool:
+        """
+        Route a Matplotlib mouse event to the correct active SiteSelector.
+
+        Returns
+        -------
+        bool
+            True if a selector was invoked and reported that it changed something
+            visible (artists/selection) and a redraw should be scheduled.
+
+        Routing rules
+        -------------
+        1) If a drag is in progress, motion/release events are always routed to
+           the drag owner (selector that received the initial press), even if
+           the mouse leaves the Axes.
+        2) Otherwise route to the active selector for event.inaxes.
+        3) On press, latch modifier keys for the duration of the gesture and
+           establish drag ownership.
+        4) On release, clear modifier latch and drag ownership.
+        """
+        # --------------------------------------------------------------
+        # 1) Drag capture: keep routing motion/release to drag owner.
+        # --------------------------------------------------------------
+        if self._drag_owner is not None and selector_method_name in ("on_motion", "on_release"):
+            selector = self._drag_owner
+            changed = self._invoke_selector(selector, selector_method_name, event)
+
+            if selector_method_name == "on_release":
+                selector.drag_tracker.mods = frozenset()
+                self._drag_owner = None
+
+            return changed
+
+        # --------------------------------------------------------------
+        # 2) No drag owner: select by Axes under cursor.
+        # --------------------------------------------------------------
+        ax = getattr(event, "inaxes", None)
+        selector = self._active.get(ax)
+        if selector is None:
+            return False
+
+        # --------------------------------------------------------------
+        # 3) Press initializes gesture ownership and latches modifiers.
+        # --------------------------------------------------------------
+        if selector_method_name == "on_press":
+            self._drag_owner = selector
+            selector.drag_tracker.mods = frozenset(self._mods_from_mouse_event(event))
+
+        return self._invoke_selector(selector, selector_method_name, event)
+
+    def _invoke_selector(self, selector, selector_method_name: str, event) -> bool:
+        """
+        Call a selector's event handler (on_press/on_motion/on_release).
+
+        Returns
+        -------
+        bool
+            True if selector reports that it changed something visible.
+        """
+        selector_method = getattr(selector, selector_method_name)
+        result = selector_method(event)
+        return bool(result)
 
     def _mods_from_mouse_event(self, event) -> set[str]:
         """
@@ -167,92 +253,6 @@ class SiteSelectorManager:
         if "control" in k or "ctrl" in k or "meta" in k:
             mods.add("control")
         return mods
-
-    def _dispatch(self, selector_method_name: str):
-        """
-        Build a Matplotlib event callback that routes events to the right SiteSelector.
-
-        Matplotlib's ``mpl_connect`` expects a *callable(event)``. We want to reuse the
-        same routing logic for multiple event types (press/motion/release), so this
-        method is a small factory that closes over the name of the selector method
-        we intend to invoke (e.g. ``"on_press"``).
-
-        Parameters
-        ----------
-        selector_method_name : str
-            Name of the SiteSelector method to invoke. Expected values are
-            ``"on_press"``, ``"on_motion"``, or ``"on_release"``.
-
-        Returns
-        -------
-        callable
-            A function of signature ``callback(event)`` suitable for ``mpl_connect``.
-
-        Routing rules
-        -------------
-        1) If a drag is in progress, route motion/release to the drag owner (the
-           selector that received the initial press), even if the cursor leaves its Axes.
-        2) Otherwise, route the event to the *active* selector for ``event.inaxes``.
-        3) On press: latch modifier keys into the selector's ``drag_tracker.mods`` and
-           set the drag owner.
-        4) On release: clear drag owner and latched modifiers.
-        5) Schedule a single ``draw_idle()`` if we actually dispatched to a selector.
-           (Selectors should not call draw_idle themselves if you adopt this pattern.)
-        """
-
-        def callback(event):
-            """
-            Matplotlib callback for a single event type.
-
-            This callback selects a target SiteSelector, then invokes the appropriate
-            selector method (on_press/on_motion/on_release) via dynamic dispatch.
-            """
-            updated = False
-
-            # ------------------------------------------------------------------
-            # 1) Drag capture: once a drag starts, motion/release are forced to the
-            #    selector where the press began.
-            # ------------------------------------------------------------------
-            if self._drag_owner is not None and selector_method_name in ("on_motion", "on_release"):
-                selector = self._drag_owner
-                selector_handler = getattr(selector, selector_method_name)
-                selector_handler(event)
-                updated = True
-
-                if selector_method_name == "on_release":
-                    # Gesture ended; clear latched modifiers and drag ownership.
-                    selector.drag_tracker.mods = frozenset()
-                    self._drag_owner = None
-
-            else:
-                # ------------------------------------------------------------------
-                # 2) No drag capture: route by which Axes the event occurred in.
-                #    event.inaxes is the Axes under the cursor (or None).
-                # ------------------------------------------------------------------
-                ax = getattr(event, "inaxes", None)
-                selector = self._active.get(ax)
-                if selector is None:
-                    return  # no active selector for this Axes; ignore event
-
-                # ------------------------------------------------------------------
-                # 3) Press starts a gesture: establish drag owner and latch modifiers.
-                # ------------------------------------------------------------------
-                if selector_method_name == "on_press":
-                    self._drag_owner = selector
-                    mods = self._mods_from_mouse_event(event)
-                    selector.drag_tracker.mods = frozenset(mods)
-
-                selector_handler = getattr(selector, selector_method_name)
-                selector_handler(event)
-                updated = True
-
-            # ------------------------------------------------------------------
-            # 4) If anything was updated, redraw
-            # ------------------------------------------------------------------
-            if updated:
-                self.fig.canvas.draw_idle()
-
-        return callback
 
 
 class SiteSelector:
@@ -333,7 +333,7 @@ class SiteSelector:
     # Event handlers
     # ------------------------------------------------------------------
 
-    def on_press(self, event):
+    def on_press(self, event) -> bool:
         """
         Begin a selection gesture.
 
@@ -352,7 +352,7 @@ class SiteSelector:
           draws a hover outline.
         """
         if event.inaxes is not self.renderer.ax:
-            return
+            return False
 
         # Store drag start as (r, theta) in that order, matching PolarBinGrid.
         self.drag_tracker.drag_start = (event.ydata, event.xdata)
@@ -368,15 +368,18 @@ class SiteSelector:
         else:
             self.operation = SelectionOperation.REPLACE
 
-        # Establish an initial preview if we have valid data coordinates.
-        if event.xdata is not None and event.ydata is not None:
-            start = (event.ydata, event.xdata)
-            bins = self._bins_from_drag(start, start)
-            preview_bins = self._apply_preview(bins)
-            self.drag_tracker.last_preview_bins = preview_bins
-            self._draw_hover(preview_bins)
+        if event.xdata is None or event.ydata is None:
+            return False
 
-    def on_motion(self, event):
+        # Establish an initial preview if we have valid data coordinates.
+        start = (event.ydata, event.xdata)
+        bins = self._bins_from_drag(start, start)
+        preview_bins = self._apply_preview(bins)
+        self.drag_tracker.last_preview_bins = preview_bins
+        self._draw_hover(preview_bins)
+        return True
+
+    def on_motion(self, event) -> bool:
         """
         Update hover preview during a drag gesture.
 
@@ -395,13 +398,13 @@ class SiteSelector:
           location, then redraws the hover outline.
         """
         if self.drag_tracker.drag_start is None:
-            return
+            return False
 
         # Freeze hover updates unless the cursor is inside this Axes.
         if event.inaxes is not self.renderer.ax:
-            return
+            return False
         if event.xdata is None or event.ydata is None:
-            return
+            return False
 
         theta = unwrap_theta(self.drag_tracker.last_theta, event.xdata)
         self.drag_tracker.last_theta = theta
@@ -414,8 +417,9 @@ class SiteSelector:
         self.drag_tracker.last_preview_bins = preview_bins
 
         self._draw_hover(preview_bins)
+        return True
 
-    def on_release(self, _event):
+    def on_release(self, _event) -> bool:
         """
         Finalize a selection gesture and commit the result.
 
@@ -434,7 +438,7 @@ class SiteSelector:
         - Resets gesture state (including latched modifiers).
         """
         if self.drag_tracker.drag_start is None:
-            return
+            return False
 
         before = self.selection.snapshot()
         preview_bins = self.drag_tracker.last_preview_bins
@@ -459,6 +463,7 @@ class SiteSelector:
         self.drag_tracker.last_theta = None
         self.drag_tracker.last_preview_bins = None
         self.drag_tracker.mods = frozenset()
+        return True
 
     # ------------------------------------------------------------------
     # Selection logic
