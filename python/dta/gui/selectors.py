@@ -128,7 +128,7 @@ class SiteSelectorManager:
         # Latch modifiers for the duration of the gesture.
         selector.drag_tracker.mods = frozenset(self._mods_from_mouse_event(event))
 
-        updated = self._invoke_selector(selector, "on_press", event)
+        updated = bool(selector.on_press(event))
         if updated:
             self.fig.canvas.draw_idle()
 
@@ -136,7 +136,7 @@ class SiteSelectorManager:
         """Matplotlib callback: mouse motion."""
         if self._drag_owner is None:
             return
-        updated = self._invoke_selector(self._drag_owner, "on_motion", event)
+        updated = bool(self._drag_owner.on_motion(event))
         if updated:
             self.fig.canvas.draw_idle()
 
@@ -146,33 +146,16 @@ class SiteSelectorManager:
             return False
 
         selector = self._drag_owner
-        updated = self._invoke_selector(selector, "on_release", event)
+        updated = bool(selector.on_release(event))
         if updated:
             self.fig.canvas.draw_idle()
 
         selector.drag_tracker.mods = frozenset()
         self._drag_owner = None
 
-    # ------------------------------------------------------------------
-    # Routing logic
-    # ------------------------------------------------------------------
-
-    def _invoke_selector(self, selector, selector_method_name: str, event) -> bool:
-        """
-        Call a selector's event handler (on_press/on_motion/on_release).
-
-        Returns
-        -------
-        bool
-            True if selector reports that it changed something visible.
-        """
-        selector_method = getattr(selector, selector_method_name)
-        result = selector_method(event)
-        return bool(result)
-
     def _mods_from_mouse_event(self, event) -> set[str]:
         """
-        Extract modifier keys from a Matplotlib mouse event.
+        Query the MouseEvent to see if any keyboard buttons have been pressed.
 
         Parameters
         ----------
