@@ -117,72 +117,45 @@ class SiteSelectorManager:
 
     def _on_press_event(self, event):
         """Matplotlib callback: mouse press."""
-        if self._route_event("on_press", event):
+        ax = getattr(event, "inaxes", None)
+        selector = self._active.get(ax)
+        if selector is None:
+            return
+
+        # The selector that receives the press becomes the drag owner until release.
+        self._drag_owner = selector
+
+        # Latch modifiers for the duration of the gesture.
+        selector.drag_tracker.mods = frozenset(self._mods_from_mouse_event(event))
+
+        updated = self._invoke_selector(selector, "on_press", event)
+        if updated:
             self.fig.canvas.draw_idle()
 
     def _on_motion_event(self, event):
         """Matplotlib callback: mouse motion."""
-        if self._route_event("on_motion", event):
+        if self._drag_owner is None:
+            return
+        updated = self._invoke_selector(self._drag_owner, "on_motion", event)
+        if updated:
             self.fig.canvas.draw_idle()
 
     def _on_release_event(self, event):
         """Matplotlib callback: mouse release."""
-        if self._route_event("on_release", event):
+        if self._drag_owner is None:
+            return False
+
+        selector = self._drag_owner
+        updated = self._invoke_selector(selector, "on_release", event)
+        if updated:
             self.fig.canvas.draw_idle()
+
+        selector.drag_tracker.mods = frozenset()
+        self._drag_owner = None
 
     # ------------------------------------------------------------------
     # Routing logic
     # ------------------------------------------------------------------
-
-    def _route_event(self, selector_method_name: str, event) -> bool:
-        """
-        Route a Matplotlib mouse event to the correct active SiteSelector.
-
-        Returns
-        -------
-        bool
-            True if a selector was invoked and reported that it changed something
-            visible (artists/selection) and a redraw should be scheduled.
-
-        Routing rules
-        -------------
-        1) If a drag is in progress, motion/release events are always routed to
-           the drag owner (selector that received the initial press), even if
-           the mouse leaves the Axes.
-        2) Otherwise route to the active selector for event.inaxes.
-        3) On press, latch modifier keys for the duration of the gesture and
-           establish drag ownership.
-        4) On release, clear modifier latch and drag ownership.
-        """
-        # --------------------------------------------------------------
-        # 1) Drag capture: keep routing motion/release to drag owner.
-        # --------------------------------------------------------------
-        if self._drag_owner is not None and selector_method_name in ("on_motion", "on_release"):
-            selector = self._drag_owner
-            changed = self._invoke_selector(selector, selector_method_name, event)
-
-            if selector_method_name == "on_release":
-                selector.drag_tracker.mods = frozenset()
-                self._drag_owner = None
-
-            return changed
-
-        # --------------------------------------------------------------
-        # 2) No drag owner: select by Axes under cursor.
-        # --------------------------------------------------------------
-        ax = getattr(event, "inaxes", None)
-        selector = self._active.get(ax)
-        if selector is None:
-            return False
-
-        # --------------------------------------------------------------
-        # 3) Press initializes gesture ownership and latches modifiers.
-        # --------------------------------------------------------------
-        if selector_method_name == "on_press":
-            self._drag_owner = selector
-            selector.drag_tracker.mods = frozenset(self._mods_from_mouse_event(event))
-
-        return self._invoke_selector(selector, selector_method_name, event)
 
     def _invoke_selector(self, selector, selector_method_name: str, event) -> bool:
         """
