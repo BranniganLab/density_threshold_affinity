@@ -61,7 +61,7 @@ def test_bins_in_region_nonempty_and_indices_valid():
     r_edges = np.linspace(0, 1, 5)           # 4 bins
     grid = PolarBinGrid(theta_edges, r_edges)
 
-    bins = set(grid.bins_in_region(0.1, 0.1, 0.6, 0.6))
+    bins = grid.bins_in_region((0.1, 0.1), (0.6, 0.6))
 
     assert len(bins) > 0
     assert all(0 <= ri < grid.n_r and 0 <= ti < grid.n_t for (ri, ti) in bins)
@@ -73,7 +73,7 @@ def test_bins_in_region_wraparound_includes_zero_angle_bin():
     grid = PolarBinGrid(theta_edges, r_edges)
 
     # Cross 2pi boundary: near 2pi down to small angle
-    bins = set(grid.bins_in_region(0.0, 1.9 * np.pi, 1.0, 0.1 * np.pi))
+    bins = grid.bins_in_region((0.0, 1.9 * np.pi), (1.0, 0.1 * np.pi))
     assert len(bins) > 0
 
     # Must include a bin near theta ~ 0
