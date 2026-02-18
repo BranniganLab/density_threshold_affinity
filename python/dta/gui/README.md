@@ -155,7 +155,6 @@ class SiteSelector {
     +on_press(event)
     +on_motion(event)
     +on_release(event)
-    -bins_from_drag(start: tuple, end: tuple) Set~BinAddress~ | None
     -calculate_preview_bins(bins: Set~BinAddress~) Set~BinAddress~
     -draw_preview(bins: Set~BinAddress~)
     -draw_selection()
