@@ -396,11 +396,11 @@ class SiteSelector:
         if self.drag_tracker.drag_start is None:
             return False
 
-        before = self.selection.snapshot()
+        before = frozenset(self.selection.get_bins())
 
         self.selection.update(self.drag_tracker.current_preview_bins)
 
-        after = self.selection.snapshot()
+        after = frozenset(self.selection.get_bins())
         self.on_selection_committed(before, after)
 
         self._draw_selection()

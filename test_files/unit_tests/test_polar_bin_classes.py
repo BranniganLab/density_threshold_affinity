@@ -122,7 +122,7 @@ def test_selection_ops():
     m = BinSelection()
 
     m.update({(0, 0), (1, 2)})
-    assert m.snapshot() == frozenset({(0, 0), (1, 2)})
+    assert m.get_bins() == set({(0, 0), (1, 2)})
 
     m.clear()
     assert m.get_bins() == set()

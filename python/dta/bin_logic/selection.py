@@ -30,17 +30,6 @@ class BinSelection:
         """Initialize an empty selection."""
         self._bins = set()
 
-    def snapshot(self):
-        """
-        Capture the current selection state.
-
-        Returns
-        -------
-        frozenset
-            Immutable snapshot of selected bins.
-        """
-        return frozenset(self._bins)
-
     def update(self, bins):
         """
         Replace the current selection.
