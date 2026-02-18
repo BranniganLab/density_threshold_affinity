@@ -330,7 +330,7 @@ class SiteSelector:
             start=self.drag_tracker.drag_start,
             end=self.drag_tracker.drag_start
         )
-        updated_preview_bins = self._calculate_preview(clicked_bin)
+        updated_preview_bins = self._calculate_preview_bins(clicked_bin)
         self.drag_tracker.last_preview_bins = updated_preview_bins
         self._draw_hover(updated_preview_bins)
         return True
@@ -369,10 +369,10 @@ class SiteSelector:
             self.drag_tracker.drag_start, (event.ydata, theta)
         )
 
-        preview_bins = self._calculate_preview(bins)
-        self.drag_tracker.last_preview_bins = preview_bins
+        updated_preview_bins = self._calculate_preview_bins(bins)
+        self.drag_tracker.last_preview_bins = updated_preview_bins
 
-        self._draw_hover(preview_bins)
+        self._draw_hover(updated_preview_bins)
         return True
 
     def on_release(self, _event) -> bool:
@@ -397,9 +397,8 @@ class SiteSelector:
             return False
 
         before = self.selection.snapshot()
-        preview_bins = self.drag_tracker.last_preview_bins
 
-        self._commit_preview_selection(preview_bins)
+        self.selection.set(self.drag_tracker.last_preview_bins)
 
         after = self.selection.snapshot()
         self.on_selection_committed(before, after)
@@ -446,7 +445,7 @@ class SiteSelector:
 
         return set(self.grid.bins_in_region(r0, t0, r1, t1))
 
-    def _calculate_preview(self, bins):
+    def _calculate_preview_bins(self, bins):
         """
         Compute the preview selection for the current gesture without mutation.
 
@@ -478,41 +477,6 @@ class SiteSelector:
             return current - bins
 
         return current
-
-    def _apply_commit(self, bins):
-        """
-        Apply the latched selection operation to the committed selection.
-
-        Parameters
-        ----------
-        bins : set[tuple[int, int]]
-            The bin set implied by the gesture region. For ``REPLACE`` this is
-            the final selection; for ``ADD``/``SUBTRACT`` this is the delta
-            applied to the current selection.
-        """
-        if self.operation is SelectionOperation.REPLACE:
-            self.selection.set(bins)
-        elif self.operation is SelectionOperation.ADD:
-            self.selection.add(bins)
-        elif self.operation is SelectionOperation.SUBTRACT:
-            self.selection.remove(bins)
-
-    def _commit_preview_selection(self, preview_bins):
-        """
-        Commit a precomputed final selection directly.
-
-        Parameters
-        ----------
-        preview_bins : set[tuple[int, int]]
-            Final selection bins to store in the selection.
-
-        Notes
-        -----
-        This method is used when the hover preview already represents the full
-        desired final selection (for example, after combining the current
-        selection with a delta under ADD/SUBTRACT).
-        """
-        self.selection.set(preview_bins)
 
     # ------------------------------------------------------------------
     # Rendering
