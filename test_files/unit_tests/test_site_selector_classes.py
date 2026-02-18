@@ -69,7 +69,7 @@ def test_release_commits_last_preview_exactly():
     # release outside data coords (xdata/ydata None is fine)
     sel.on_release(FakeMouseEvent(inaxes=None, xdata=None, ydata=None, buttons=None))
 
-    assert sel.selection.snapshot() == frozenset(preview)
+    assert sel.selection.get_bins() == preview
 
 
 def test_add_and_subtract_semantics_across_multiple_drags():
@@ -142,4 +142,4 @@ def test_integration_freeze_outside_axes_but_commit_on_release_outside():
     assert selA.drag_tracker.drag_start is None
 
     # Commit should equal last preview from A
-    assert selA.selection.snapshot() == frozenset(preview_before)
+    assert selA.selection.get_bins() == preview_before

@@ -31,7 +31,7 @@ def test_renderer_draw_edges_matches_manual(fig_test, fig_ref):
 
 
 @check_figures_equal(extensions=("png",))
-def test_selector_draw_committed_matches_expected(fig_test, fig_ref):
+def test_selector_draw_selection_matches_expected(fig_test, fig_ref):
     theta_edges = np.linspace(0, 2 * np.pi, 9)
     r_edges = np.linspace(0, 1, 5)
     bins = {(0, 0), (0, 1), (1, 1)}
@@ -40,7 +40,7 @@ def test_selector_draw_committed_matches_expected(fig_test, fig_ref):
     ax_t = fig_test.add_subplot(111, projection="polar")
     sel = SiteSelector(ax_t, theta_edges, r_edges, plot_kwargs={"color": "r", "lw": 2, "zorder": 20})
     sel.selection.update(bins)
-    sel._draw_committed()
+    sel._draw_selection()
 
     # reference figure: compute edges and draw manually
     ax_r = fig_ref.add_subplot(111, projection="polar")
