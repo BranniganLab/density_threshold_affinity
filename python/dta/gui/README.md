@@ -196,6 +196,7 @@ SiteSelectorManager o-- SiteSelector : coordinates behavior for one Axes
 
 NamedTuple <|-- BinAddress
 NamedTuple <|-- Coordinate
+NamedTuple <|-- BinEdge
 
 %% =========================
 %% Styling (MVC color coding)
