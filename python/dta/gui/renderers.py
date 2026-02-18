@@ -72,7 +72,9 @@ class SelectionRenderer:
             kwargs.update(plot_kwargs)
 
         for edge in edges:
-            artists.append(self.ax.plot(edge.theta_endpoints, edge.r_endpoints, **kwargs)[0])
+            theta_endpoints = (edge.endpoint1[1], edge.endpoint2[1])
+            r_endpoints = (edge.endpoint1[0], edge.endpoint2[0])
+            artists.append(self.ax.plot(theta_endpoints, r_endpoints, **kwargs)[0])
         return artists
 
     def shade_interior_region(self):

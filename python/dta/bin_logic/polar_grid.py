@@ -14,25 +14,8 @@ The grid:
 
 It is pure domain code and is shared by GUI and analysis layers.
 """
-from dataclasses import dataclass
 import numpy as np
-
-
-@dataclass(frozen=True)
-class BinEdge:
-    """
-    Geometric description of a single visible bin edge in polar coordinates.
-
-    Attributes
-    ----------
-    r_endpoints : tuple[float, float]
-        Radial coordinates of the edge endpoints.
-    theta_endpoints : tuple[float, float]
-        Angular coordinates (radians) of the edge endpoints.
-    """
-
-    r_endpoints: tuple
-    theta_endpoints: tuple
+from dta.bin_logic.utils import Coordinate, BinAddress, BinEdge
 
 
 class PolarBinGrid:
@@ -63,28 +46,26 @@ class PolarBinGrid:
         self.n_t = len(theta_edges) - 1
         self.n_r = len(r_edges) - 1
 
-    def map_coord_to_bin_idx(self, r, theta):
+    def map_coord_to_bin_idx(self, coord):
         """
         Determine which bin contains a given polar coordinate.
 
         Parameters
         ----------
-        r : float
-            Radial coordinate.
-        theta : float
-            Angular coordinate in radians.
+        coord : Coordinate
+            The r, theta coordinate pair.
 
         Returns
         -------
-        tuple[int, int] or None
+        BinAddress or None
             The (radial index, angular index) of the bin,
             or None if the point lies outside the grid.
         """
-        ti = np.searchsorted(self.theta_edges, theta % (2 * np.pi), side="right") - 1
-        ri = np.searchsorted(self.r_edges, r, side="right") - 1
+        ti = np.searchsorted(self.theta_edges, coord[1] % (2 * np.pi), side="right") - 1
+        ri = np.searchsorted(self.r_edges, coord[0], side="right") - 1
 
         if 0 <= ri < self.n_r and 0 <= ti < self.n_t:
-            return ri, ti
+            return BinAddress(ri, ti)
         return None
 
     def bins_in_region(self, start, end):
@@ -96,15 +77,15 @@ class PolarBinGrid:
 
         Parameters
         ----------
-        start : tuple
+        start : Coordinate
             Coordinate of first corner of the region.
-        end : tuple
+        end : Coordinate
             Coordinate of opposite corner of the region.
 
         Returns
         -------
-        list[tuple[int, int]]
-            All bin indices intersecting the region.
+        list[BinAddress]
+            All bins intersecting the region.
         """
         r_min, r_max = sorted((start[0], end[0]))
         bins = []
@@ -117,7 +98,7 @@ class PolarBinGrid:
                     r_low = self.r_edges[ri]
                     r_high = self.r_edges[ri + 1]
                     if r_high >= r_min and r_low <= r_max:
-                        bins.append((ri, ti))
+                        bins.append(BinAddress(ri, ti))
         return set(bins)
 
     def exposed_edges(self, bins):
@@ -128,7 +109,7 @@ class PolarBinGrid:
 
         Parameters
         ----------
-        bins : iterable of (int, int)
+        bins : iterable of BinAddress(es)
             Bin indices.
 
         Returns
@@ -140,16 +121,16 @@ class PolarBinGrid:
             return []
 
         mask = np.zeros((self.n_r, self.n_t), dtype=bool)
-        for ri, ti in bins:
-            mask[ri, ti] = True
+        for bin_address in bins:
+            mask[bin_address] = True
 
         edges = []
-        for ri, ti in zip(*np.where(mask)):
-            edges.extend(self._determine_exposed_edges(mask, ri, ti))
+        for bin_address in zip(*np.where(mask)):
+            edges.extend(self._determine_exposed_edges(mask, bin_address))
 
         return edges
 
-    def _determine_exposed_edges(self, mask, ri, ti):
+    def _determine_exposed_edges(self, mask, bin_address):
         """
         Determine which edges of a bin are exposed.
 
@@ -157,7 +138,7 @@ class PolarBinGrid:
         ----------
         mask : ndarray
             Boolean array indicating selected bins.
-        ri, ti : int
+        bin_address : BinAddress
             Bin indices.
 
         Returns
@@ -167,26 +148,27 @@ class PolarBinGrid:
         """
         edges = []
         n_r, n_t = mask.shape
+        ri, ti = bin_address
 
         if ri == n_r - 1 or not mask[ri + 1, ti]:
-            edges.append(self._edge_geometry(ri, ti, "outer"))
+            edges.append(self._edge_geometry(bin_address, "outer"))
         if ri == 0 or not mask[ri - 1, ti]:
-            edges.append(self._edge_geometry(ri, ti, "inner"))
+            edges.append(self._edge_geometry(bin_address, "inner"))
         if not mask[ri, (ti - 1) % n_t]:
-            edges.append(self._edge_geometry(ri, ti, "left"))
+            edges.append(self._edge_geometry(bin_address, "left"))
         if not mask[ri, (ti + 1) % n_t]:
-            edges.append(self._edge_geometry(ri, ti, "right"))
+            edges.append(self._edge_geometry(bin_address, "right"))
 
         return edges
 
-    def _edge_geometry(self, ri, ti, side):
+    def _edge_geometry(self, bin_address, side):
         """
         Construct the geometry for a specific edge of a bin.
 
         Parameters
         ----------
-        ri, ti : int
-            Bin indices.
+        bin_address : BinAddress
+            The r and theta indices of this bin in the lattice.
         side : {'outer', 'inner', 'left', 'right'}
 
         Returns
@@ -194,18 +176,19 @@ class PolarBinGrid:
         BinEdge
             Edge geometry.
         """
-        r0, r1 = self.r_edges[ri], self.r_edges[ri + 1]
-        t0 = self.theta_edges[ti]
-        t1 = self.theta_edges[(ti + 1) % self.n_t]
+        r0 = self.r_edges[bin_address[0]]
+        r1 = self.r_edges[bin_address[0] + 1]
+        t0 = self.theta_edges[bin_address[1]]
+        t1 = self.theta_edges[(bin_address[1] + 1) % self.n_t]
 
         if side == "outer":
-            return BinEdge((r1, r1), (t0, t1))
+            return BinEdge(Coordinate(r1, t0), Coordinate(r1, t1))
         if side == "inner":
-            return BinEdge((r0, r0), (t0, t1))
+            return BinEdge(Coordinate(r0, t0), Coordinate(r0, t1))
         if side == "left":
-            return BinEdge((r0, r1), (t0, t0))
+            return BinEdge(Coordinate(r0, t0), Coordinate(r1, t0))
         if side == "right":
-            return BinEdge((r0, r1), (t1, t1))
+            return BinEdge(Coordinate(r0, t1), Coordinate(r1, t1))
 
         raise ValueError(f"Unknown edge type: {side}")
 

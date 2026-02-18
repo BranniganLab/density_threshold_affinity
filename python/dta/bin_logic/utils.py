@@ -9,7 +9,38 @@ quantities (e.g., wrapping, unwrapping, and normalization) in radians.
 Functions here are framework-agnostic and shared by core geometry,
 GUI interaction logic, and analysis code.
 """
+from dataclasses import dataclass
+from typing import NamedTuple
 import numpy as np
+
+
+class BinAddress(NamedTuple):
+    """The r and theta indices that correspond to one bin in a lattice."""
+
+    r_index: int
+    theta_index: int
+
+
+class Coordinate(NamedTuple):
+    """The r and theta coordinate pair."""
+
+    r_coord: float
+    theta_coord: float
+
+
+@dataclass(frozen=True)
+class BinEdge:
+    """
+    Geometric description of a single visible bin edge in polar coordinates.
+
+    Attributes
+    ----------
+    endpoint1, endpoint2 : Coordinate
+        The coordinates of both edge endpoints.
+    """
+
+    endpoint1: Coordinate
+    endpoint2: Coordinate
 
 
 def unwrap_theta(previous_theta, current_theta):
