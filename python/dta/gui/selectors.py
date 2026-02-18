@@ -312,12 +312,12 @@ class SiteSelector:
         if event.xdata is None or event.ydata is None:
             return False
 
-        # Store drag start as (r, theta)
+        # Store drag start as (r, theta).
         self.drag_tracker.drag_start = (event.ydata, event.xdata)
         self.drag_tracker.last_theta = event.xdata
 
+        # Latch key-press modifiers.
         mods = self.drag_tracker.mods
-
         if "shift" in mods:
             self.operation = SelectionOperation.ADD
         elif "control" in mods:
@@ -325,8 +325,11 @@ class SiteSelector:
         else:
             self.operation = SelectionOperation.REPLACE
 
-        # Establish an initial preview if we have valid data coordinates.
-        clicked_bin = self._bins_from_drag(self.drag_tracker.drag_start, self.drag_tracker.drag_start)
+        # Establish an initial preview.
+        clicked_bin = self._bins_from_drag(
+            start=self.drag_tracker.drag_start,
+            end=self.drag_tracker.drag_start
+        )
         updated_preview_bins = self._calculate_preview(clicked_bin)
         self.drag_tracker.last_preview_bins = updated_preview_bins
         self._draw_hover(updated_preview_bins)
@@ -396,15 +399,7 @@ class SiteSelector:
         before = self.selection.snapshot()
         preview_bins = self.drag_tracker.last_preview_bins
 
-        if preview_bins is None:
-            # No preview was computed; treat as a click at the press location.
-            r0, t0 = self.drag_tracker.drag_start
-            idx = self.grid.map_coord_to_bin_idx(r0, t0)
-            bins = {idx} if idx is not None else set()
-            self._apply_commit(bins)
-        else:
-            # The preview bins represent the final desired selection.
-            self._commit_preview_selection(preview_bins)
+        self._commit_preview_selection(preview_bins)
 
         after = self.selection.snapshot()
         self.on_selection_committed(before, after)
