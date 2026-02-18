@@ -120,7 +120,7 @@ class SelectionRenderer {
 namespace DTA.bin_logic.selection {
 class BinSelection {
     -bins : Set~BinAddress~
-    +set(bins: Set~BinAddress~)
+    +update(bins: Set~BinAddress~)
     +get_bins() Set~BinAddress~
     +clear()
     +snapshot() FrozenSet~BinAddress~
