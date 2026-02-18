@@ -398,7 +398,7 @@ class SiteSelector:
 
         before = self.selection.snapshot()
 
-        self.selection.set(self.drag_tracker.current_preview_bins)
+        self.selection.update(self.drag_tracker.current_preview_bins)
 
         after = self.selection.snapshot()
         self.on_selection_committed(before, after)

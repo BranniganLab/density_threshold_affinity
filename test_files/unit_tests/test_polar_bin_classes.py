@@ -121,14 +121,8 @@ def test_renderer_draw_edges_creates_artists():
 def test_selection_ops():
     m = BinSelection()
 
-    m.set({(0, 0), (1, 2)})
+    m.update({(0, 0), (1, 2)})
     assert m.snapshot() == frozenset({(0, 0), (1, 2)})
-
-    m.add({(2, 3)})
-    assert (2, 3) in m.get_bins()
-
-    m.remove({(0, 0)})
-    assert (0, 0) not in m.get_bins()
 
     m.clear()
     assert m.get_bins() == set()

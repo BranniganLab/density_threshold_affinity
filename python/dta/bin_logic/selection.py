@@ -41,7 +41,7 @@ class BinSelection:
         """
         return frozenset(self._bins)
 
-    def set(self, bins):
+    def update(self, bins):
         """
         Replace the current selection.
 
@@ -51,26 +51,6 @@ class BinSelection:
             New selection.
         """
         self._bins = set(bins)
-
-    def add(self, bins):
-        """
-        Add bins to the current selection.
-
-        Parameters
-        ----------
-        bins : iterable of (int, int)
-        """
-        self._bins |= set(bins)
-
-    def remove(self, bins):
-        """
-        Remove bins from the current selection.
-
-        Parameters
-        ----------
-        bins : iterable of (int, int)
-        """
-        self._bins -= set(bins)
 
     def clear(self):
         """Clear the selection."""
