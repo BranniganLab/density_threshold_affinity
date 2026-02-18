@@ -126,9 +126,12 @@ class SelectionRenderer {
 namespace DTA.bin_logic.selection {
 class BinSelection {
     -bins : Set~BinAddress~
+    -selection_history*
     +update(bins: Set~BinAddress~)
     +get_bins() Set~BinAddress~
     +clear()
+    +undo()*
+    +redo()*
 }
 }
 
@@ -165,7 +168,7 @@ class SiteSelector {
     -draw_preview(bins: Set~BinAddress~)
     -draw_selection()
     -clear_artists(artists: List~Artist~)
-    -on_selection_committed(before: Set~BinAddress~, after: Set~BinAddress~)*
+    -save_to_selection_history(before: Set~BinAddress~, after: Set~BinAddress~)*
 }
 
 class SiteSelectorManager {
