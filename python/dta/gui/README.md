@@ -194,9 +194,9 @@ SiteSelector ..> SelectorOperations : enumerates allowed modes
 
 SiteSelectorManager o-- SiteSelector : coordinates behavior for one Axes
 
-NamedTuple <|-- BinAddress
-NamedTuple <|-- Coordinate
-NamedTuple <|-- BinEdge
+NamedTuple <|-- BinAddress : is a
+NamedTuple <|-- Coordinate : is a
+NamedTuple <|-- BinEdge : is a
 
 %% =========================
 %% Styling (MVC color coding)
