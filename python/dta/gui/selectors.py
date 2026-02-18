@@ -315,7 +315,6 @@ class SiteSelector:
         # Store drag start as (r, theta)
         self.drag_tracker.drag_start = (event.ydata, event.xdata)
         self.drag_tracker.last_theta = event.xdata
-        self.drag_tracker.last_preview_bins = None
 
         mods = self.drag_tracker.mods
 
@@ -328,9 +327,9 @@ class SiteSelector:
 
         # Establish an initial preview if we have valid data coordinates.
         clicked_bin = self._bins_from_drag(self.drag_tracker.drag_start, self.drag_tracker.drag_start)
-        preview_bins = self._calculate_preview(clicked_bin)
-        self.drag_tracker.last_preview_bins = preview_bins
-        self._draw_hover(preview_bins)
+        updated_preview_bins = self._calculate_preview(clicked_bin)
+        self.drag_tracker.last_preview_bins = updated_preview_bins
+        self._draw_hover(updated_preview_bins)
         return True
 
     def on_motion(self, event) -> bool:
