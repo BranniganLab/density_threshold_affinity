@@ -401,12 +401,10 @@ class SiteSelector:
         if self.drag_tracker.drag_start is None:
             return False
 
-        before = frozenset(self.selection.get_bins())
+        last_bins = frozenset(self.selection.get_bins())
+        self.save_to_selection_history(last_bins)
 
         self.selection.update(self.drag_tracker.current_preview_bins)
-
-        after = frozenset(self.selection.get_bins())
-        self.on_selection_committed(before, after)
 
         self._draw_selection()
         self._clear_artists(self.renderer.hover_artists)
@@ -522,18 +520,13 @@ class SiteSelector:
     # Undo hook
     # ------------------------------------------------------------------
 
-    def on_selection_committed(self, before, after):
+    def save_to_selection_history(self, last_bins):
         """
         Hold this space for a future implementation of 'undo' logic.
 
         Parameters
         ----------
-        before, after : frozenset[tuple[int, int]]
-            The committed selection state immediately before and after the
-            gesture, respectively.
-
-        Notes
-        -----
-        The default implementation is a no-op. Subclasses may override this to
-        implement undo/redo stacks, logging, or notifications.
+        last_bins : frozenset[BinAddress]
+            The committed selection state immediately before the most-recent
+            gesture.
         """
