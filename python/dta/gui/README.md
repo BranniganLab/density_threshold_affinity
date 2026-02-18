@@ -123,7 +123,6 @@ class BinSelection {
     +update(bins: Set~BinAddress~)
     +get_bins() Set~BinAddress~
     +clear()
-    +snapshot() FrozenSet~BinAddress~
 }
 }
 
