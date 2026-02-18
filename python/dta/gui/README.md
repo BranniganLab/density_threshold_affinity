@@ -151,10 +151,10 @@ class SiteSelector {
     +drag_tracker: SelectorDragState
     +operation: SelectorOperations
     +on_activate()
-    +on_deactivate()
     +on_press(event)
     +on_motion(event)
     +on_release(event)
+    +on_deactivate()
     -calculate_preview_bins(bins: Set~BinAddress~) Set~BinAddress~
     -draw_preview(bins: Set~BinAddress~)
     -draw_selection()
