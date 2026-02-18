@@ -326,7 +326,7 @@ class SiteSelector:
             self.operation = SelectionOperation.REPLACE
 
         # Establish an initial preview.
-        clicked_bin = self._bins_from_drag(
+        clicked_bin = self.grid.bins_in_region(
             start=self.drag_tracker.drag_start,
             end=self.drag_tracker.drag_start
         )
@@ -365,8 +365,9 @@ class SiteSelector:
         theta = unwrap_theta(self.drag_tracker.last_theta, event.xdata)
         self.drag_tracker.last_theta = theta
 
-        bins = self._bins_from_drag(
-            self.drag_tracker.drag_start, (event.ydata, theta)
+        bins = self.grid.bins_in_region(
+            start=self.drag_tracker.drag_start,
+            end=(event.ydata, theta)
         )
 
         updated_preview_bins = self._calculate_preview_bins(bins)
@@ -383,8 +384,8 @@ class SiteSelector:
         ----------
         _event : matplotlib.backend_bases.MouseEvent
             Mouse release event. The event is accepted for signature
-            compatibility with Matplotlib callbacks; the commit behavior is
-            determined entirely by internal drag/preview state.
+            compatibility with Matplotlib callbacks, but is not used by this
+            method.
 
         Side Effects
         ------------
@@ -415,35 +416,6 @@ class SiteSelector:
     # ------------------------------------------------------------------
     # Selection logic
     # ------------------------------------------------------------------
-
-    def _bins_from_drag(self, start, end):
-        """
-        Compute bins covered by a click or drag gesture.
-
-        Parameters
-        ----------
-        start, end : tuple[float, float]
-            ``(r, theta)`` coordinates representing the drag start and drag end.
-
-        Returns
-        -------
-        set[tuple[int, int]]
-            Set of selected bin indices as ``(r_index, theta_index)``.
-
-        Notes
-        -----
-        If the start and end coordinates are identical (within a small epsilon),
-        this is treated as a single-bin click. Otherwise, this is treated as a
-        region selection.
-        """
-        r0, t0 = start
-        r1, t1 = end
-
-        if abs(r1 - r0) < 1e-8 and abs(t1 - t0) < 1e-8:
-            idx = self.grid.map_coord_to_bin_idx(r1, t1)
-            return {idx} if idx is not None else set()
-
-        return set(self.grid.bins_in_region(r0, t0, r1, t1))
 
     def _calculate_preview_bins(self, bins):
         """

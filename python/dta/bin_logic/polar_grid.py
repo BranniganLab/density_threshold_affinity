@@ -87,7 +87,7 @@ class PolarBinGrid:
             return ri, ti
         return None
 
-    def bins_in_region(self, r0, theta0, r1, theta1):
+    def bins_in_region(self, start, end):
         """
         Return all bins intersecting a dragged polar region.
 
@@ -96,16 +96,18 @@ class PolarBinGrid:
 
         Parameters
         ----------
-        r0, theta0 : float
-            First corner of the region.
-        r1, theta1 : float
-            Opposite corner of the region.
+        start : tuple
+            Coordinate of first corner of the region.
+        end : tuple
+            Coordinate of opposite corner of the region.
 
         Returns
         -------
         list[tuple[int, int]]
             All bin indices intersecting the region.
         """
+        r0, theta0 = start
+        r1, theta1 = end
         r_min, r_max = sorted((r0, r1))
         bins = []
 
@@ -118,7 +120,7 @@ class PolarBinGrid:
                     r_high = self.r_edges[ri + 1]
                     if r_high >= r_min and r_low <= r_max:
                         bins.append((ri, ti))
-        return bins
+        return set(bins)
 
     def exposed_edges(self, bins):
         """
