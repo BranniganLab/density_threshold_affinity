@@ -20,7 +20,7 @@ Jupyter widget backends) where modifier keys may not be reported consistently.
 """
 
 from dta.bin_logic.polar_grid import PolarBinGrid
-from dta.bin_logic.utils import unwrap_theta
+from dta.bin_logic.utils import unwrap_theta, Coordinate
 from dta.bin_logic.selection import BinSelection
 from .state import SelectionOperation, SelectorDragState
 from .renderers import SelectionRenderer
@@ -313,8 +313,9 @@ class SiteSelector:
             return False
 
         # Store drag start as (r, theta).
-        self.drag_tracker.drag_start = (event.ydata, event.xdata)
-        self.drag_tracker.last_theta = event.xdata
+        click_coordinate = Coordinate(event.ydata, event.xdata)
+        self.drag_tracker.drag_start = click_coordinate
+        self.drag_tracker.last_theta = click_coordinate.theta_coord
 
         # Latch key-press modifiers.
         mods = self.drag_tracker.mods
@@ -327,8 +328,8 @@ class SiteSelector:
 
         # Establish an initial preview.
         clicked_bin = self.grid.bins_in_region(
-            start=self.drag_tracker.drag_start,
-            end=self.drag_tracker.drag_start
+            start=click_coordinate,
+            end=click_coordinate
         )
         updated_preview_bins = self._calculate_preview_bins(clicked_bin)
         self.drag_tracker.current_preview_bins = updated_preview_bins
@@ -362,12 +363,15 @@ class SiteSelector:
         if event.xdata is None or event.ydata is None:
             return False
 
-        theta = unwrap_theta(self.drag_tracker.last_theta, event.xdata)
-        self.drag_tracker.last_theta = theta
+        current_location = Coordinate(
+            event.ydata,
+            unwrap_theta(self.drag_tracker.last_theta, event.xdata)
+        )
+        self.drag_tracker.last_theta = current_location.theta_coord
 
         bins = self.grid.bins_in_region(
             start=self.drag_tracker.drag_start,
-            end=(event.ydata, theta)
+            end=current_location
         )
 
         updated_preview_bins = self._calculate_preview_bins(bins)
