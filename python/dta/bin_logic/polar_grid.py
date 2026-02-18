@@ -106,15 +106,13 @@ class PolarBinGrid:
         list[tuple[int, int]]
             All bin indices intersecting the region.
         """
-        r0, theta0 = start
-        r1, theta1 = end
-        r_min, r_max = sorted((r0, r1))
+        r_min, r_max = sorted((start[0], end[0]))
         bins = []
 
         for ti in range(self.n_t):
             t_low = self.theta_edges[ti]
             t_high = self.theta_edges[ti + 1]
-            if self.bin_in_theta_arc(theta0, theta1, t_low, t_high):
+            if self.bin_in_theta_arc(start[1], end[1], t_low, t_high):
                 for ri in range(self.n_r):
                     r_low = self.r_edges[ri]
                     r_high = self.r_edges[ri + 1]
