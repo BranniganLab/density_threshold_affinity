@@ -9,7 +9,8 @@ Created on Fri Jan 30 16:01:23 2026
 import numpy as np
 import pytest
 
-from dta.bin_logic import PolarBinGrid, BinSelection, BinEdge
+from dta.bin_logic import PolarBinGrid, BinSelection
+from dta.bin_logic.utils import BinEdge, Coordinate
 from dta.gui import SelectionRenderer
 
 
@@ -22,14 +23,14 @@ def test_map_coord_to_bin_idx_basic_and_wrap():
     r = 0.25
     theta = 0.25 * np.pi
 
-    assert grid.map_coord_to_bin_idx(r, theta) == (0, 0)
-    assert grid.map_coord_to_bin_idx(r, theta + 2.0 * np.pi) == (0, 0)
+    assert grid.map_coord_to_bin_idx((r, theta)) == (0, 0)
+    assert grid.map_coord_to_bin_idx((r, theta + 2.0 * np.pi)) == (0, 0)
 
     # outside radius
-    assert grid.map_coord_to_bin_idx(2.0, theta) is None
+    assert grid.map_coord_to_bin_idx((2.0, theta)) is None
 
     # exactly on outer edge is outside
-    assert grid.map_coord_to_bin_idx(1.0, theta) is None
+    assert grid.map_coord_to_bin_idx((1.0, theta)) is None
 
 
 def test_map_coord_to_bin_idx_boundaries_theta_and_r():
@@ -38,22 +39,22 @@ def test_map_coord_to_bin_idx_boundaries_theta_and_r():
     grid = PolarBinGrid(theta_edges, r_edges)
 
     # theta exactly on interior edge goes to the bin on the "right"
-    assert grid.map_coord_to_bin_idx(0.5, 1.0) == (0, 1)
+    assert grid.map_coord_to_bin_idx((0.5, 1.0)) == (0, 1)
 
     # theta=0.0 maps to first bin
-    assert grid.map_coord_to_bin_idx(0.5, 0.0) == (0, 0)
+    assert grid.map_coord_to_bin_idx((0.5, 0.0)) == (0, 0)
 
     # theta at the last *grid edge* is outside (since this grid does not span 2π)
-    assert grid.map_coord_to_bin_idx(0.5, 2.0) is None
+    assert grid.map_coord_to_bin_idx((0.5, 2.0)) is None
 
     # actual angular wraparound happens at 2π
-    assert grid.map_coord_to_bin_idx(0.5, 2.0 * np.pi) == (0, 0)
+    assert grid.map_coord_to_bin_idx((0.5, 2.0 * np.pi)) == (0, 0)
 
     # r exactly on interior edge goes to bin on the "right"
-    assert grid.map_coord_to_bin_idx(1.0, 0.5) == (1, 0)
+    assert grid.map_coord_to_bin_idx((1.0, 0.5)) == (1, 0)
 
     # r at outer edge is out of range
-    assert grid.map_coord_to_bin_idx(2.0, 0.5) is None
+    assert grid.map_coord_to_bin_idx((2.0, 0.5)) is None
 
 
 def test_bins_in_region_nonempty_and_indices_valid():
@@ -77,7 +78,7 @@ def test_bins_in_region_wraparound_includes_zero_angle_bin():
     assert len(bins) > 0
 
     # Must include a bin near theta ~ 0
-    assert grid.map_coord_to_bin_idx(0.5, 0.01) in bins
+    assert grid.map_coord_to_bin_idx((0.5, 0.01)) in bins
 
 
 def test_exposed_edges_single_bin_has_four():
@@ -109,8 +110,8 @@ def test_renderer_draw_edges_creates_artists():
     renderer = SelectionRenderer(ax, plot_kwargs={"color": "k", "lw": 1})
 
     edges = [
-        BinEdge((0.0, 1.0), (0.0, 0.0)),
-        BinEdge((1.0, 1.0), (0.0, 0.5)),
+        BinEdge((0.0, 0.0), (1.0, 0.0)),
+        BinEdge((1.0, 0.0), (1.0, 0.5)),
     ]
 
     artists = renderer.draw_edges(edges)
