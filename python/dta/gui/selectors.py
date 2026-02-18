@@ -332,7 +332,7 @@ class SiteSelector:
         )
         updated_preview_bins = self._calculate_preview_bins(clicked_bin)
         self.drag_tracker.current_preview_bins = updated_preview_bins
-        self._draw_hover(updated_preview_bins)
+        self._draw_preview(updated_preview_bins)
         return True
 
     def on_motion(self, event) -> bool:
@@ -372,7 +372,7 @@ class SiteSelector:
         updated_preview_bins = self._calculate_preview_bins(bins)
         self.drag_tracker.current_preview_bins = updated_preview_bins
 
-        self._draw_hover(updated_preview_bins)
+        self._draw_preview(updated_preview_bins)
         return True
 
     def on_release(self, _event) -> bool:
@@ -403,7 +403,7 @@ class SiteSelector:
         after = self.selection.snapshot()
         self.on_selection_committed(before, after)
 
-        self._draw_committed()
+        self._draw_selection()
         self._clear_artists(self.renderer.hover_artists)
 
         self.drag_tracker.drag_start = None
@@ -482,7 +482,7 @@ class SiteSelector:
     # Rendering
     # ------------------------------------------------------------------
 
-    def _draw_hover(self, bins):
+    def _draw_preview(self, bins):
         """
         Draw the hover preview outline for a bin set.
 
@@ -509,7 +509,7 @@ class SiteSelector:
             self.renderer.draw_edges(edges, hover_kwargs)
         )
 
-    def _draw_committed(self):
+    def _draw_selection(self):
         """
         Draw the committed selection outline.
 
