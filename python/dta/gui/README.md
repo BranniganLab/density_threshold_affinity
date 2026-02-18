@@ -46,8 +46,9 @@ classDiagram
 %% =========================
 
 class PolarBinGrid:::model
-class BinEdge:::model
 class BinAddress:::model
+class Coordinate:::model
+class BinEdge:::model
 
 class SelectionRenderer:::view
 
@@ -58,8 +59,9 @@ class SelectorOperations:::controller
 class BinSelection:::controller
 
 <<Model>> PolarBinGrid
-<<Model>> BinEdge
 <<Model>> BinAddress
+<<Model>> Coordinate
+<<Model>> BinEdge
 
 <<View>> SelectionRenderer
 
@@ -80,8 +82,8 @@ class PolarBinGrid {
     -theta_edges: ndarray
     -n_r: int
     -n_t: int
-    +map_coord_to_bin_idx(r: float, theta: float) BinAddress | None
-    +bins_in_region(r0: float, t0: float, r1: float, t1: float) Set~BinAddress~
+    +map_coord_to_bin_idx(coord: Coordinate) BinAddress | None
+    +bins_in_region(start: Coordinate, end: Coordinate) Set~BinAddress~
     +exposed_edges(bins: Set~BinAddress) List~BinEdge~
     +bin_in_theta_arc(theta_start: float, theta_end: float, bin_start: float, bin_end: float) bool
     -_edge_geometry(bin: BinAddress, side: str) BinEdge
@@ -89,14 +91,18 @@ class PolarBinGrid {
 }
 
 namespace DTA.bin_logic.utils {
-class BinEdge {
-    +r_endpoints: float, float
-    +theta_endpoints: float, float
-}
-
+class NamedTuple {}
 class BinAddress {
     +r_index: Int
     +theta_index: Int
+}
+class Coordinate {
+    +r_coord: float
+    +theta_coord: float
+}
+class BinEdge {
+    +endpoint1: Coordinate
+    +endpoint2: Coordinate
 }
 }
 
@@ -136,7 +142,7 @@ class SelectorOperations {
 
 class SelectorDragState {
     <<dataclass>>
-    +drag_start: float,float | None
+    +drag_start: Coordinate | None
     +last_theta: float | None
     +current_preview_bins: Set~BinAddress~ | None
     +mods: FrozenSet~string~
@@ -187,6 +193,9 @@ SiteSelector *-- SelectorDragState : keeps track of mouse drags and key-press mo
 SiteSelector ..> SelectorOperations : enumerates allowed modes
 
 SiteSelectorManager o-- SiteSelector : coordinates behavior for one Axes
+
+NamedTuple <|-- BinAddress
+NamedTuple <|-- Coordinate
 
 %% =========================
 %% Styling (MVC color coding)
