@@ -309,7 +309,10 @@ class SiteSelector:
         if event.inaxes is not self.renderer.ax:
             return False
 
-        # Store drag start as (r, theta) in that order, matching PolarBinGrid.
+        if event.xdata is None or event.ydata is None:
+            return False
+
+        # Store drag start as (r, theta)
         self.drag_tracker.drag_start = (event.ydata, event.xdata)
         self.drag_tracker.last_theta = event.xdata
         self.drag_tracker.last_preview_bins = None
@@ -323,13 +326,9 @@ class SiteSelector:
         else:
             self.operation = SelectionOperation.REPLACE
 
-        if event.xdata is None or event.ydata is None:
-            return False
-
         # Establish an initial preview if we have valid data coordinates.
-        start = (event.ydata, event.xdata)
-        bins = self._bins_from_drag(start, start)
-        preview_bins = self._apply_preview(bins)
+        clicked_bin = self._bins_from_drag(self.drag_tracker.drag_start, self.drag_tracker.drag_start)
+        preview_bins = self._calculate_preview(clicked_bin)
         self.drag_tracker.last_preview_bins = preview_bins
         self._draw_hover(preview_bins)
         return True
@@ -368,7 +367,7 @@ class SiteSelector:
             self.drag_tracker.drag_start, (event.ydata, theta)
         )
 
-        preview_bins = self._apply_preview(bins)
+        preview_bins = self._calculate_preview(bins)
         self.drag_tracker.last_preview_bins = preview_bins
 
         self._draw_hover(preview_bins)
@@ -453,7 +452,7 @@ class SiteSelector:
 
         return set(self.grid.bins_in_region(r0, t0, r1, t1))
 
-    def _apply_preview(self, bins):
+    def _calculate_preview(self, bins):
         """
         Compute the preview selection for the current gesture without mutation.
 
