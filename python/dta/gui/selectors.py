@@ -143,7 +143,7 @@ class SiteSelectorManager:
     def _on_release_event(self, event):
         """Matplotlib callback: mouse release."""
         if self._drag_owner is None:
-            return False
+            return
 
         selector = self._drag_owner
         updated = bool(selector.on_release(event))
