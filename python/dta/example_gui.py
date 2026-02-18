@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""Example usage of the SiteSelector GUI."""
 import numpy as np
 import matplotlib.pyplot as plt
 from dta.gui import SiteSelectorManager, SiteSelector
