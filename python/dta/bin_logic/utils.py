@@ -9,7 +9,6 @@ quantities (e.g., wrapping, unwrapping, and normalization) in radians.
 Functions here are framework-agnostic and shared by core geometry,
 GUI interaction logic, and analysis code.
 """
-from dataclasses import dataclass
 from typing import NamedTuple
 import numpy as np
 
@@ -28,8 +27,7 @@ class Coordinate(NamedTuple):
     theta_coord: float
 
 
-@dataclass(frozen=True)
-class BinEdge:
+class BinEdge(NamedTuple):
     """
     Geometric description of a single visible bin edge in polar coordinates.
 
