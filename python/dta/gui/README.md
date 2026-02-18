@@ -121,11 +121,9 @@ namespace DTA.bin_logic.selection {
 class BinSelection {
     -bins : Set~BinAddress~
     +set(bins: Set~BinAddress~)
-    +add(bins: Set~BinAddress~)
-    +remove(bins: Set~BinAddress~)
+    +get_bins() Set~BinAddress~
     +clear()
     +snapshot() FrozenSet~BinAddress~
-    +get_bins() Set~BinAddress~
 }
 }
 
@@ -141,7 +139,7 @@ class SelectorDragState {
     <<dataclass>>
     +drag_start: float,float | None
     +last_theta: float | None
-    +last_preview_bins: Set~BinAddress~ | None
+    +current_preview_bins: Set~BinAddress~ | None
     +mods: FrozenSet~string~
 }
 }
@@ -158,12 +156,10 @@ class SiteSelector {
     +on_press(event)
     +on_motion(event)
     +on_release(event)
-    -bins_from_drag(start: tuple, end: tuple) Set~BinAddress~ | BinAddress | None
-    -apply_preview(bins: Set~BinAddress~) Set~BinAddress~
-    -apply_commit(bins: Set~BinAddress~)
-    -commit_preview_selection(preview_bins: Set~BinAddress~)
-    -draw_hover(bins: Set~BinAddress~)
-    -draw_committed()
+    -bins_from_drag(start: tuple, end: tuple) Set~BinAddress~ | None
+    -calculate_preview_bins(bins: Set~BinAddress~) Set~BinAddress~
+    -draw_preview(bins: Set~BinAddress~)
+    -draw_selection()
     -clear_artists(artists: List~Artist~)
     -on_selection_committed(before: Set~BinAddress~, after: Set~BinAddress~)*
 }
