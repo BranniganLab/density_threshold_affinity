@@ -268,7 +268,7 @@ class SiteSelector:
         """
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
-        self.drag_tracker.last_preview_bins = None
+        self.drag_tracker.current_preview_bins = None
         self.drag_tracker.mods = frozenset()
 
     def on_deactivate(self):
@@ -281,7 +281,7 @@ class SiteSelector:
         self._clear_artists(self.renderer.hover_artists)
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
-        self.drag_tracker.last_preview_bins = None
+        self.drag_tracker.current_preview_bins = None
         self.drag_tracker.mods = frozenset()
 
     # ------------------------------------------------------------------
@@ -331,7 +331,7 @@ class SiteSelector:
             end=self.drag_tracker.drag_start
         )
         updated_preview_bins = self._calculate_preview_bins(clicked_bin)
-        self.drag_tracker.last_preview_bins = updated_preview_bins
+        self.drag_tracker.current_preview_bins = updated_preview_bins
         self._draw_hover(updated_preview_bins)
         return True
 
@@ -370,7 +370,7 @@ class SiteSelector:
         )
 
         updated_preview_bins = self._calculate_preview_bins(bins)
-        self.drag_tracker.last_preview_bins = updated_preview_bins
+        self.drag_tracker.current_preview_bins = updated_preview_bins
 
         self._draw_hover(updated_preview_bins)
         return True
@@ -398,7 +398,7 @@ class SiteSelector:
 
         before = self.selection.snapshot()
 
-        self.selection.set(self.drag_tracker.last_preview_bins)
+        self.selection.set(self.drag_tracker.current_preview_bins)
 
         after = self.selection.snapshot()
         self.on_selection_committed(before, after)
@@ -408,7 +408,7 @@ class SiteSelector:
 
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
-        self.drag_tracker.last_preview_bins = None
+        self.drag_tracker.current_preview_bins = None
         self.drag_tracker.mods = frozenset()
         return True
 

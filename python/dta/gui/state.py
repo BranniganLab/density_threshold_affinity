@@ -45,7 +45,7 @@ class SelectorDragState:
     last_theta
         Most recently processed (unwrapped) theta for the drag, used to make
         theta continuous across the 0/2π discontinuity.
-    last_preview_bins
+    current_preview_bins
         The most recently computed preview selection (final selection that would
         be committed if the gesture ended now). ``None`` indicates that no valid
         preview has been computed yet.
@@ -57,5 +57,5 @@ class SelectorDragState:
 
     drag_start: tuple[float, float] | None = None
     last_theta: float | None = None
-    last_preview_bins: set[tuple[int, int]] | None = None
+    current_preview_bins: set[tuple[int, int]] | None = None
     mods: frozenset[str] = field(default_factory=frozenset)
