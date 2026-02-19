@@ -42,12 +42,12 @@ def test_selector_freezes_when_mouse_moves_to_other_axes():
 
     # create a preview
     selA.on_motion(FakeMouseEvent(inaxes=axA, xdata=0.4, ydata=0.4))
-    before = selA.drag_tracker.current_preview_bins
+    before = selA.current_preview_bins
     assert before is not None
 
     # move in Axes B -> should not update preview
     selA.on_motion(FakeMouseEvent(inaxes=axB, xdata=1.2, ydata=0.8))
-    assert selA.drag_tracker.current_preview_bins == before
+    assert selA.current_preview_bins == before
 
 
 def test_release_commits_last_preview_exactly():
@@ -63,7 +63,7 @@ def test_release_commits_last_preview_exactly():
 
     # drag to create preview
     sel.on_motion(FakeMouseEvent(inaxes=ax, xdata=0.6, ydata=0.6))
-    preview = sel.drag_tracker.current_preview_bins
+    preview = sel.current_preview_bins
     assert preview is not None
 
     # release outside data coords (xdata/ydata None is fine)
@@ -87,7 +87,7 @@ def test_add_and_subtract_semantics_across_multiple_drags():
     sel._mods = frozenset({"control"})
     sel.on_press(FakeMouseEvent(inaxes=ax, xdata=0.2, ydata=0.2))
     sel.on_motion(FakeMouseEvent(inaxes=ax, xdata=0.6, ydata=0.6))
-    preview_sub = sel.drag_tracker.current_preview_bins
+    preview_sub = sel.current_preview_bins
     assert preview_sub is not None
 
     sel.on_release(FakeMouseEvent(inaxes=None, xdata=None, ydata=None, buttons=None))
@@ -100,7 +100,7 @@ def test_add_and_subtract_semantics_across_multiple_drags():
     sel._mods = frozenset({"shift"})
     sel.on_press(FakeMouseEvent(inaxes=ax, xdata=1.0, ydata=0.8))
     sel.on_motion(FakeMouseEvent(inaxes=ax, xdata=1.4, ydata=0.9))
-    preview_add = sel.drag_tracker.current_preview_bins
+    preview_add = sel.current_preview_bins
     assert preview_add is not None
 
     sel.on_release(FakeMouseEvent(inaxes=None, xdata=None, ydata=None, buttons=None))
@@ -130,12 +130,12 @@ def test_integration_freeze_outside_axes_but_commit_on_release_outside():
 
     # Move inside A to generate preview
     mgr._on_motion_event(FakeMouseEvent(inaxes=axA, xdata=0.5, ydata=0.5))
-    preview_before = selA.drag_tracker.current_preview_bins
+    preview_before = selA.current_preview_bins
     assert preview_before is not None
 
     # Move over B — selector A must freeze (no updates)
     mgr._on_motion_event(FakeMouseEvent(inaxes=axB, xdata=1.5, ydata=0.9))
-    assert selA.drag_tracker.current_preview_bins == preview_before
+    assert selA.current_preview_bins == preview_before
 
     # Release outside axes — manager routes to drag owner
     mgr._on_release_event(FakeMouseEvent(inaxes=None, xdata=None, ydata=None, buttons=None))
