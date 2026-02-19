@@ -6,8 +6,8 @@ Created on Thu Nov 14 13:51:00 2024.
 @author: js2746
 """
 import numpy as np
-from DTA.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG
-from DTA.density import calculate_bin_area
+from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG
+from dta.density import calculate_bin_area
 
 
 class Site:

@@ -8,7 +8,7 @@ Created on Mon Nov 11 09:44:53 2024.
 from pathlib import Path
 from collections import namedtuple
 import numpy as np
-from DTA.utils import validate_path
+from dta.utils import validate_path
 
 
 SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
