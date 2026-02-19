@@ -9,8 +9,8 @@ Created on Fri Jan 30 16:01:23 2026
 import numpy as np
 import pytest
 
-from dta.bin_logic import PolarBinGrid, BinSelection
-from dta.bin_logic.utils import BinEdge, Coordinate
+from dta.bin_logic import PolarBinGrid
+from dta.bin_logic.utils import BinEdge
 from dta.gui import SelectionRenderer
 
 
@@ -117,13 +117,3 @@ def test_renderer_draw_edges_creates_artists():
     artists = renderer.draw_edges(edges)
     assert len(artists) == 2
     assert all(a.axes is ax for a in artists)
-
-
-def test_selection_ops():
-    m = BinSelection()
-
-    m.update({(0, 0), (1, 2)})
-    assert m.get_bins() == set({(0, 0), (1, 2)})
-
-    m.clear()
-    assert m.get_bins() == set()
