@@ -143,26 +143,27 @@ def outline_site(ax, site, grid_dims, linewidth=1, color='black'):
 
 def isolate_unique_site_edges(bin_coords_list, grid_dims):
     """
-    List all of the edges that need to be drawn in order to enclose the site.\
-    In this lattice space, if edges are repeated it means they are internal \
+    List all of the edges that need to be drawn in order to enclose the site.
+
+    In this lattice space, if edges are repeated it means they are internal
     edges and should not be drawn at all.
 
     Parameters
     ----------
     bin_coords_list : list or tuples
-        The bins that belong to this site in (r, theta) format. e.g. \
-        [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
-        13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
+        The bins that belong to this site in (r, theta) format. e.g.
+        [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and
+        13th theta bins in the 3rd radial bin from the origin. Bin coordinates
         are zero-indexed by convention.
         The list of bin.
     grid_dims : namedtuple
-        Contains dr, number of r bins, dtheta, number of theta bins, and number\
+        Contains dr, number of r bins, dtheta, number of theta bins, and number
         of frames contained in file.
 
     Returns
     -------
     line_list : list of tuples
-        The list of exterior bin edges needed in order to draw the site outline.\
+        The list of exterior bin edges needed in order to draw the site outline.
         Each bin edge is a tuple, with each tuple value being an ndarray.
 
     """
@@ -212,13 +213,13 @@ def compile_bin_edges(bin_coords, grid_dims):
     bin_coords : tuple
         The tuple of bin coordinates stored in (r_bin, theta_bin) format.
     grid_dims : namedtuple
-        Contains dr, number of r bins, dtheta, number of theta bins, and number\
+        Contains dr, number of r bins, dtheta, number of theta bins, and number
         of frames contained in file.
 
     Returns
     -------
     tuple of tuples
-        The four lines corresponding to the bin edges. Each tuple contains two\
+        The four lines corresponding to the bin edges. Each tuple contains two
         ndarrays of equal lengths.
 
     """
@@ -387,11 +388,11 @@ def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False, sho
     bulk_mode : float or "NULL", optional
         If not "NULL", add a dashed red line showing n_peak. The default is "NULL".
     plot_probability : boolean, optional
-        If True, turn the y axis into probability percentages, rather than \
+        If True, turn the y axis into probability percentages, rather than
         raw counts. The default is False.
     show_target : boolean, optional
-        If bulk_mode is True and show_target is True, label the red line "target\
-        mode". If bulk_mode is True and show_target is False, label the red line\
+        If bulk_mode is True and show_target is True, label the red line "target
+        mode". If bulk_mode is True and show_target is False, label the red line
         "bulk mode".
 
     Returns
@@ -435,25 +436,25 @@ def plot_titration_curve(ax, deltaG, deltaG_std, temperature, label, plot_error=
     label : str
         The label to add to the legend.
     plot_error : boolean, optional
-        If True, also plot the error as a shaded region around the titration \
-        curve. If False, do not plot the error; error_type and n_replicas are \
+        If True, also plot the error as a shaded region around the titration
+        curve. If False, do not plot the error; error_type and n_replicas are
         ignored with this option. The default is True.
     error_type : str, optional
         Use 'std' for standard deviation. This is the default.
-        Use 'ste' for standard error. User must specify n_replicas with this \
+        Use 'ste' for standard error. User must specify n_replicas with this
         option.
-        Use 'CI' for a 95% confidence interval. User must specify n_replicas \
+        Use 'CI' for a 95% confidence interval. User must specify n_replicas
         with this option.
     n_replicas : int, optional
-        The number of samples/replicas in your deltaG calculation. Used to \
-        calculate the standard error and/or confidence interval. The default is\
+        The number of samples/replicas in your deltaG calculation. Used to
+        calculate the standard error and/or confidence interval. The default is
         None.
     color : str, optional
-        A matplotlib-recognizeable color string. Applied to curve. Default is \
-        None, which results in matplotlib choosing your color from its default\
+        A matplotlib-recognizeable color string. Applied to curve. Default is
+        None, which results in matplotlib choosing your color from its default
         palette.
     linestyle : str, optional
-        A matplotlib-recognizable linestyle string. Applied to curve. Default is\
+        A matplotlib-recognizable linestyle string. Applied to curve. Default is
         'solid'.
 
     Returns
@@ -574,10 +575,10 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings)
     Parameters
     ----------
     enrichments_list : list
-        A list of 2d ndarrays containing enrichment values for each bin in the\
+        A list of 2d ndarrays containing enrichment values for each bin in the
         lattice. One list item per heatmap.
     helices : list of ndarrays
-        Each ndarray in the list contains helix coordinates. There should be one\
+        Each ndarray in the list contains helix coordinates. There should be one
         ndarray per heatmap.
     heatmap_settings : HeatmapSettings object
         Contains all of the auxiliary information needed to plot heatmaps.
