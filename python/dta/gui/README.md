@@ -123,7 +123,8 @@ class SelectionRenderer {
 %% =========================
 %% Controller
 %% =========================
-namespace DTA.bin_logic.selection {
+
+namespace DTA.gui.selector_state {
 class BinSelection {
     -bins : Set~BinAddress~
     -selection_history*
@@ -133,9 +134,7 @@ class BinSelection {
     +undo()*
     +redo()*
 }
-}
 
-namespace DTA.gui.selector_state {
 class SelectorOperations {
     <<enumeration>>
     REPLACE
