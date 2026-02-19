@@ -146,7 +146,6 @@ class SelectorDragState {
     <<dataclass>>
     +drag_start: Coordinate | None
     +last_theta: float | None
-    +current_preview_bins: Set~BinAddress~ | None
     +mods: FrozenSet~string~
 }
 }
@@ -158,6 +157,7 @@ class SiteSelector {
     +renderer: SelectionRenderer
     +drag_tracker: SelectorDragState
     +operation: SelectorOperations
+    +current_preview_bins: Set~BinAddress~ | None
     +on_activate()
     +on_press(event)
     +on_motion(event)
