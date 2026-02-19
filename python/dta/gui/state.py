@@ -59,3 +59,36 @@ class SelectorDragState:
     last_theta: float | None = None
     current_preview_bins: set[tuple[int, int]] | None = None
     mods: frozenset[str] = field(default_factory=frozenset)
+
+
+class BinSelection:
+    """Class that contains the set of selected bins."""
+
+    def __init__(self):
+        """Initialize an empty selection."""
+        self._bins = set()
+
+    def update(self, bins):
+        """
+        Replace the current selection.
+
+        Parameters
+        ----------
+        bins : iterable of (int, int)
+            New selection.
+        """
+        self._bins = set(bins)
+
+    def clear(self):
+        """Clear the selection."""
+        self._bins.clear()
+
+    def get_bins(self):
+        """
+        Return the current selection.
+
+        Returns
+        -------
+        set[tuple[int, int]]
+        """
+        return set(self._bins)
