@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Angular utility functions for polar coordinate systems.
+Angular utility classes and functions for polar coordinate systems.
 
 This module provides small, reusable helpers for working with angular
 quantities (e.g., wrapping, unwrapping, and normalization) in radians.

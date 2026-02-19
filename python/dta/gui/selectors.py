@@ -253,6 +253,7 @@ class SiteSelector:
         self.selection = BinSelection()
         self.drag_tracker = SelectorDragState()
         self.operation = SelectionOperation.REPLACE
+        self.current_preview_bins = None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -267,8 +268,8 @@ class SiteSelector:
         """
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
-        self.drag_tracker.current_preview_bins = None
         self.drag_tracker.mods = frozenset()
+        self.current_preview_bins = None
 
     def on_deactivate(self):
         """
@@ -280,8 +281,8 @@ class SiteSelector:
         self._clear_artists(self.renderer.hover_artists)
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
-        self.drag_tracker.current_preview_bins = None
         self.drag_tracker.mods = frozenset()
+        self.current_preview_bins = None
 
     # ------------------------------------------------------------------
     # Event handlers
@@ -331,7 +332,7 @@ class SiteSelector:
             end=click_coordinate
         )
         updated_preview_bins = self._calculate_preview_bins(clicked_bin)
-        self.drag_tracker.current_preview_bins = updated_preview_bins
+        self.current_preview_bins = updated_preview_bins
         self._draw_preview(updated_preview_bins)
         return True
 
@@ -374,7 +375,7 @@ class SiteSelector:
         )
 
         updated_preview_bins = self._calculate_preview_bins(bins)
-        self.drag_tracker.current_preview_bins = updated_preview_bins
+        self.current_preview_bins = updated_preview_bins
 
         self._draw_preview(updated_preview_bins)
         return True
@@ -403,14 +404,14 @@ class SiteSelector:
         last_bins = frozenset(self.selection.get_bins())
         self.save_to_selection_history(last_bins)
 
-        self.selection.update(self.drag_tracker.current_preview_bins)
+        self.selection.update(self.current_preview_bins)
 
         self._draw_selection()
         self._clear_artists(self.renderer.hover_artists)
 
         self.drag_tracker.drag_start = None
         self.drag_tracker.last_theta = None
-        self.drag_tracker.current_preview_bins = None
+        self.current_preview_bins = None
         self.drag_tracker.mods = frozenset()
         return True
 
