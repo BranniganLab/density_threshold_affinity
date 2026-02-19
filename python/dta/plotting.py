@@ -12,9 +12,9 @@ import matplotlib as mpl
 from matplotlib import gridspec
 from matplotlib.colors import ListedColormap, Normalize
 from scipy import constants
-from DTA.utils import calculate_hist_mode
-from DTA.Site import Site
-from DTA.SymmetricSite import SymmetricSite
+from dta.utils import calculate_hist_mode
+from dta.Site import Site
+from dta.SymmetricSite import SymmetricSite
 
 
 @dataclass
