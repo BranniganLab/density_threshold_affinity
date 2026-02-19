@@ -1,4 +1,4 @@
 """Import the necessary classes."""
 from .selectors import SiteSelector, SiteSelectorManager
-from .state import SelectionOperation, SelectorDragState
+from .selector_state import SelectionOperation, SelectorDragState, BinSelection
 from .renderers import SelectionRenderer
