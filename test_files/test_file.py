@@ -8,7 +8,6 @@ This is a pytest file for regression testing DTA.
 import pytest
 import numpy as np
 from pathlib import Path
-import matplotlib.pyplot as plt
 
 from dta.utils import load_inclusion_coordinates
 from dta.density import parse_tcl_dat_file, aggregate_density_enrichment_scores, load_replica_counts, valid_Dimensions

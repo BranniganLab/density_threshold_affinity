@@ -155,7 +155,6 @@ def isolate_unique_site_edges(bin_coords_list, grid_dims):
         [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and
         13th theta bins in the 3rd radial bin from the origin. Bin coordinates
         are zero-indexed by convention.
-        The list of bin.
     grid_dims : namedtuple
         Contains dr, number of r bins, dtheta, number of theta bins, and number
         of frames contained in file.
