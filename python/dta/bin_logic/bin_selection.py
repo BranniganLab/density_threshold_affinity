@@ -15,7 +15,7 @@ of the selection. Undo/redo hooks are reserved for future implementation.
 
 from __future__ import annotations
 from collections.abc import Iterable
-from dta.bin_logic import BinAddress, BinAddressLike, as_bin_address
+from dta.bin_logic.utils import BinAddress, BinAddressLike, as_bin_address
 
 
 class BinSelection:
