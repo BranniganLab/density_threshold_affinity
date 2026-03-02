@@ -340,31 +340,42 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
     global params
     if {$restrict_to_Rmax == 1} {
         set outer_r2 [expr $params(Rmax)**2]
-        set sel [ atomselect top "($atseltext) and same resid as (x*x + y*y < $outer_r2)"  frame $frame_i]
+        set sel_to_sort [ atomselect top "($atseltext) and same resid as (x*x + y*y < $outer_r2)"  frame $frame_i]
     } elseif {$restrict_to_Rmax == 0} {
-        set sel [ atomselect top "$atseltext"  frame $frame_i]
+        set sel_to_sort [ atomselect top "$atseltext"  frame $frame_i]
     } else {
         error "restrict_leaflet_sorter_to_Rmax must be 1 or 0"
     }
-    set sel_num [llength [lsort -unique [$sel get resid] ] ]
-    set sel_resid_list [lsort -unique [$sel get resid] ]
+    set sel_num [llength [lsort -unique [$sel_to_sort get resid] ] ]
+    set sel_resid_list [lsort -unique [$sel_to_sort get resid] ]
     set totals {}
     if {$sel_num < 1} {
+        # No lipids to sort. Return zeros.
+
         set totals [list "lower 0 0" "upper 0 0"] 
     } else {
-        #assign leaflets from $frame_i to user2 field of each bead for this selection
+        # Assign user2 values for of each bead of each lipid in the selection.
+
         foreach sel_resid $sel_resid_list {
             set selstring "(${atseltext}) and (resid $sel_resid)"
             leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)
         }
-        #copy leaflet values from $frame_i to all frames between $frame_i and $frame_f
-        set leaflet_list [$sel get user2] 
-        for {set interim_frame [expr $frame_i + 1]} {$interim_frame < [expr $frame_f]} {incr interim_frame} {
-            $sel frame $interim_frame
-            $sel update
-            $sel set user2 $leaflet_list
+
+        # Copy leaflet values from $frame_i to all frames between $frame_i and 
+        # $frame_f. Use index numbers for this, since $sel is based off of a 
+        # radial shell when $restrict_to_Rmax is on.
+
+        set leaflet_list [$sel_to_sort get user2] 
+        set sel_to_update [atomselect top "index [$sel_to_sort get index]"]
+        for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame < [expr $frame_f]} {incr unsorted_frame} {
+            $sel_to_update frame $unsorted_frame
+            $sel_to_update update
+            $sel_to_update set user2 $leaflet_list
         }
-        #count the number of lipids and the number of beads in each leaflet
+        $sel_to_update delete
+
+        # Count the number of lipids and the number of beads in each leaflet.
+
         foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
             set leaf_sel [ atomselect top "(${atseltext}) and $leaf"  frame $frame_i]
             set num_beads [$leaf_sel num]
@@ -390,8 +401,14 @@ proc trajectory_leaflet_assignment {atseltext headname tailname} {
                 puts "Defaulting to z=0 as the reference height to sort by."
         }
     }
-    for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame $params(leaflet_reassign_interval)} {
+    for {set update_frame $params(start_frame)} {$update_frame <= [expr $params(end_frame) - $params(leaflet_reassign_interval)]} {incr update_frame $params(leaflet_reassign_interval)} {
         frame_leaflet_assignment $atseltext $headname $tailname $update_frame [expr $update_frame + $params(leaflet_reassign_interval)] $params(restrict_leaflet_sorter_to_Rmax)
+        incr num_reassignments
+    }
+    if {[test_if_evenly_divisible $params(end_frame) $params(leaflet_reassign_interval)] != 1} {
+        # Run one extra iteration to finish final leftover frames at end of trajectory.
+
+        frame_leaflet_assignment $atseltext $headname $tailname $update_frame $params(end_frame) $params(restrict_leaflet_sorter_to_Rmax)
         incr num_reassignments
     }
     puts "Checked for leaflet reassignments $num_reassignments times."

@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='DTA',
+    name='dta',
     version='1.0',
     description='Tools for Doing Density-Threshold Affinity analysis',
     url='https://github.com/BranniganLab/density_threshold_affinity',
