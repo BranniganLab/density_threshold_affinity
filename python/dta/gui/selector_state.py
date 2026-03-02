@@ -19,6 +19,7 @@ SelectorDragState
     Per-gesture state latched and updated during interaction:
     - drag start location in (r, theta)
     - theta unwrapping continuity (last_theta)
+    - the most recent preview bin set that would be committed on release
     - modifier set frozen at gesture start
 
 Non-goals
@@ -58,7 +59,7 @@ class SelectorDragState:
     last_theta
         Most recently processed (unwrapped) theta for the drag, used to make
         theta continuous across the 0/2π discontinuity.
-    current_preview_bins
+    current_drag_bins
         The most recently computed preview selection (final selection that would
         be committed if the gesture ended now). ``None`` indicates that no valid
         preview has been computed yet.
@@ -70,5 +71,5 @@ class SelectorDragState:
 
     drag_start: tuple[float, float] | None = None
     last_theta: float | None = None
-    current_preview_bins: set[tuple[int, int]] | None = None
+    current_drag_bins: set[tuple[int, int]] | None = None
     mods: frozenset[str] = field(default_factory=frozenset)
