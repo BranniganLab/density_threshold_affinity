@@ -64,7 +64,7 @@ class SelectorDragState:
     def start_drag(self, at: CoordinateLike, *, mods: frozenset[str]) -> None:
         """Initialize gesture state at press-time."""
         self.drag_start = as_coordinate(at)
-        self.last_theta = self.drag_start.theta
+        self.last_theta = self.drag_start.theta_coord
         self.mods = mods
 
     def update_theta(self, theta_unwrapped: float) -> None:
