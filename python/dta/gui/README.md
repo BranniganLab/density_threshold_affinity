@@ -128,7 +128,7 @@ namespace DTA.gui.selector_state {
 class BinSelection {
     -bins : Set~BinAddress~
     -selection_history*
-    +update(bins: Set~BinAddress~)
+    +set_bins(bins: Set~BinAddress~)
     +get_bins() Set~BinAddress~
     +clear()
     +undo()*
