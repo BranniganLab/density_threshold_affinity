@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Angular utility classes and functions for polar coordinate systems.
+Core geometric value types and angle utilities used throughout DTA.
 
-This module provides small, reusable helpers for working with angular
-quantities (e.g., wrapping, unwrapping, and normalization) in radians.
+This module defines lightweight, immutable data structures for representing
+polar-grid concepts (bin addresses, coordinates, and bin edges), along with
+numerical helpers for working with angular values.
 
-Functions here are framework-agnostic and shared by core geometry,
-GUI interaction logic, and analysis code.
+The NamedTuple types in this module serve as stable, hashable value objects
+that are safe to use as dictionary keys, set elements, and components of
+higher-level domain models.
+
+Functions
+---------
+unwrap_theta(previous_theta, current_theta)
+    Adjust an angular value to maintain continuity across the 2π boundary.
+    This is primarily used during drag operations or other incremental
+    updates where angular wraparound would otherwise introduce discontinuities.
 """
 from typing import NamedTuple
 import numpy as np
