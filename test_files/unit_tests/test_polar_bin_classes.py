@@ -7,8 +7,6 @@ Created on Fri Jan 30 16:01:23 2026
 """
 
 import numpy as np
-import pytest
-
 from dta.bin_logic import PolarBinGrid
 from dta.bin_logic.utils import BinEdge
 from dta.gui import SelectionRenderer
