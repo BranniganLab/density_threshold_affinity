@@ -8,6 +8,7 @@ Created on Mon Mar  2 11:27:51 2026
 
 import pytest
 
+from dta.bin_logic import Coordinate
 from dta.gui.selector_state import SelectionOperation, SelectorDragState
 
 
@@ -29,17 +30,34 @@ def test_selector_drag_state_defaults_are_empty_and_none():
     assert isinstance(s.mods, frozenset)
 
 
-def test_selector_drag_state_allows_setting_fields_and_latches_mods():
-    s = SelectorDragState(
-        drag_start=(1.25, 0.5),
-        last_theta=6.1,
+def test_selector_drag_state_start_drag_latches_mods_and_coerces_coordinate():
+    s = SelectorDragState()
+
+    s.start_drag(
+        at=(1.25, 0.5),
         mods=frozenset({"shift", "control"}),
     )
 
-    assert s.drag_start == (1.25, 0.5)
-    assert s.last_theta == 6.1
+    assert isinstance(s.drag_start, Coordinate)
+    assert s.drag_start == Coordinate(r=1.25, theta=0.5)
+
+    # start_drag initializes last_theta from drag_start.theta
+    assert s.last_theta == 0.5
     assert s.mods == frozenset({"shift", "control"})
 
     # mods is a frozenset, so it should be immutable
     with pytest.raises(AttributeError):
         s.mods.add("alt")  # type: ignore[attr-defined]
+
+
+def test_selector_drag_state_update_theta_and_clear():
+    s = SelectorDragState()
+    s.start_drag(at=Coordinate(r=2.0, theta=1.0), mods=frozenset({"shift"}))
+
+    s.update_theta(6.1)
+    assert s.last_theta == 6.1
+
+    s.clear()
+    assert s.drag_start is None
+    assert s.last_theta is None
+    assert s.mods == frozenset()
