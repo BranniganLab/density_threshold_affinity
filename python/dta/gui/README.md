@@ -49,6 +49,7 @@ class PolarBinGrid:::model
 class BinAddress:::model
 class Coordinate:::model
 class BinEdge:::model
+class BinSelection:::model
 
 class SelectionRenderer:::view
 
@@ -56,12 +57,12 @@ class SiteSelector:::controller
 class SiteSelectorManager:::controller
 class SelectorDragState:::controller
 class SelectorOperations:::controller
-class BinSelection:::controller
 
 <<Model>> PolarBinGrid
 <<Model>> BinAddress
 <<Model>> Coordinate
 <<Model>> BinEdge
+<<Model>> BinSelection
 
 <<View>> SelectionRenderer
 
@@ -69,7 +70,6 @@ class BinSelection:::controller
 <<Controller>> SiteSelectorManager
 <<Controller>> SelectorDragState
 <<Controller>> SelectorOperations
-<<Controller>> BinSelection
 
 
 %% =========================
@@ -105,6 +105,17 @@ class BinEdge {
     +endpoint2: Coordinate
 }
 }
+namespace DTA.bin_logic.bin_selection {
+class BinSelection {
+    -bins : Set~BinAddress~
+    -selection_history*
+    +set_bins(bins: Set~BinAddress~)
+    +get_bins() Set~BinAddress~
+    +clear()
+    +undo()*
+    +redo()*
+}
+}
 
 %% =========================
 %% View
@@ -125,16 +136,6 @@ class SelectionRenderer {
 %% =========================
 
 namespace DTA.gui.selector_state {
-class BinSelection {
-    -bins : Set~BinAddress~
-    -selection_history*
-    +set_bins(bins: Set~BinAddress~)
-    +get_bins() Set~BinAddress~
-    +clear()
-    +undo()*
-    +redo()*
-}
-
 class SelectorOperations {
     <<enumeration>>
     REPLACE
