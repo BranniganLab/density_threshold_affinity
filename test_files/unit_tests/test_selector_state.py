@@ -56,23 +56,23 @@ def test_bin_selection_initially_empty():
 def test_bin_selection_update_replaces_selection():
     sel = BinSelection()
 
-    sel.update([(0, 1), (2, 3), (0, 1)])  # duplicates should be collapsed
+    sel.set_bins([(0, 1), (2, 3), (0, 1)])  # duplicates should be collapsed
     assert sel.get_bins() == {(0, 1), (2, 3)}
 
-    sel.update([(9, 9)])
+    sel.set_bins([(9, 9)])
     assert sel.get_bins() == {(9, 9)}
 
 
 def test_bin_selection_clear_empties_selection():
     sel = BinSelection()
-    sel.update([(0, 1), (2, 3)])
+    sel.set_bins([(0, 1), (2, 3)])
     sel.clear()
     assert sel.get_bins() == set()
 
 
 def test_bin_selection_get_bins_returns_copy_not_alias():
     sel = BinSelection()
-    sel.update([(1, 1), (2, 2)])
+    sel.set_bins([(1, 1), (2, 2)])
 
     bins_copy = sel.get_bins()
     bins_copy.add((999, 999))  # mutate the returned set
@@ -86,9 +86,9 @@ def test_bin_selection_update_accepts_any_iterable():
     sel = BinSelection()
 
     # generator input
-    sel.update((i, i + 1) for i in range(3))
+    sel.set_bins((i, i + 1) for i in range(3))
     assert sel.get_bins() == {(0, 1), (1, 2), (2, 3)}
 
     # set input
-    sel.update({(5, 6), (7, 8)})
+    sel.set_bins({(5, 6), (7, 8)})
     assert sel.get_bins() == {(5, 6), (7, 8)}

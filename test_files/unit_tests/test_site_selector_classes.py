@@ -55,7 +55,7 @@ def test_release_commits_last_preview_exactly():
     sel = _make_selector(ax)
 
     # seed committed selection
-    sel.selection.update({(0, 0), (1, 1)})
+    sel.selection.set_bins({(0, 0), (1, 1)})
 
     # latch subtract
     sel._mods = frozenset({"control"})
@@ -81,7 +81,7 @@ def test_add_and_subtract_semantics_across_multiple_drags():
 
     # Start with some committed bins
     initial = {(0, 0), (0, 1), (1, 1)}
-    sel.selection.update(initial)
+    sel.selection.set_bins(initial)
 
     # --- SUBTRACT gesture: ctrl drag ---
     sel._mods = frozenset({"control"})
