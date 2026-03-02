@@ -68,9 +68,19 @@ class BinSelection:
         """Initialize an empty selection."""
         self._bins = set()
 
-    def update(self, bins):
+    def get_bins(self):
         """
-        Replace the current selection.
+        Return the current selection.
+
+        Returns
+        -------
+        set[tuple[int, int]]
+        """
+        return set(self._bins)
+
+    def set_bins(self, bins):
+        """
+        Replace/set the current selection.
 
         Parameters
         ----------
@@ -83,12 +93,10 @@ class BinSelection:
         """Clear the selection."""
         self._bins.clear()
 
-    def get_bins(self):
-        """
-        Return the current selection.
+    def undo(self):
+        """Future undo function."""
+        pass
 
-        Returns
-        -------
-        set[tuple[int, int]]
-        """
-        return set(self._bins)
+    def redo(self):
+        """Future redo function."""
+        pass

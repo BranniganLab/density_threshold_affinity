@@ -404,7 +404,7 @@ class SiteSelector:
         last_bins = frozenset(self.selection.get_bins())
         self.save_to_selection_history(last_bins)
 
-        self.selection.update(self.current_preview_bins)
+        self.selection.set_bins(self.current_preview_bins)
 
         self._draw_selection()
         self._clear_artists(self.renderer.hover_artists)
