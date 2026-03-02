@@ -16,9 +16,7 @@ of the selection. Undo/redo hooks are reserved for future implementation.
 from __future__ import annotations
 from collections.abc import Iterable
 from typing import Union
-from .utils import BinAddress
-
-BinLike = Union[BinAddress, tuple[int, int]]
+from .utils import BinAddress, BinAddressLike, as_bin_address
 
 
 class BinSelection:
@@ -28,21 +26,13 @@ class BinSelection:
         """Initialize an empty selection."""
         self._bins: set[BinAddress] = set()
 
-    @staticmethod
-    def _coerce_bin(bin_: BinLike) -> BinAddress:
-        """Normalize user input to a BinAddress."""
-        if isinstance(bin_, BinAddress):
-            return bin_
-        r, t = bin_
-        return BinAddress(int(r), int(t))
-
     def get_bins(self) -> set[BinAddress]:
         """Return a copy of the current selection."""
         return set(self._bins)
 
     def set_bins(self, bins: Iterable[BinLike]) -> None:
         """Replace/set the current selection."""
-        self._bins = {self._coerce_bin(b) for b in bins}
+        self._bins = {as_bin_address(b) for b in bins}
 
     def clear(self) -> None:
         """Clear the selection."""
