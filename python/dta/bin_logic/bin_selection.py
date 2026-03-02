@@ -41,8 +41,6 @@ class BinSelection:
 
     def undo(self):
         """Future undo function."""
-        pass
 
     def redo(self):
         """Future redo function."""
-        pass
