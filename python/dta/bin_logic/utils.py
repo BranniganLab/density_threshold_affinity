@@ -96,7 +96,7 @@ def as_coordinate(x: CoordinateLike) -> Coordinate:
     r, theta = x
     return Coordinate(r_coord=float(r), theta_coord=float(theta))
 
-def as_bin_address(bin_: BinAddressLike) -> BinAddress
+def as_bin_address(bin_: BinAddressLike) -> BinAddress:
     """Normalize user input to a BinAddress."""
         if isinstance(bin_, BinAddress):
             return bin_
