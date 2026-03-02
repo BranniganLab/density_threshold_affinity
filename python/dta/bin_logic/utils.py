@@ -20,6 +20,7 @@ unwrap_theta(previous_theta, current_theta)
 """
 from typing import NamedTuple
 import numpy as np
+from typing import Union
 
 
 class BinAddress(NamedTuple):
@@ -83,3 +84,14 @@ def unwrap_theta(previous_theta, current_theta):
         return current_theta + 2 * np.pi
 
     return current_theta
+
+
+CoordinateLike = Union[Coordinate, tuple[float, float]]
+
+
+def as_coordinate(x: CoordinateLike) -> Coordinate:
+    """Coerce (r, theta) tuples into Coordinate; pass through Coordinate."""
+    if isinstance(x, Coordinate):
+        return x
+    r, theta = x
+    return Coordinate(r_coord=float(r), theta_coord=float(theta))

@@ -25,7 +25,6 @@ def test_selector_drag_state_defaults_are_empty_and_none():
 
     assert s.drag_start is None
     assert s.last_theta is None
-    assert s.current_drag_bins is None
     assert s.mods == frozenset()
     assert isinstance(s.mods, frozenset)
 
@@ -34,13 +33,11 @@ def test_selector_drag_state_allows_setting_fields_and_latches_mods():
     s = SelectorDragState(
         drag_start=(1.25, 0.5),
         last_theta=6.1,
-        current_drag_bins={(0, 0), (1, 2)},
         mods=frozenset({"shift", "control"}),
     )
 
     assert s.drag_start == (1.25, 0.5)
     assert s.last_theta == 6.1
-    assert s.current_drag_bins == {(0, 0), (1, 2)}
     assert s.mods == frozenset({"shift", "control"})
 
     # mods is a frozenset, so it should be immutable

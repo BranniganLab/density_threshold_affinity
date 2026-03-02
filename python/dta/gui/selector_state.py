@@ -34,8 +34,11 @@ This module is an internal implementation detail of the Matplotlib GUI and is
 not part of the public analysis API.
 """
 
+from __future__ import annotations
+
 from enum import Enum
 from dataclasses import dataclass, field
+from dta.bin_logic import Coordinate, CoordinateLike, as_coordinate
 
 
 class SelectionOperation(Enum):
@@ -51,25 +54,25 @@ class SelectorDragState:
     """
     State for tracking a single click/drag gesture.
 
-    Attributes
-    ----------
-    drag_start
-        (r, theta) coordinates of the mouse at the moment the drag began,
-        or ``None`` if no drag is in progress.
-    last_theta
-        Most recently processed (unwrapped) theta for the drag, used to make
-        theta continuous across the 0/2π discontinuity.
-    current_drag_bins
-        The most recently computed preview selection (final selection that would
-        be committed if the gesture ended now). ``None`` indicates that no valid
-        preview has been computed yet.
-    mods
-        Modifier set latched at the start of the gesture. Values are strings
-        such as ``"shift"`` and ``"control"``. This value should not change
-        mid-drag.
+    drag_start is stored as a Coordinate (namedtuple) once a drag begins.
     """
 
-    drag_start: tuple[float, float] | None = None
+    drag_start: Coordinate | None = None
     last_theta: float | None = None
-    current_drag_bins: set[tuple[int, int]] | None = None
     mods: frozenset[str] = field(default_factory=frozenset)
+
+    def start_drag(self, at: CoordinateLike, *, mods: frozenset[str]) -> None:
+        """Initialize gesture state at press-time."""
+        self.drag_start = as_coordinate(at)
+        self.last_theta = self.drag_start.theta
+        self.mods = mods
+
+    def update_theta(self, theta_unwrapped: float) -> None:
+        """Update continuity bookkeeping."""
+        self.last_theta = theta_unwrapped
+
+    def clear(self) -> None:
+        """Reset to the 'no active gesture' state."""
+        self.drag_start = None
+        self.last_theta = None
+        self.mods = frozenset()
