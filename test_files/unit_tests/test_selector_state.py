@@ -39,7 +39,7 @@ def test_selector_drag_state_start_drag_latches_mods_and_coerces_coordinate():
     )
 
     assert isinstance(s.drag_start, Coordinate)
-    assert s.drag_start == Coordinate(r=1.25, theta=0.5)
+    assert s.drag_start == Coordinate(r_coord=1.25, theta_coord=0.5)
 
     # start_drag initializes last_theta from drag_start.theta
     assert s.last_theta == 0.5
@@ -52,7 +52,7 @@ def test_selector_drag_state_start_drag_latches_mods_and_coerces_coordinate():
 
 def test_selector_drag_state_update_theta_and_clear():
     s = SelectorDragState()
-    s.start_drag(at=Coordinate(r=2.0, theta=1.0), mods=frozenset({"shift"}))
+    s.start_drag(at=Coordinate(r_coord=2.0, theta_coord=1.0), mods=frozenset({"shift"}))
 
     s.update_theta(6.1)
     assert s.last_theta == 6.1
