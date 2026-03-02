@@ -1,23 +1,36 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Transient GUI interaction state for Matplotlib-based site selection.
+Ephemeral interaction state for Matplotlib-driven selection gestures.
 
-This module defines lightweight, short-lived state objects used by
-Matplotlib controllers to track the lifecycle of selection gestures
-(mouse press, drag, and release).
+This module contains small, data-centric types used by the Matplotlib GUI layer
+to track a *single* selection gesture (press → drag → release). These objects
+are intentionally short-lived and UI-facing: they capture latched modifier keys,
+drag continuity bookkeeping, and the current preview result during an active
+interaction.
 
-The classes here:
-- represent user intent (replace/add/remove) derived from modifier keys,
-- capture per-gesture drag state and preview geometry,
-- exist only during active interactions.
+Contents
+--------
+SelectionOperation
+    Semantic operation requested by the user (replace/add/subtract), typically
+    derived from modifier keys at press-time.
 
-They do not perform rendering or modify persistent selection state.
-All drawing is handled by renderers, and all committed selection state
-lives in dta.core.selection.
+SelectorDragState
+    Per-gesture state latched and updated during interaction:
+    - drag start location in (r, theta)
+    - theta unwrapping continuity (last_theta)
+    - modifier set frozen at gesture start
 
-These objects are internal to the Matplotlib GUI layer and are not part
-of the public analysis or core APIs.
+Non-goals
+---------
+- No rendering: these types do not touch Matplotlib artists/canvases.
+- No persistence: committed selection state is owned by the selection model in
+  the core/bin-logic layer (e.g., dta.bin_logic), not here.
+- No domain validation: address validity and invariants belong to the domain
+  model and grid/geometry code.
+
+This module is an internal implementation detail of the Matplotlib GUI and is
+not part of the public analysis API.
 """
 
 from enum import Enum
