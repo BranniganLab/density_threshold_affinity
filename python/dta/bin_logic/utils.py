@@ -84,21 +84,3 @@ def unwrap_theta(previous_theta, current_theta):
         return current_theta + 2 * np.pi
 
     return current_theta
-
-
-CoordinateLike = Union[Coordinate, tuple[float, float]]
-BinAddressLike = Union[BinAddress, tuple[int, int]]
-
-def as_coordinate(x: CoordinateLike) -> Coordinate:
-    """Coerce (r, theta) tuples into Coordinate; pass through Coordinate."""
-    if isinstance(x, Coordinate):
-        return x
-    r, theta = x
-    return Coordinate(r_coord=float(r), theta_coord=float(theta))
-
-def as_bin_address(bin_: BinAddressLike) -> BinAddress:
-    """Normalize user input to a BinAddress."""
-    if isinstance(bin_, BinAddress):
-        return bin_
-    r, t = bin_
-    return BinAddress(int(r), int(t))
