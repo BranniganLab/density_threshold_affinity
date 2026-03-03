@@ -38,7 +38,7 @@ from __future__ import annotations
 
 from enum import Enum
 from dataclasses import dataclass, field
-from dta.bin_logic import Coordinate, CoordinateLike, as_coordinate
+from dta.bin_logic import Coordinate
 
 
 class SelectionOperation(Enum):
@@ -61,9 +61,9 @@ class SelectorDragState:
     last_theta: float | None = None
     mods: frozenset[str] = field(default_factory=frozenset)
 
-    def start_drag(self, at: CoordinateLike, *, mods: frozenset[str]) -> None:
+    def start_drag(self, at: Coordinate, *, mods: frozenset[str]) -> None:
         """Initialize gesture state at press-time."""
-        self.drag_start = as_coordinate(at)
+        self.drag_start = Coordinate(*at)
         self.last_theta = self.drag_start.theta_coord
         self.mods = mods
 
