@@ -19,7 +19,6 @@ unwrap_theta(previous_theta, current_theta)
     updates where angular wraparound would otherwise introduce discontinuities.
 """
 from typing import NamedTuple
-from typing import Union
 import numpy as np
 
 
