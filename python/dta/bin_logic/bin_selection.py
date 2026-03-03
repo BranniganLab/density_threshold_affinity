@@ -15,7 +15,7 @@ of the selection. Undo/redo hooks are reserved for future implementation.
 
 from __future__ import annotations
 from collections.abc import Iterable
-from dta.bin_logic.utils import BinAddress, BinAddressLike, as_bin_address
+from dta.bin_logic.utils import BinAddress
 
 
 class BinSelection:
@@ -29,9 +29,9 @@ class BinSelection:
         """Return a copy of the current selection."""
         return set(self._bins)
 
-    def set_bins(self, bins: Iterable[BinAddressLike]) -> None:
+    def set_bins(self, bins: Iterable[BinAddress]) -> None:
         """Replace/set the current selection."""
-        self._bins = {as_bin_address(b) for b in bins}
+        self._bins = {BinAddress(*b) for b in bins}
 
     def clear(self) -> None:
         """Clear the selection."""
