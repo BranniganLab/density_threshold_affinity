@@ -39,8 +39,8 @@ class BinSelection:
 
     def undo(self):
         """Future undo function."""
-        return NotImplementedError("Undo has not been implemented yet.")
+        raise NotImplementedError("Undo has not been implemented yet.")
 
     def redo(self):
         """Future redo function."""
-        return NotImplementedError("Redo has not been implemented yet.")
+        raise NotImplementedError("Redo has not been implemented yet.")
