@@ -384,7 +384,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
             $leaf_sel delete
         }
     }
-    $sel delete
+    $sel_to_sort delete
     return $totals
 }
 
