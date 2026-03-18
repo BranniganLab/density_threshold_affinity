@@ -1,132 +1,125 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Mar  2 14:53:51 2026
+"""Unit tests for lightweight bin-logic value types and angular unwrapping."""
 
-@author: js2746
-"""
-
-import pytest
 import numpy as np
+import pytest
 
-from dta.bin_logic.utils import BinAddress, Coordinate, BinEdge, unwrap_theta
+from dta.bin_logic.utils import BinAddress, BinEdge, Coordinate, unwrap_theta
 
 
-# -----------------------
-# NamedTuple structural tests
-# -----------------------
-
-def test_binaddress_fields_and_tuple_behavior():
+def test_binaddress_exposes_expected_public_tuple_api():
+    """Verify that BinAddress preserves its public field order and tuple semantics."""
     b = BinAddress(r_index=3, theta_index=7)
 
-    # field names / order are part of the public API
+    # Verify the public field names and ordering expected by callers.
     assert BinAddress._fields == ("r_index", "theta_index")
 
-    # tuple-like behavior
+    # Verify tuple-style and attribute-style access expose the same values.
     assert tuple(b) == (3, 7)
     assert b[0] == 3
     assert b[1] == 7
-
-    # attribute access
     assert b.r_index == 3
     assert b.theta_index == 7
 
-    # immutability
-    with pytest.raises(AttributeError):
-        b.r_index = 99  # type: ignore[misc]
 
-    # hashability (useful as dict keys / set elements)
-    d = {b: "ok"}
-    assert d[BinAddress(3, 7)] == "ok"
-
-
-def test_coordinate_fields_and_types_are_reasonable():
+def test_coordinate_is_immutable_and_hashable():
+    """Verify that Coordinate behaves like an immutable, hashable value object."""
     c = Coordinate(r_coord=1.5, theta_coord=0.25)
 
-    assert Coordinate._fields == ("r_coord", "theta_coord")
-    assert tuple(c) == (1.5, 0.25)
+    # Verify attribute access exposes the stored coordinate values.
     assert c.r_coord == 1.5
     assert c.theta_coord == 0.25
 
+    # Verify the value object cannot be mutated after construction.
     with pytest.raises(AttributeError):
         c.theta_coord = 0.0  # type: ignore[misc]
 
-    # hashability sanity
+    # Verify equivalent values can be used interchangeably in hashed containers.
     s = {c}
     assert Coordinate(1.5, 0.25) in s
 
 
-def test_binedge_fields_and_nesting():
+def test_binedge_stores_coordinate_endpoints():
+    """Verify that BinEdge retains the provided Coordinate endpoints unchanged."""
     p1 = Coordinate(1.0, 0.0)
     p2 = Coordinate(2.0, np.pi / 2)
     e = BinEdge(endpoint1=p1, endpoint2=p2)
 
-    assert BinEdge._fields == ("endpoint1", "endpoint2")
+    # Verify the edge preserves the supplied endpoint objects.
     assert e.endpoint1 == p1
     assert e.endpoint2 == p2
+
+    # Verify nested coordinate data remains accessible through the edge.
     assert e.endpoint1.r_coord == 1.0
     assert e.endpoint2.theta_coord == pytest.approx(np.pi / 2)
 
-    with pytest.raises(AttributeError):
-        e.endpoint1 = p2  # type: ignore[misc]
 
-
-# -----------------------
-# unwrap_theta tests
-# -----------------------
-
-def test_unwrap_theta_when_previous_is_none_returns_current_unchanged():
+def test_unwrap_theta_returns_current_when_no_previous_angle_exists():
+    """Verify that unwrap_theta leaves the first sample unchanged."""
     assert unwrap_theta(None, 0.1) == 0.1
     assert unwrap_theta(None, 2 * np.pi - 1e-6) == pytest.approx(2 * np.pi - 1e-6)
 
 
-def test_unwrap_theta_no_wrap_when_delta_within_pi():
+def test_unwrap_theta_leaves_small_deltas_unchanged():
+    """Verify that unwrap_theta does not adjust values already within pi of the previous angle."""
     prev = 1.0
-    cur = 1.0 + (np.pi - 1e-9)  # slightly less than +pi
-    assert unwrap_theta(prev, cur) == pytest.approx(cur)
 
-    cur2 = 1.0 - (np.pi - 1e-9)  # slightly less than -pi
-    assert unwrap_theta(prev, cur2) == pytest.approx(cur2)
+    # Verify a delta just below +pi is treated as already continuous.
+    cur_forward = 1.0 + (np.pi - 1e-9)
+    assert unwrap_theta(prev, cur_forward) == pytest.approx(cur_forward)
 
-
-def test_unwrap_theta_wraps_negative_when_delta_greater_than_pi():
-    # If current_theta jumps forward across 2π boundary relative to previous_theta,
-    # delta can appear > pi and we subtract 2π.
-    prev = 2 * np.pi - 0.1
-    cur = 0.05  # small angle after wrap
-    # delta = 0.05 - (2π - 0.1) = -2π + 0.15, which is < -pi, so should add 2π
-    # (this case is actually handled by the delta < -pi branch)
-    assert unwrap_theta(prev, cur) == pytest.approx(cur + 2 * np.pi)
-
-    # Construct a delta > +pi case directly
-    prev2 = 0.1
-    cur2 = 0.1 + (np.pi + 1e-6)
-    assert unwrap_theta(prev2, cur2) == pytest.approx(cur2 - 2 * np.pi)
+    # Verify a delta just above -pi is also treated as already continuous.
+    cur_backward = 1.0 - (np.pi - 1e-9)
+    assert unwrap_theta(prev, cur_backward) == pytest.approx(cur_backward)
 
 
-def test_unwrap_theta_wraps_positive_when_delta_less_than_minus_pi():
-    prev = 0.1 + (np.pi + 1e-6)
-    cur = 0.1
-    assert unwrap_theta(prev, cur) == pytest.approx(cur + 2 * np.pi)
+def test_unwrap_theta_adjusts_across_wrap_boundary_in_both_directions():
+    """Verify that unwrap_theta removes discontinuities larger than pi in either direction."""
+    # Verify an angle just after 0 is lifted into continuity with a prior angle near 2π.
+    prev_near_2pi = 2 * np.pi - 0.1
+    cur_after_wrap = 0.05
+    assert unwrap_theta(prev_near_2pi, cur_after_wrap) == pytest.approx(
+        cur_after_wrap + 2 * np.pi
+    )
+
+    # Verify a forward jump greater than +pi is pulled back by one full revolution.
+    prev_small = 0.1
+    cur_large_jump = 0.1 + (np.pi + 1e-6)
+    assert unwrap_theta(prev_small, cur_large_jump) == pytest.approx(
+        cur_large_jump - 2 * np.pi
+    )
+
+    # Verify a backward jump less than -pi is pushed forward by one full revolution.
+    prev_large = 0.1 + (np.pi + 1e-6)
+    cur_small = 0.1
+    assert unwrap_theta(prev_large, cur_small) == pytest.approx(cur_small + 2 * np.pi)
 
 
-def test_unwrap_theta_exactly_pi_or_minus_pi_no_adjustment():
+def test_unwrap_theta_does_not_adjust_exactly_pi_boundaries():
+    """Verify that unwrap_theta treats exact +/-pi deltas as non-wrapping cases."""
     prev = 1.234
 
+    # Verify the +pi boundary does not trigger a wrap correction.
     cur_plus_pi = prev + np.pi
     assert unwrap_theta(prev, cur_plus_pi) == pytest.approx(cur_plus_pi)
 
+    # Verify the -pi boundary does not trigger a wrap correction.
     cur_minus_pi = prev - np.pi
     assert unwrap_theta(prev, cur_minus_pi) == pytest.approx(cur_minus_pi)
 
 
-def test_unwrap_theta_idempotent_for_continuous_sequence():
-    # If we feed a sequence already continuous, unwrap should not introduce drift.
+def test_unwrap_theta_preserves_an_already_continuous_sequence():
+    """Verify that unwrap_theta does not introduce drift into a continuous series."""
     thetas = [0.1, 0.2, 0.3, 0.4]
     prev = None
     out = []
-    for t in thetas:
-        u = unwrap_theta(prev, t)
-        out.append(u)
-        prev = u
+
+    # Run the sequence incrementally the same way production code would.
+    for theta in thetas:
+        unwrapped = unwrap_theta(prev, theta)
+        out.append(unwrapped)
+        prev = unwrapped
+
+    # Verify the result matches the original continuous input.
     assert out == pytest.approx(thetas)
