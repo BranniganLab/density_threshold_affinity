@@ -442,6 +442,7 @@ class SiteSelector:
         self._clear_artists(self.renderer.hover_artists)
 
         self.drag_tracker.reset()
+        self.current_preview_bins = None
         return True
 
     # ------------------------------------------------------------------

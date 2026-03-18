@@ -59,7 +59,7 @@ from __future__ import annotations
 
 from enum import Enum
 from dataclasses import dataclass
-from dta.bin_logic import Coordinate
+from dta.bin_logic.utils import Coordinate
 
 
 class SelectionOperation(Enum):
