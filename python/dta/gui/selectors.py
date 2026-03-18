@@ -282,8 +282,6 @@ class SiteSelector:
         self.renderer = SelectionRenderer(ax, plot_kwargs)
         self.selection = BinSelection()
         self.drag_tracker = SelectorDragState()
-        self.operation = SelectionOperation.REPLACE
-        self.current_preview_bins = None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -296,10 +294,7 @@ class SiteSelector:
         This method resets transient drag/preview state, but does not modify the
         committed selection.
         """
-        self.drag_tracker.drag_start = None
-        self.drag_tracker.last_theta = None
-        self.drag_tracker.mods = frozenset()
-        self.current_preview_bins = None
+        self.drag_tracker.clear()
 
     def on_deactivate(self):
         """
@@ -309,10 +304,7 @@ class SiteSelector:
         drag/preview state. It does not modify the committed selection.
         """
         self._clear_artists(self.renderer.hover_artists)
-        self.drag_tracker.drag_start = None
-        self.drag_tracker.last_theta = None
-        self.drag_tracker.mods = frozenset()
-        self.current_preview_bins = None
+        self.drag_tracker.clear()
 
     # ------------------------------------------------------------------
     # Event handlers
@@ -347,22 +339,13 @@ class SiteSelector:
         self.drag_tracker.drag_start = click_coordinate
         self.drag_tracker.last_theta = click_coordinate.theta_coord
 
-        # Latch key-press modifiers.
-        mods = self.drag_tracker.mods
-        if "shift" in mods:
-            self.operation = SelectionOperation.ADD
-        elif "control" in mods:
-            self.operation = SelectionOperation.SUBTRACT
-        else:
-            self.operation = SelectionOperation.REPLACE
-
         # Establish an initial preview.
         clicked_bin = self.grid.bins_in_region(
             start=click_coordinate,
             end=click_coordinate
         )
         updated_preview_bins = self._calculate_preview_bins(clicked_bin)
-        self.current_preview_bins = updated_preview_bins
+        self.drag_tracker.current_preview_bins = updated_preview_bins
         self._draw_preview(updated_preview_bins)
         return True
 
@@ -405,7 +388,7 @@ class SiteSelector:
         )
 
         updated_preview_bins = self._calculate_preview_bins(bins)
-        self.current_preview_bins = updated_preview_bins
+        self.drag_tracker.current_preview_bins = updated_preview_bins
 
         self._draw_preview(updated_preview_bins)
         return True
@@ -424,9 +407,9 @@ class SiteSelector:
         Side Effects
         ------------
         - Commits the selection.
-        - Calls :meth:`on_selection_committed` with pre/post snapshots.
+        - Calls :meth:`save_to_selection_history` bin snapshot.
         - Redraws committed selection edges and clears hover edges.
-        - Resets gesture state (including latched modifiers).
+        - Resets gesture state (including latched operation).
         """
         if self.drag_tracker.drag_start is None:
             return False
@@ -434,15 +417,12 @@ class SiteSelector:
         last_bins = frozenset(self.selection.get_bins())
         self.save_to_selection_history(last_bins)
 
-        self.selection.set_bins(self.current_preview_bins)
+        self.selection.set_bins(self.drag_tracker.current_preview_bins)
 
         self._draw_selection()
         self._clear_artists(self.renderer.hover_artists)
 
-        self.drag_tracker.drag_start = None
-        self.drag_tracker.last_theta = None
-        self.current_preview_bins = None
-        self.drag_tracker.mods = frozenset()
+        self.drag_tracker.clear()
         return True
 
     # ------------------------------------------------------------------
@@ -473,11 +453,11 @@ class SiteSelector:
         """
         current = self.selection.get_bins()
 
-        if self.operation is SelectionOperation.REPLACE:
+        if self.drag_tracker.operation is SelectionOperation.REPLACE:
             return bins
-        if self.operation is SelectionOperation.ADD:
+        if self.drag_tracker.operation is SelectionOperation.ADD:
             return current | bins
-        if self.operation is SelectionOperation.SUBTRACT:
+        if self.drag_tracker.operation is SelectionOperation.SUBTRACT:
             return current - bins
 
         return current
