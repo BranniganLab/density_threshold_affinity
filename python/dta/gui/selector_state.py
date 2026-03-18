@@ -37,7 +37,7 @@ not part of the public analysis API.
 from __future__ import annotations
 
 from enum import Enum
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from dta.bin_logic import Coordinate
 
 
@@ -54,18 +54,20 @@ class SelectorDragState:
     """
     State for tracking a single click/drag gesture.
 
-    drag_start is stored as a Coordinate (namedtuple) once a drag begins.
+    drag_start is stored as a Coordinate once a drag begins.
+    operation is the semantic selection action resolved by the controller
+    at gesture start.
     """
 
     drag_start: Coordinate | None = None
     last_theta: float | None = None
-    mods: frozenset[str] = field(default_factory=frozenset)
+    operation: SelectionOperation = SelectionOperation.REPLACE
 
-    def start_drag(self, at: Coordinate, *, mods: frozenset[str]) -> None:
+    def start_drag(self, at: Coordinate, *, operation: SelectionOperation) -> None:
         """Initialize gesture state at press-time."""
         self.drag_start = Coordinate(*at)
         self.last_theta = self.drag_start.theta_coord
-        self.mods = mods
+        self.operation = operation
 
     def update_theta(self, theta_unwrapped: float) -> None:
         """Update continuity bookkeeping."""
@@ -75,4 +77,4 @@ class SelectorDragState:
         """Reset to the 'no active gesture' state."""
         self.drag_start = None
         self.last_theta = None
-        self.mods = frozenset()
+        self.operation = SelectionOperation.REPLACE
