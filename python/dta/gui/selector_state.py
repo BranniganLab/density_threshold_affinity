@@ -1,37 +1,58 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Ephemeral interaction state for Matplotlib-driven selection gestures.
+Per-gesture interaction state for GUI-based selection.
 
-This module contains small, data-centric types used by the Matplotlib GUI layer
-to track a *single* selection gesture (press → drag → release). These objects
-are intentionally short-lived and UI-facing: they capture latched modifier keys,
-drag continuity bookkeeping, and the current preview result during an active
-interaction.
+This module defines lightweight state containers used during an active
+mouse interaction (press → drag → release) within a `SiteSelector`.
+These objects track only the minimal metadata required to interpret a
+gesture; they do not perform selection logic and do not store any
+preview or committed selection results.
+
+Overview
+--------
+A selection gesture is initiated by the controller layer
+(`SiteSelectorManager`), which determines the active selector and
+latches the selection operation (e.g., REPLACE, ADD, SUBTRACT) based
+on modifier keys at press time. That latched operation is passed into
+the selector and stored for the duration of the gesture.
+
+The classes in this module support that process by maintaining:
+
+- The drag origin in data coordinates
+- Angular continuity information across motion events
+- The latched selection operation for the active gesture
 
 Contents
 --------
 SelectionOperation
-    Semantic operation requested by the user (replace/add/subtract), typically
-    derived from modifier keys at press-time.
+    Enumeration of selection modes (REPLACE, ADD, SUBTRACT). These
+    operations define how a computed bin set should be applied to the
+    existing selection.
 
 SelectorDragState
-    Per-gesture state latched and updated during interaction:
-    - drag start location in (r, theta)
-    - theta unwrapping continuity (last_theta)
-    - the most recent preview bin set that would be committed on release
-    - operation type frozen at gesture start
+    Container for per-gesture drag state. Tracks the drag origin,
+    most recent theta value (for angular continuity), and the latched
+    selection operation for the active gesture.
 
-Non-goals
----------
-- No rendering: these types do not touch Matplotlib artists/canvases.
-- No persistence: committed selection state is owned by the selection model in
-  the core/bin-logic layer (e.g., dta.bin_logic), not here.
-- No domain validation: address validity and invariants belong to the domain
-  model and grid/geometry code.
+Responsibilities
+----------------
+- Provide simple, reusable containers for per-gesture state
+- Ensure consistent initialization and reset semantics across gestures
+- Maintain invariants needed for interpreting motion events
 
-This module is an internal implementation detail of the Matplotlib GUI and is
-not part of the public analysis API.
+Non-responsibilities
+--------------------
+- Do not compute or store preview selections
+- Do not modify or query the selection model
+- Do not interpret keyboard modifiers or determine selection mode
+
+Design Notes
+------------
+All preview and committed selection state is owned by `SiteSelector`.
+This module intentionally remains minimal and policy-free so that
+gesture orchestration (controller) and selection semantics (selector)
+remain cleanly separated.
 """
 
 from __future__ import annotations
@@ -52,11 +73,27 @@ class SelectionOperation(Enum):
 @dataclass
 class SelectorDragState:
     """
-    State for tracking a single click/drag gesture.
+    Lightweight container for per-gesture drag state within a SiteSelector.
 
-    drag_start is stored as a Coordinate once a drag begins.
-    operation is the semantic selection action resolved by the controller
-    at gesture start.
+    This class tracks the minimal transient state required to interpret a
+    single mouse drag gesture in polar coordinates. It does not perform any
+    selection logic and does not store preview or committed bin sets.
+
+    Responsibilities
+    ----------------
+    - Store the drag origin (`drag_start`) in data coordinates.
+    - Track the most recent theta value (`last_theta`) to maintain angular
+      continuity during motion (e.g., across 2π wrap-around).
+    - Hold the latched `SelectionOperation` for the duration of the gesture.
+
+    Design Notes
+    ------------
+    The latched operation is determined by the controller layer
+    (`SiteSelectorManager`) at press time and passed into `start_drag(...)`.
+    This ensures consistent behavior across the entire gesture, independent
+    of subsequent keyboard state changes.
+
+    All preview and committed selection state is owned by `SiteSelector`.
     """
 
     drag_start: Coordinate | None = None
@@ -74,11 +111,7 @@ class SelectorDragState:
         self.last_theta = self.drag_start.theta_coord
         self._operation = operation
 
-    def update_theta(self, theta_unwrapped: float) -> None:
-        """Update continuity bookkeeping."""
-        self.last_theta = theta_unwrapped
-
-    def clear(self) -> None:
+    def reset(self) -> None:
         """Reset to the 'no active gesture' state."""
         self.drag_start = None
         self.last_theta = None

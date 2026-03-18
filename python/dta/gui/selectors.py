@@ -124,10 +124,8 @@ class SiteSelectorManager:
         # The selector that receives the press becomes the drag owner until release.
         self._drag_owner = selector
 
-        # Latch operation for the duration of the gesture.
-        selector.drag_tracker.operation = self._determine_operation_from_key_presses(event)
-
-        updated = bool(selector.on_press(event))
+        operation = self._determine_operation_from_key_presses(event)
+        updated = bool(selector.on_press(event, operation))
         if updated:
             self.fig.canvas.draw_idle()
 
@@ -295,7 +293,7 @@ class SiteSelector:
         This method resets transient drag/preview state, but does not modify the
         committed selection.
         """
-        self.drag_tracker.drag_start.clear()
+        self.drag_tracker.reset()
         self.current_preview_bins = None
 
     def on_deactivate(self):
@@ -306,30 +304,49 @@ class SiteSelector:
         drag/preview state. It does not modify the committed selection.
         """
         self._clear_artists(self.renderer.hover_artists)
-        self.drag_tracker.drag_start.clear()
+        self.drag_tracker.reset()
         self.current_preview_bins = None
 
     # ------------------------------------------------------------------
     # Event handlers
     # ------------------------------------------------------------------
 
-    def on_press(self, event) -> bool:
+    def on_press(self, event, operation) -> bool:
         """
-        Begin a selection gesture.
+        Begin a new selection gesture within this selector.
+
+        This method is invoked by the controller (`SiteSelectorManager`)
+        when a mouse press occurs inside this selector's axes and this
+        selector has been designated as the drag owner for the gesture.
+
+        Behavior
+        --------
+        - Initializes the per-gesture drag state via `SelectorDragState.start_drag`,
+          capturing the drag origin and latching the provided `SelectionOperation`.
+        - Computes and stores the initial preview selection based on the
+          press location and latched operation.
 
         Parameters
         ----------
         event : matplotlib.backend_bases.MouseEvent
-            Mouse press event. Only presses occurring inside this selector's
-            Axes are processed.
+            The press event in data coordinates. `xdata` and `ydata` must
+            be non-None and correspond to this selector's axes.
+        operation : SelectionOperation
+            The selection mode (e.g., REPLACE, ADD, SUBTRACT) as determined
+            and latched by the controller at gesture start.
 
-        Side Effects
-        ------------
-        - Initializes drag state (start location and theta history).
-        - Latches the selection operation (replace/add/subtract) from the
-          gesture's modifier state stored in ``drag_tracker.mods``.
-        - If data coordinates are available, computes an initial preview and
-          draws a hover outline.
+        Returns
+        -------
+        bool
+            True if the event was handled and a gesture was initiated;
+            False otherwise (e.g., event outside axes or invalid data).
+
+        Notes
+        -----
+        - The selection operation is latched at press time and remains
+          fixed for the duration of the gesture.
+        - Preview and committed selection state are owned by `SiteSelector`;
+          `SelectorDragState` only tracks minimal gesture metadata.
         """
         if event.inaxes is not self.renderer.ax:
             return False
@@ -339,8 +356,7 @@ class SiteSelector:
 
         # Store drag start as (r, theta).
         click_coordinate = Coordinate(event.ydata, event.xdata)
-        self.drag_tracker.drag_start = click_coordinate
-        self.drag_tracker.last_theta = click_coordinate.theta_coord
+        self.drag_tracker.start_drag(click_coordinate, operation=operation)
 
         # Establish an initial preview.
         clicked_bin = self.grid.bins_in_region(
@@ -425,7 +441,7 @@ class SiteSelector:
         self._draw_selection()
         self._clear_artists(self.renderer.hover_artists)
 
-        self.drag_tracker.clear()
+        self.drag_tracker.reset()
         return True
 
     # ------------------------------------------------------------------
