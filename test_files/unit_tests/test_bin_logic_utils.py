@@ -8,26 +8,40 @@ import pytest
 from dta.bin_logic.utils import BinAddress, BinEdge, Coordinate, unwrap_theta
 
 
-def test_binaddress_exposes_expected_public_tuple_api():
-    """Verify that BinAddress preserves its public field order and tuple semantics."""
+def test_binaddress_behaves_as_an_immutable_hashable_named_value():
+    """Verify that BinAddress exposes its public tuple API and remains immutable and hashable."""
     b = BinAddress(r_index=3, theta_index=7)
 
     # Verify the public field names and ordering expected by callers.
     assert BinAddress._fields == ("r_index", "theta_index")
 
-    # Verify tuple-style and attribute-style access expose the same values.
+    # Verify tuple-style and attribute-style access expose the stored indices.
     assert tuple(b) == (3, 7)
     assert b[0] == 3
     assert b[1] == 7
     assert b.r_index == 3
     assert b.theta_index == 7
 
+    # Verify the value object cannot be mutated after construction.
+    with pytest.raises(AttributeError):
+        b.r_index = 0  # type: ignore[misc]
 
-def test_coordinate_is_immutable_and_hashable():
-    """Verify that Coordinate behaves like an immutable, hashable value object."""
+    # Verify equivalent values can be used interchangeably in hashed containers.
+    s = {b}
+    assert BinAddress(3, 7) in s
+
+
+def test_coordinate_behaves_as_an_immutable_hashable_named_value():
+    """Verify that Coordinate exposes its public tuple API and remains immutable and hashable."""
     c = Coordinate(r_coord=1.5, theta_coord=0.25)
 
-    # Verify attribute access exposes the stored coordinate values.
+    # Verify the public field names and ordering expected by callers.
+    assert Coordinate._fields == ("r_coord", "theta_coord")
+
+    # Verify tuple-style and attribute-style access expose the stored coordinates.
+    assert tuple(c) == (1.5, 0.25)
+    assert c[0] == 1.5
+    assert c[1] == 0.25
     assert c.r_coord == 1.5
     assert c.theta_coord == 0.25
 
@@ -40,19 +54,33 @@ def test_coordinate_is_immutable_and_hashable():
     assert Coordinate(1.5, 0.25) in s
 
 
-def test_binedge_stores_coordinate_endpoints():
-    """Verify that BinEdge retains the provided Coordinate endpoints unchanged."""
+def test_binedge_behaves_as_an_immutable_hashable_named_value():
+    """Verify that BinEdge exposes its public tuple API and remains immutable and hashable."""
     p1 = Coordinate(1.0, 0.0)
     p2 = Coordinate(2.0, np.pi / 2)
     e = BinEdge(endpoint1=p1, endpoint2=p2)
 
-    # Verify the edge preserves the supplied endpoint objects.
+    # Verify the public field names and ordering expected by callers.
+    assert BinEdge._fields == ("endpoint1", "endpoint2")
+
+    # Verify tuple-style and attribute-style access expose the stored endpoints.
+    assert tuple(e) == (p1, p2)
+    assert e[0] == p1
+    assert e[1] == p2
     assert e.endpoint1 == p1
     assert e.endpoint2 == p2
 
     # Verify nested coordinate data remains accessible through the edge.
     assert e.endpoint1.r_coord == 1.0
     assert e.endpoint2.theta_coord == pytest.approx(np.pi / 2)
+
+    # Verify the value object cannot be mutated after construction.
+    with pytest.raises(AttributeError):
+        e.endpoint1 = p2  # type: ignore[misc]
+
+    # Verify equivalent values can be used interchangeably in hashed containers.
+    s = {e}
+    assert BinEdge(p1, p2) in s
 
 
 def test_unwrap_theta_returns_current_when_no_previous_angle_exists():
