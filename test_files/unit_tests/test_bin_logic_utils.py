@@ -89,7 +89,7 @@ def test_unwrap_theta_returns_current_when_no_previous_angle_exists():
     assert unwrap_theta(None, 2 * np.pi - 1e-6) == pytest.approx(2 * np.pi - 1e-6)
 
 
-def test_unwrap_theta_leaves_small_deltas_unchanged():
+def test_unwrap_theta_leaves_deltas_lt_pi_unchanged():
     """Verify that unwrap_theta does not adjust values already within pi of the previous angle."""
     prev = 1.0
 
