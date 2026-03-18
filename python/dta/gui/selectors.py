@@ -233,8 +233,7 @@ class SiteSelectorManager:
             return SelectionOperation.ADD
         elif "control" in key_presses:
             return SelectionOperation.SUBTRACT
-        else:
-            raise ValueError(f"fn expects 'shift', 'control', or nothing. Received {key_presses}.")
+        raise ValueError(f"fn expects 'shift', 'control', or nothing. Received {key_presses}.")
 
 
 class SiteSelector:
