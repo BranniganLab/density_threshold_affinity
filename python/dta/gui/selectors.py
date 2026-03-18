@@ -124,8 +124,8 @@ class SiteSelectorManager:
         # The selector that receives the press becomes the drag owner until release.
         self._drag_owner = selector
 
-        # Latch modifiers for the duration of the gesture.
-        selector.drag_tracker.mods = frozenset(self._mods_from_mouse_event(event))
+        # Latch operation for the duration of the gesture.
+        selector.drag_tracker.operation = self._determine_operation_from_key_presses(event)
 
         updated = bool(selector.on_press(event))
         if updated:
@@ -207,6 +207,36 @@ class SiteSelectorManager:
         if "control" in k or "ctrl" in k or "meta" in k:
             mods.add("control")
         return mods
+
+    def _determine_operation_from_key_presses(self, event) -> SelectionOperation:
+        """
+        Determine the correct operation mode from keyboard presses.
+
+        Parameters
+        ----------
+        event : matplotlib.backend_bases.MouseEvent
+            Mouse event potentially carrying modifier state.
+
+        Returns
+        -------
+        SelectionOperation
+            The operation modifier for a selection.
+
+        Notes
+        -----
+        If user switches quickly between shift and ctrl, matplotlib widget in
+        Jupyter is sometimes not fast enough to capture that. If shift and ctrl
+        are logged simultaneously, default to shift behavior (ADD).
+        """
+        key_presses = self._mods_from_mouse_event(event)
+        if len(key_presses) == 0:
+            return SelectionOperation.REPLACE
+        elif "shift" in key_presses:
+            return SelectionOperation.ADD
+        elif "control" in key_presses:
+            return SelectionOperation.SUBTRACT
+        else:
+            raise ValueError(f"fn expects 'shift', 'control', or nothing. Received {key_presses}.")
 
 
 class SiteSelector:
