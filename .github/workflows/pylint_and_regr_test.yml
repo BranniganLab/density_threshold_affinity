@@ -30,4 +30,6 @@ jobs:
     - name: Running unit tests with pytest
       run: |
         python -m pytest ./test_files/unit_tests/test_*.py
+    - name: Running regression test with pytest
+      run: |
         python -m pytest ./test_files/test_file.py

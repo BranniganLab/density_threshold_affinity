@@ -1,48 +1,89 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Mar  2 11:27:51 2026
-
-@author: js2746
-"""
+"""Unit tests for selection-operation enums and selector drag-state lifecycle."""
 
 import pytest
 
+from dta.bin_logic import Coordinate
 from dta.gui.selector_state import SelectionOperation, SelectorDragState
 
 
-def test_selection_operation_enum_values():
+def test_selection_operation_enum_exposes_expected_distinct_values():
+    """Verify that SelectionOperation defines the expected distinct string values."""
+    # Verify each enum member exposes the public value consumed by callers.
     assert SelectionOperation.REPLACE.value == "replace"
     assert SelectionOperation.ADD.value == "add"
     assert SelectionOperation.SUBTRACT.value == "subtract"
 
-    # sanity: enum members are distinct
-    assert len({SelectionOperation.REPLACE, SelectionOperation.ADD, SelectionOperation.SUBTRACT}) == 3
+    # Verify the enum members are distinct options rather than aliases.
+    assert len(
+        {
+            SelectionOperation.REPLACE,
+            SelectionOperation.ADD,
+            SelectionOperation.SUBTRACT,
+        }
+    ) == 3
 
 
-def test_selector_drag_state_defaults_are_empty_and_none():
+def test_selector_drag_state_defaults_are_empty():
+    """Verify that a new SelectorDragState starts with no active drag state."""
     s = SelectorDragState()
 
+    # Verify no drag has started yet, so positional tracking is empty.
     assert s.drag_start is None
     assert s.last_theta is None
-    assert s.current_preview_bins is None
-    assert s.mods == frozenset()
-    assert isinstance(s.mods, frozenset)
+
+    # Verify the default semantic selection behavior is replace.
+    assert s.operation is SelectionOperation.REPLACE
 
 
-def test_selector_drag_state_allows_setting_fields_and_latches_mods():
-    s = SelectorDragState(
-        drag_start=(1.25, 0.5),
-        last_theta=6.1,
-        current_preview_bins={(0, 0), (1, 2)},
-        mods=frozenset({"shift", "control"}),
+def test_selector_drag_state_start_drag_latches_operation_and_initializes_position():
+    """Verify that start_drag stores the drag origin, seeds theta tracking, and latches the resolved operation."""
+    s = SelectorDragState()
+
+    s.start_drag(
+        at=(1.25, 0.5),
+        operation=SelectionOperation.ADD,
     )
 
-    assert s.drag_start == (1.25, 0.5)
-    assert s.last_theta == 6.1
-    assert s.current_preview_bins == {(0, 0), (1, 2)}
-    assert s.mods == frozenset({"shift", "control"})
+    # Verify the drag origin is coerced to a Coordinate with the expected values.
+    assert isinstance(s.drag_start, Coordinate)
+    assert s.drag_start == Coordinate(r_coord=1.25, theta_coord=0.5)
 
-    # mods is a frozenset, so it should be immutable
+    # Verify theta tracking is initialized from the drag start coordinate.
+    assert s.last_theta == 0.5
+
+    # Verify the resolved semantic operation is latched exactly as provided.
+    assert s.operation is SelectionOperation.ADD
+
+
+def test_selector_drag_state_update_theta_and_clear_reset_state():
+    """Verify that update_theta advances theta tracking and clear resets the drag state."""
+    s = SelectorDragState()
+    s.start_drag(
+        at=Coordinate(r_coord=2.0, theta_coord=1.0),
+        operation=SelectionOperation.SUBTRACT,
+    )
+
+    # Verify update_theta replaces the tracked theta for the active drag.
+    s.update_theta(6.1)
+    assert s.last_theta == 6.1
+
+    # Verify clear resets all drag-related state back to the default empty values.
+    s.clear()
+    assert s.drag_start is None
+    assert s.last_theta is None
+    assert s.operation is SelectionOperation.REPLACE
+
+
+def test_selector_drag_state_operation_cannot_be_reassigned_directly():
+    """Verify that the latched operation cannot be reassigned directly mid-gesture."""
+    s = SelectorDragState()
+    s.start_drag(
+        at=Coordinate(r_coord=2.0, theta_coord=1.0),
+        operation=SelectionOperation.ADD,
+    )
+
+    # Verify external callers cannot overwrite the latched operation directly.
     with pytest.raises(AttributeError):
-        s.mods.add("alt")  # type: ignore[attr-defined]
+        s.operation = SelectionOperation.SUBTRACT
