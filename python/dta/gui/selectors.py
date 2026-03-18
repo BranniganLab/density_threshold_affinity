@@ -282,6 +282,7 @@ class SiteSelector:
         self.renderer = SelectionRenderer(ax, plot_kwargs)
         self.selection = BinSelection()
         self.drag_tracker = SelectorDragState()
+        self.current_preview_bins = None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -294,7 +295,8 @@ class SiteSelector:
         This method resets transient drag/preview state, but does not modify the
         committed selection.
         """
-        self.drag_tracker.clear()
+        self.drag_tracker.drag_start.clear()
+        self.current_preview_bins = None
 
     def on_deactivate(self):
         """
@@ -304,7 +306,8 @@ class SiteSelector:
         drag/preview state. It does not modify the committed selection.
         """
         self._clear_artists(self.renderer.hover_artists)
-        self.drag_tracker.clear()
+        self.drag_tracker.drag_start.clear()
+        self.current_preview_bins = None
 
     # ------------------------------------------------------------------
     # Event handlers
@@ -345,7 +348,7 @@ class SiteSelector:
             end=click_coordinate
         )
         updated_preview_bins = self._calculate_preview_bins(clicked_bin)
-        self.drag_tracker.current_preview_bins = updated_preview_bins
+        self.current_preview_bins = updated_preview_bins
         self._draw_preview(updated_preview_bins)
         return True
 
@@ -388,7 +391,7 @@ class SiteSelector:
         )
 
         updated_preview_bins = self._calculate_preview_bins(bins)
-        self.drag_tracker.current_preview_bins = updated_preview_bins
+        self.current_preview_bins = updated_preview_bins
 
         self._draw_preview(updated_preview_bins)
         return True
@@ -417,7 +420,7 @@ class SiteSelector:
         last_bins = frozenset(self.selection.get_bins())
         self.save_to_selection_history(last_bins)
 
-        self.selection.set_bins(self.drag_tracker.current_preview_bins)
+        self.selection.set_bins(self.current_preview_bins)
 
         self._draw_selection()
         self._clear_artists(self.renderer.hover_artists)
