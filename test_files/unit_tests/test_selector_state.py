@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """Unit tests for selection-operation enums and selector drag-state lifecycle."""
 
+import pytest
+
 from dta.bin_logic import Coordinate
 from dta.gui.selector_state import SelectionOperation, SelectorDragState
 
@@ -72,3 +74,16 @@ def test_selector_drag_state_update_theta_and_clear_reset_state():
     assert s.drag_start is None
     assert s.last_theta is None
     assert s.operation is SelectionOperation.REPLACE
+
+
+def test_selector_drag_state_operation_cannot_be_reassigned_directly():
+    """Verify that the latched operation cannot be reassigned directly mid-gesture."""
+    s = SelectorDragState()
+    s.start_drag(
+        at=Coordinate(r_coord=2.0, theta_coord=1.0),
+        operation=SelectionOperation.ADD,
+    )
+
+    # Verify external callers cannot overwrite the latched operation directly.
+    with pytest.raises(AttributeError):
+        s.operation = SelectionOperation.SUBTRACT

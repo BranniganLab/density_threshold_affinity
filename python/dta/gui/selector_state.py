@@ -61,13 +61,18 @@ class SelectorDragState:
 
     drag_start: Coordinate | None = None
     last_theta: float | None = None
-    operation: SelectionOperation = SelectionOperation.REPLACE
+    _operation: SelectionOperation = SelectionOperation.REPLACE
+
+    @property
+    def operation(self) -> SelectionOperation:
+        """Get self.operation without exposing setter."""
+        return self._operation
 
     def start_drag(self, at: Coordinate, *, operation: SelectionOperation) -> None:
         """Initialize gesture state at press-time."""
         self.drag_start = Coordinate(*at)
         self.last_theta = self.drag_start.theta_coord
-        self.operation = operation
+        self._operation = operation
 
     def update_theta(self, theta_unwrapped: float) -> None:
         """Update continuity bookkeeping."""
@@ -77,4 +82,4 @@ class SelectorDragState:
         """Reset to the 'no active gesture' state."""
         self.drag_start = None
         self.last_theta = None
-        self.operation = SelectionOperation.REPLACE
+        self._operation = SelectionOperation.REPLACE
