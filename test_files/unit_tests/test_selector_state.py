@@ -69,6 +69,7 @@ def test_site_selector_on_press_returns_false_outside_axes():
     assert updated is False
     assert sel.drag_tracker.drag_start is None
     assert sel.current_preview_bins is None
+    plt.close()
 
 
 def test_site_selector_on_press_returns_false_for_missing_data_coords():
@@ -84,6 +85,7 @@ def test_site_selector_on_press_returns_false_for_missing_data_coords():
     assert updated is False
     assert sel.drag_tracker.drag_start is None
     assert sel.current_preview_bins is None
+    plt.close()
 
 
 def test_site_selector_on_press_latches_operation_and_creates_initial_preview():
@@ -100,6 +102,7 @@ def test_site_selector_on_press_latches_operation_and_creates_initial_preview():
     assert sel.drag_tracker.drag_start is not None
     assert sel.drag_tracker.operation is SelectionOperation.ADD
     assert sel.current_preview_bins is not None
+    plt.close()
 
 
 def test_site_selector_on_motion_returns_false_without_active_drag():
@@ -111,6 +114,7 @@ def test_site_selector_on_motion_returns_false_without_active_drag():
 
     assert updated is False
     assert sel.current_preview_bins is None
+    plt.close()
 
 
 def test_site_selector_on_motion_returns_false_outside_axes_and_freezes_preview():
@@ -129,6 +133,7 @@ def test_site_selector_on_motion_returns_false_outside_axes_and_freezes_preview(
 
     assert updated is False
     assert sel.current_preview_bins == preview_before
+    plt.close()
 
 
 def test_site_selector_on_motion_returns_false_for_missing_data_coords():
@@ -146,6 +151,7 @@ def test_site_selector_on_motion_returns_false_for_missing_data_coords():
 
     assert updated is False
     assert sel.current_preview_bins == preview_before
+    plt.close()
 
 
 def test_site_selector_on_motion_updates_preview_and_last_theta():
@@ -164,6 +170,7 @@ def test_site_selector_on_motion_updates_preview_and_last_theta():
     assert updated is True
     assert sel.current_preview_bins is not None
     assert sel.drag_tracker.last_theta != last_theta_before
+    plt.close()
 
 
 def test_site_selector_on_release_returns_false_without_active_drag():
@@ -178,6 +185,7 @@ def test_site_selector_on_release_returns_false_without_active_drag():
     assert updated is False
     assert sel.drag_tracker.drag_start is None
     assert sel.current_preview_bins is None
+    plt.close()
 
 
 def test_site_selector_release_commits_last_preview_exactly():
@@ -205,6 +213,7 @@ def test_site_selector_release_commits_last_preview_exactly():
     assert sel.drag_tracker.last_theta is None
     assert sel.drag_tracker.operation is SelectionOperation.REPLACE
     assert sel.current_preview_bins is None
+    plt.close()
 
 
 def test_site_selector_add_and_subtract_semantics_across_multiple_drags():
@@ -244,6 +253,7 @@ def test_site_selector_add_and_subtract_semantics_across_multiple_drags():
     assert committed_after_add == set(preview_add)
     assert sel.current_preview_bins is None
     assert sel.drag_tracker.operation is SelectionOperation.REPLACE
+    plt.close()
 
 
 def test_site_selector_calculate_preview_bins_replace_mode():
@@ -261,6 +271,7 @@ def test_site_selector_calculate_preview_bins_replace_mode():
     preview = sel._calculate_preview_bins(bins)
 
     assert preview == bins
+    plt.close()
 
 
 def test_site_selector_calculate_preview_bins_add_mode():
@@ -279,6 +290,7 @@ def test_site_selector_calculate_preview_bins_add_mode():
     preview = sel._calculate_preview_bins(bins)
 
     assert preview == current | bins
+    plt.close()
 
 
 def test_site_selector_calculate_preview_bins_subtract_mode():
@@ -297,6 +309,7 @@ def test_site_selector_calculate_preview_bins_subtract_mode():
     preview = sel._calculate_preview_bins(bins)
 
     assert preview == {(0, 0), (2, 2)}
+    plt.close()
 
 
 def test_site_selector_on_activate_resets_transient_state():
@@ -319,6 +332,7 @@ def test_site_selector_on_activate_resets_transient_state():
     assert sel.drag_tracker.operation is SelectionOperation.REPLACE
     assert sel.current_preview_bins is None
     assert sel.selection.get_bins() == {(0, 0)}
+    plt.close()
 
 
 def test_site_selector_on_deactivate_clears_hover_artists_and_transient_state():
@@ -345,6 +359,7 @@ def test_site_selector_on_deactivate_clears_hover_artists_and_transient_state():
     assert sel.drag_tracker.last_theta is None
     assert sel.drag_tracker.operation is SelectionOperation.REPLACE
     assert sel.current_preview_bins is None
+    plt.close()
 
 
 # ============================================================================
@@ -374,6 +389,7 @@ def test_site_selector_manager_set_active_deactivates_previous_selector():
     assert manager._active[ax] is sel_b
     assert sel_a.drag_tracker.drag_start is None
     assert sel_a.current_preview_bins is None
+    plt.close()
 
 
 def test_site_selector_manager_mods_from_dict_gui_event_shift():
@@ -391,6 +407,7 @@ def test_site_selector_manager_mods_from_dict_gui_event_shift():
     )
 
     assert mods == {"shift"}
+    plt.close()
 
 
 def test_site_selector_manager_mods_from_dict_gui_event_ctrl_and_meta():
@@ -417,6 +434,7 @@ def test_site_selector_manager_mods_from_dict_gui_event_ctrl_and_meta():
 
     assert mods_ctrl == {"control"}
     assert mods_meta == {"control"}
+    plt.close()
 
 
 def test_site_selector_manager_mods_from_object_gui_event():
@@ -434,6 +452,7 @@ def test_site_selector_manager_mods_from_object_gui_event():
     )
 
     assert mods == {"shift", "control"}
+    plt.close()
 
 
 def test_site_selector_manager_mods_from_key_fallback():
@@ -451,6 +470,7 @@ def test_site_selector_manager_mods_from_key_fallback():
     )
 
     assert mods == {"shift", "control"}
+    plt.close()
 
 
 def test_site_selector_manager_latches_replace_when_no_modifiers():
@@ -465,6 +485,7 @@ def test_site_selector_manager_latches_replace_when_no_modifiers():
 
     assert manager._drag_owner is sel
     assert sel.drag_tracker.operation is SelectionOperation.REPLACE
+    plt.close()
 
 
 def test_site_selector_manager_latches_add_when_shift_is_pressed():
@@ -481,6 +502,7 @@ def test_site_selector_manager_latches_add_when_shift_is_pressed():
 
     assert manager._drag_owner is sel
     assert sel.drag_tracker.operation is SelectionOperation.ADD
+    plt.close()
 
 
 def test_site_selector_manager_latches_subtract_when_control_is_pressed():
@@ -497,6 +519,7 @@ def test_site_selector_manager_latches_subtract_when_control_is_pressed():
 
     assert manager._drag_owner is sel
     assert sel.drag_tracker.operation is SelectionOperation.SUBTRACT
+    plt.close()
 
 
 def test_site_selector_manager_prefers_shift_when_shift_and_control_are_both_present():
@@ -513,6 +536,7 @@ def test_site_selector_manager_prefers_shift_when_shift_and_control_are_both_pre
 
     assert manager._drag_owner is sel
     assert sel.drag_tracker.operation is SelectionOperation.ADD
+    plt.close()
 
 
 def test_site_selector_manager_motion_returns_early_without_drag_owner():
@@ -523,6 +547,7 @@ def test_site_selector_manager_motion_returns_early_without_drag_owner():
     manager._on_motion_event(FakeMouseEvent(inaxes=ax, xdata=0.2, ydata=0.2))
 
     assert manager._drag_owner is None
+    plt.close()
 
 
 def test_site_selector_manager_release_returns_early_without_drag_owner():
@@ -535,6 +560,7 @@ def test_site_selector_manager_release_returns_early_without_drag_owner():
     )
 
     assert manager._drag_owner is None
+    plt.close()
 
 
 # ============================================================================
@@ -573,3 +599,4 @@ def test_integration_freeze_outside_axes_but_commit_on_release_outside():
     assert sel_a.drag_tracker.operation is SelectionOperation.REPLACE
     assert sel_a.current_preview_bins is None
     assert sel_a.selection.get_bins() == preview_before
+    plt.close()
