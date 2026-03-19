@@ -229,9 +229,9 @@ class SiteSelectorManager:
         key_presses = self._mods_from_mouse_event(event)
         if len(key_presses) == 0:
             return SelectionOperation.REPLACE
-        elif "shift" in key_presses:
+        if "shift" in key_presses:
             return SelectionOperation.ADD
-        elif "control" in key_presses:
+        if "control" in key_presses:
             return SelectionOperation.SUBTRACT
         raise ValueError(f"fn expects 'shift', 'control', or nothing. Received {key_presses}.")
 

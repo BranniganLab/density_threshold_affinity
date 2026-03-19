@@ -539,6 +539,28 @@ def test_site_selector_manager_prefers_shift_when_shift_and_control_are_both_pre
     plt.close()
 
 
+def test_manager_prefers_add_when_shift_and_control_present_in_gui_event():
+    """Shift should take precedence over control when both are present in guiEvent."""
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    sel = _make_selector(ax)
+
+    manager = SiteSelectorManager(fig)
+    manager.register(sel, active=True)
+
+    manager._on_press_event(
+        FakeMouseEvent(
+            inaxes=ax,
+            xdata=0.2,
+            ydata=0.2,
+            guiEvent={"shiftKey": True, "ctrlKey": True},
+        )
+    )
+
+    assert manager._drag_owner is sel
+    assert sel.drag_tracker.operation is SelectionOperation.ADD
+    plt.close()
+
+
 def test_site_selector_manager_motion_returns_early_without_drag_owner():
     """Motion callback should do nothing when no selector owns the drag."""
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
