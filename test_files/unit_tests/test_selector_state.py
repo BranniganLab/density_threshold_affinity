@@ -9,6 +9,7 @@ import numpy as np
 
 from dta.gui import SiteSelector, SiteSelectorManager
 from dta.gui.selector_state import SelectionOperation
+from dta.bin_logic.utils import Coordinate
 
 
 @dataclass
@@ -252,7 +253,7 @@ def test_site_selector_calculate_preview_bins_replace_mode():
 
     sel.selection.set_bins({(0, 0), (1, 1)})
     sel.drag_tracker.start_drag(
-        sel.grid.bin_center(0, 0),
+        Coordinate(r_coord=0.25, theta_coord=0.5),
         operation=SelectionOperation.REPLACE,
     )
 
@@ -271,7 +272,7 @@ def test_site_selector_calculate_preview_bins_add_mode():
     bins = {(1, 1), (2, 2)}
     sel.selection.set_bins(current)
     sel.drag_tracker.start_drag(
-        sel.grid.bin_center(0, 0),
+        Coordinate(r_coord=0.25, theta_coord=0.5),
         operation=SelectionOperation.ADD,
     )
 
@@ -289,7 +290,7 @@ def test_site_selector_calculate_preview_bins_subtract_mode():
     bins = {(1, 1), (3, 3)}
     sel.selection.set_bins(current)
     sel.drag_tracker.start_drag(
-        sel.grid.bin_center(0, 0),
+        Coordinate(r_coord=0.25, theta_coord=0.5),
         operation=SelectionOperation.SUBTRACT,
     )
 
