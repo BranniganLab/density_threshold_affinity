@@ -25,9 +25,9 @@ class BinSelection:
         """Initialize an empty selection."""
         self._bins: set[BinAddress] = set()
 
-    def get_bins(self) -> set[BinAddress]:
+    def get_bins(self) -> frozenset[BinAddress]:
         """Return a copy of the current selection."""
-        return set(self._bins)
+        return frozenset(self._bins)
 
     def set_bins(self, bins: Iterable[BinAddress]) -> None:
         """Replace/set the current selection."""
