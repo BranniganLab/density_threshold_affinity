@@ -57,7 +57,7 @@ def test_selector_drag_state_start_drag_latches_operation_and_initializes_positi
     assert s.operation is SelectionOperation.ADD
 
 
-def test_selector_drag_state_clear_resets_state():
+def test_selector_drag_state_resets_state():
     """Verify that clear() resets the drag state."""
     s = SelectorDragState()
     s.start_drag(
@@ -66,7 +66,7 @@ def test_selector_drag_state_clear_resets_state():
     )
 
     # Verify clear resets all drag-related state back to the default empty values.
-    s.clear()
+    s.reset()
     assert s.drag_start is None
     assert s.last_theta is None
     assert s.operation is SelectionOperation.REPLACE
