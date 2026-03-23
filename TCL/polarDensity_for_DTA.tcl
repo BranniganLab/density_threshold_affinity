@@ -75,6 +75,28 @@ proc get_theta {x y} {
     return [RtoD $theta]
 }
 
+# get_theta_bin_vectorized
+#
+# Gets the angle from the (x,y) coordinates
+# Arguments:
+#   list: x positions
+#   list: y positions
+# Outputs:
+#   list: the theta bin indices for each atom/bead
+proc get_theta_bin_vectorized {x_list y_list dtheta} {
+    global M_PI
+    set theta_bin_list []
+    foreach x $x_list y $y_list {
+        set tmp  [expr {atan2($y,$x)}]
+        if {$tmp < 0} {
+            set theta [RtoD [expr 2*$M_PI + $tmp]]   
+        } else {
+            set theta [RtoD $tmp]
+        }
+        lappend theta_list [expr int($theta/$dtheta)]
+    }
+    return theta_bin_list 
+}
 
 # z_mid
 #
@@ -476,31 +498,24 @@ proc theta_histogram {singleFrame_lower singleFrame_upper } {
 ;#The inner-most loop of the histogramming algorithm: a loop over all lipid atoms (or beads) occupying one shell in one frame. Each atom is assigned an angular bin and totals are updated.  
 proc loop_over_atoms {shell atseltext frm} {
     global params
-    set indexs [$shell get index]
-    set theta_high_out [list]
-    set theta_low_out [list]
-    set leaflet 0
-    foreach indx $indexs {
-        #loop over atoms (or beads if CG) in the shell
-        set atsel "($atseltext) and index $indx"
-        set thislipid [atomselect top $atsel frame $frm]
-        set x [$thislipid get x]
-        set y [$thislipid get y]
-        set leaflet [$thislipid get user2]
-        set theta [get_theta $x $y]
-        set theta_bin [expr int($theta/$params(dtheta))]
-        if {$leaflet > 0} {
-            lappend theta_high_out $theta_bin
-        } elseif {$leaflet < 0} {
-            lappend theta_low_out $theta_bin
-        } else {
-            puts "WARNING: lipid atom $indx did not get assigned a leaflet for frame $frm"
-        }
-        $thislipid set user [expr $theta_bin]
-        $thislipid delete
+    set inner [atomselect top "($atseltext) and user2 '-1.0'" frame $frm]
+    set outer [atomselect top "($atseltext) and user2 1.0" frame $frm]
+    set error_check [atomselect top "($atseltext) and not user2 1.0 '-1.0'" frame $frm]
+    if {[$error_check num] != 0} {
+        set indx [$error_check get index]
+        puts "WARNING: lipid atom(s) $indx did not get assigned a leaflet for frame $frm"
     }
-    
-    return [list $theta_low_out $theta_high_out] ;#lower before upper is the convention
+    set inner_outer_bins []
+    foreach leaf [list $inner $outer] {
+        set x_list [$leaf get x]
+        set y_list [$leaf get y]
+        set theta_bin_list [get_theta_bin_vectorized $x_list $y_list $params(dtheta)]
+        lappend inner_outer_bins $theta_bin_list
+        $leaf set user $theta_bin_list
+    }
+    $inner delete
+    $outer delete
+    return inner_outer_bins
 }
 
 ;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
