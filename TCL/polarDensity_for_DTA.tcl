@@ -479,8 +479,8 @@ proc loop_over_atoms {shell atseltext frm} {
     set indexs [$shell get index]
     set theta_high_out [list]
     set theta_low_out [list]
-    set leaflet 0
     foreach indx $indexs {
+        set leaflet 0
         #loop over atoms (or beads if CG) in the shell
         set atsel "($atseltext) and index $indx"
         set thislipid [atomselect top $atsel frame $frm]
