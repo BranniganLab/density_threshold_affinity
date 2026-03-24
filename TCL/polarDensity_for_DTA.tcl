@@ -75,16 +75,17 @@ proc get_theta {x y} {
     return [RtoD $theta]
 }
 
-# get_theta_bin_vectorized
+# get_theta_bins
 #
-# Gets the angle from the (x,y) coordinates
+# Gets a list of theta bin indices from lists of x- and y-coordinates
 # Arguments:
-#   list: x positions
-#   list: y positions
-#   dtheta: step size in theta
+#   list: x coordinates
+#   list: y coordinates
+#   float: step size in theta
 # Outputs:
 #   list: the theta bin indices for each atom/bead
-proc get_theta_bin_vectorized {x_list y_list dtheta} {
+
+proc get_theta_bins {x_list y_list dtheta} {
     set theta_bin_list []
     foreach x $x_list y $y_list {
         set theta [get_theta $x $y]
@@ -505,7 +506,7 @@ proc loop_over_atoms {shell frm} {
     foreach leaf [list $inner $outer] {
         set x_list [$leaf get x]
         set y_list [$leaf get y]
-        set theta_bin_list [get_theta_bin_vectorized $x_list $y_list $params(dtheta)]
+        set theta_bin_list [get_theta_bins $x_list $y_list $params(dtheta)]
         lappend inner_outer_bins $theta_bin_list
         $leaf set user $theta_bin_list
     }
