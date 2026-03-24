@@ -93,9 +93,9 @@ proc get_theta_bin_vectorized {x_list y_list dtheta} {
         } else {
             set theta [RtoD $tmp]
         }
-        lappend theta_list [expr int($theta/$dtheta)]
+        lappend theta_bin_list [expr int($theta/$dtheta)]
     }
-    return theta_bin_list 
+    return $theta_bin_list 
 }
 
 # z_mid
@@ -496,8 +496,9 @@ proc theta_histogram {singleFrame_lower singleFrame_upper } {
 
 
 ;#The inner-most loop of the histogramming algorithm: a loop over all lipid atoms (or beads) occupying one shell in one frame. Each atom is assigned an angular bin and totals are updated.  
-proc loop_over_atoms {shell atseltext frm} {
+proc loop_over_atoms {shell frm} {
     global params
+    set atseltext [$shell text]
     set inner [atomselect top "($atseltext) and user2 '-1.0'" frame $frm]
     set outer [atomselect top "($atseltext) and user2 1.0" frame $frm]
     set error_check [atomselect top "($atseltext) and not user2 1.0 '-1.0'" frame $frm]
@@ -519,7 +520,7 @@ proc loop_over_atoms {shell atseltext frm} {
 }
 
 ;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
-proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper r_index} {
+proc loop_over_frames {shell start_frame end_frame ri rf flower fupper r_index} {
     global params
     set theta_bin_high [lrepeat [expr $params(Ntheta)+1] 0]
     set theta_bin_low [lrepeat [expr $params(Ntheta)+1] 0]
@@ -527,7 +528,7 @@ proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper
         $shell frame $frm
         $shell update 
         $shell set user3 $r_index
-        set singleFrame_counts [loop_over_atoms $shell $atseltext $frm]
+        set singleFrame_counts [loop_over_atoms $shell $frm]
         set singleFrame_upper [lindex $singleFrame_counts 1] 
         set singleFrame_lower [lindex $singleFrame_counts 0]
         set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper]
@@ -535,9 +536,7 @@ proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper
             error "theta_bin_high/low and theta_bins do not have the same length."
         }
         set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1] ]
-        #puts [lindex $theta_bins 1]
         set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
-        #puts $theta_bin_low
         output_bins $fupper $ri $rf [lindex $theta_bins 1] 
         output_bins $flower $ri $rf [lindex $theta_bins 0]   
     }
@@ -560,7 +559,7 @@ proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
         set rf2 [expr $rf*$rf]
         set ri2 [expr $ri*$ri]
         set shell [atomselect top "($atseltext) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"]
-        set theta_bin [loop_over_frames $shell $atseltext $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radial_bin_index]
+        set theta_bin [loop_over_frames $shell $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radial_bin_index]
         set theta_bin_high [lindex $theta_bin 1]
         set theta_bin_low [lindex $theta_bin 0]
         $shell delete	
