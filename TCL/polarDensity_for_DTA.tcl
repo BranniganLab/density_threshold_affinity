@@ -81,18 +81,13 @@ proc get_theta {x y} {
 # Arguments:
 #   list: x positions
 #   list: y positions
+#   dtheta: step size in theta
 # Outputs:
 #   list: the theta bin indices for each atom/bead
 proc get_theta_bin_vectorized {x_list y_list dtheta} {
-    global M_PI
     set theta_bin_list []
     foreach x $x_list y $y_list {
-        set tmp  [expr {atan2($y,$x)}]
-        if {$tmp < 0} {
-            set theta [RtoD [expr 2*$M_PI + $tmp]]   
-        } else {
-            set theta [RtoD $tmp]
-        }
+        set theta [get_theta $x $y]
         lappend theta_bin_list [expr int($theta/$dtheta)]
     }
     return $theta_bin_list 
