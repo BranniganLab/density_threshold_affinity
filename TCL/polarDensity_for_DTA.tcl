@@ -516,7 +516,7 @@ proc loop_over_atoms {shell frm} {
     }
     $inner delete
     $outer delete
-    return inner_outer_bins
+    return $inner_outer_bins
 }
 
 ;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
