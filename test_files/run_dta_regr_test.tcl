@@ -16,8 +16,8 @@ proc load_and_run_test {trajpath groname xtcname config} {
 
 ;# Put your tests below
 
-;# E protein cartesian
-set path "${script_path}/E-protein_trajectory"
-load_and_run_test $path DT_test.gro DT_test.xtc ${path}/config_for_regr_test.tcl
+;# ELIC in 95% POPC 5% Cardiolipin membrane
+set path "${script_path}/MD_files/rep1"
+load_and_run_test $path example.pdb example.xtc ${path}/config_for_regr_test.tcl
 
 exit
