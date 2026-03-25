@@ -116,7 +116,7 @@ jobs:
       # Step 8: Generate new values for regression testing
       - name: Generate new values for regression testing
         run: |
-          cd $GITHUB_WORKSPACE/testing_materials/
+          cd $GITHUB_WORKSPACE/test_files/
           echo "Running polarDensityBin.tcl on test systems in preparation for regression testing."
           #vmd -dispdev none -e ./run_nougat_test.tcl 2>&1 | tee ./nougat_test_outputs.log
           #if grep -q -e "can't" -e "couldn't" ./nougat_test_outputs.log
