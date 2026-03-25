@@ -2,8 +2,7 @@
 # 0 for sorting based on orientation of specified head & tail; 
 # 1 for legacy sorting based on orientation of default termini (aka classic local_mid_plane); 
 # 2 for sorting based on position relative to origin (tested only with cholesterol so far) 
-set leaflet_sorting_algorithm 2;
-set leaflet_sorter_2_reference_sel "name BB and resid 306" 
+set leaflet_sorting_algorithm 3; 
 set restrict_leaflet_sorter_to_Rmax 1;
 
 set center_and_align 1
