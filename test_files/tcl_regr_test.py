@@ -11,6 +11,45 @@ import difflib
 import fnmatch
 
 
+def is_ignored(rel_path: Path, patterns: list[str]) -> bool:
+    """
+    Determine whether a relative file path should be ignored.
+
+    A path is considered ignored if it matches any pattern in `patterns`.
+    Matching is performed against both:
+      - the full relative path (e.g., "subdir/file.txt")
+      - the filename only (e.g., "file.txt")
+
+    Supported pattern types (via fnmatch):
+      - Exact filenames: "file.txt"
+      - Relative paths: "subdir/file.txt"
+      - Glob patterns: "*.log", "cache/*", "*/tmp/*"
+
+    Parameters
+    ----------
+    rel_path : Path
+        Path relative to the root directory being compared.
+    patterns : list[str]
+        List of ignore patterns.
+
+    Returns
+    -------
+    bool
+        True if the path matches any ignore pattern, False otherwise.
+    """
+    rel_str = str(rel_path)
+    name = rel_path.name
+
+    for pattern in patterns:
+        if (
+            fnmatch.fnmatch(rel_str, pattern)
+            or fnmatch.fnmatch(name, pattern)
+        ):
+            return True
+
+    return False
+
+
 def assert_directories_equal(
     dir_a: Path,
     dir_b: Path,
@@ -34,15 +73,6 @@ def assert_directories_equal(
         - glob patterns: "*.log", "*/tmp/*"
     """
     ignore = ignore or []
-
-    def is_ignored(rel_path: Path) -> bool:
-        rel_str = str(rel_path)
-        name = rel_path.name
-
-        for pattern in ignore:
-            if (fnmatch.fnmatch(rel_str, pattern) or fnmatch.fnmatch(name, pattern)):
-                return True
-        return False
 
     files_a = {
         p.relative_to(dir_a)
@@ -100,6 +130,7 @@ def assert_directories_equal(
 
 
 def test_output_directory():
+    """Test if contents of reference val and test val directories match."""
     assert_directories_equal(
         Path("./MD_files/rep1/ref_vals"),
         Path("./MD_files/rep1/test_vals"),
