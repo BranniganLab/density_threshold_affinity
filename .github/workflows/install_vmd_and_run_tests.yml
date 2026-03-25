@@ -1,4 +1,4 @@
-name: VMD installation and nougat testing
+name: VMD installation and tcl testing
 
 on:
   push:
