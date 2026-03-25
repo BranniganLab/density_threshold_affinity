@@ -18,6 +18,6 @@ proc load_and_run_test {trajpath groname xtcname config} {
 
 ;# ELIC in 95% POPC 5% Cardiolipin membrane
 set path "${script_path}/MD_files/rep1"
-load_and_run_test $path example.pdb example.xtc ${path}/config_for_regr_test.tcl
+load_and_run_test $path example.gro example.xtc ${path}/config_for_regr_test.tcl
 
 exit
