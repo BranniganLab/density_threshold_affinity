@@ -77,13 +77,13 @@ def assert_directories_equal(
     files_a = {
         p.relative_to(dir_a)
         for p in dir_a.rglob("*")
-        if p.is_file() and not is_ignored(p.relative_to(dir_a))
+        if p.is_file() and not is_ignored(p.relative_to(dir_a), ignore)
     }
 
     files_b = {
         p.relative_to(dir_b)
         for p in dir_b.rglob("*")
-        if p.is_file() and not is_ignored(p.relative_to(dir_b))
+        if p.is_file() and not is_ignored(p.relative_to(dir_b), ignore)
     }
 
     # --- structure check ---
