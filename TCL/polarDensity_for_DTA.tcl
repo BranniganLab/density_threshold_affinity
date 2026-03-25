@@ -458,7 +458,7 @@ proc theta_histogram {singleFrame_lower singleFrame_upper } {
         set theta_bin_counts [lcount $ud]
         #Shell_Test $shel_count $theta_bin_counts
         set theta_bins {}
-        for {set ti 0} { $ti<=$params(Ntheta)} {incr ti 1} {
+        for {set ti 0} { $ti<$params(Ntheta)} {incr ti 1} {
             set tindex [lsearch [lindex $theta_bin_counts 0]  $ti]
             if { $tindex >= 0} {
                 set frame_count [expr 1.0 * [lindex [lindex $theta_bin_counts 1] $tindex]] 
@@ -506,8 +506,8 @@ proc loop_over_atoms {shell atseltext frm} {
 ;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
 proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper r_index} {
     global params
-    set theta_bin_high [lrepeat [expr $params(Ntheta)+1] 0]
-    set theta_bin_low [lrepeat [expr $params(Ntheta)+1] 0]
+    set theta_bin_high [lrepeat $params(Ntheta) 0]
+    set theta_bin_low [lrepeat $params(Ntheta) 0]
     for {set frm $params(start_frame)} {$frm < ${end_frame}} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
