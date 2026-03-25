@@ -1,4 +1,4 @@
-name: Pylint and regression test
+name: Pylint, unit tests, and python regression test
 
 on: [push]
 
