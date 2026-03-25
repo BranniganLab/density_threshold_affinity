@@ -128,6 +128,6 @@ jobs:
       # Step 11: Regression testing
       - name: Regression testing
         run: |
-          cd $GITHUB_WORKSPACE/testing_materials/
+          cd $GITHUB_WORKSPACE/test_files/
           echo "Regression testing start"
           #python3 -m pytest ./tests/
