@@ -86,7 +86,7 @@ proc get_theta {x y} {
 #   list: the theta bin indices for each atom/bead
 
 proc get_theta_bins {x_list y_list dtheta} {
-    set theta_bin_list []
+    set theta_bin_list {}
     foreach x $x_list y $y_list {
         set theta [get_theta $x $y]
         lappend theta_bin_list [expr int($theta/$dtheta)]
