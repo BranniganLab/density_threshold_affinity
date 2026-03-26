@@ -125,7 +125,7 @@ jobs:
             exit 1
           fi
 
-      # Step 11: Regression testing
+      # Step 9: Regression testing
       - name: Regression testing
         run: |
           cd $GITHUB_WORKSPACE/test_files/
