@@ -503,7 +503,7 @@ proc loop_over_atoms {shell frm} {
         puts "WARNING: lipid atom(s) $indx did not get assigned a leaflet for frame $frm"
     }
     $error_check delete
-    set inner_outer_bins []
+    set inner_outer_bins {}
     foreach leaf [list $inner $outer] {
         set x_list [$leaf get x]
         set y_list [$leaf get y]
