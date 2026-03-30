@@ -118,7 +118,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/test_files/
           echo "Running polarDensityBin.tcl on test systems in preparation for regression testing."
-          vmd -dispdev none -e ./run_dta_regr_test.tcl 2>&1 | tee ./dta_regr_test_outputs.log
+          vmd -dispdev none -e ./run_dta_for_regr_test.tcl 2>&1 | tee ./dta_regr_test_outputs.log
           if grep -q -e "can't" -e "couldn't" ./dta_regr_test_outputs.log
           then
             echo "An error occurred when running polarDensityBin.tcl on the test systems"
