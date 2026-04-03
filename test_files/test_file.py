@@ -18,18 +18,18 @@ from dta.SiteAcrossReplicas import SiteAcrossReplicas
 
 
 def analyze_sample_outputs():
-    # colormap = make_custom_colormap()
+    colormap = make_custom_colormap()
     root = Path(__file__).parent.resolve()
     root_path = root.joinpath("sample_tcl_outputs", "PC_CL").resolve()  # The directory containing your replica subdirectories
-    # DPPC_root_path = root_path.joinpath("../DPPC").resolve()  # The directory containing the outputs of PolarDensityBin from your DPPC + protein simulation
-    # DPPC_bulk_root_path = root_path.joinpath("../DPPC_bulk/").resolve()  # The directory that will contain the outputs of do_get_counts.tcl from your DPPC bulk simulation
+    DPPC_root_path = root_path.joinpath("../DPPC").resolve()  # The directory containing the outputs of PolarDensityBin from your DPPC + protein simulation
+    DPPC_bulk_root_path = root_path.joinpath("../DPPC_bulk/").resolve()  # The directory that will contain the outputs of do_get_counts.tcl from your DPPC bulk simulation
     bulk_system_root_path = root_path.joinpath("../PC_CL_bulk").resolve()  # The directory that will contain the outputs of do_get_counts.tcl from your bulk simulation
     system_name = "CL"  # The filestem that PolarDensityBin used.
     replicas = ["rep1", "rep2"]  # names of replica subdirectories, located in the "root_path" directory
-    # helix_definitions = root_path.joinpath(replicas[0])  #where are the coordinates for the transmembrane helices?
-    # max_enrichment = 5  # how high do you want your heat map to go?
+    helix_definitions = root_path.joinpath(replicas[0])  # where are the coordinates for the transmembrane helices?
+    max_enrichment = 5  # how high do you want your heat map to go?
 
-    # helices = load_inclusion_coordinates(helix_definitions)
+    helices = load_inclusion_coordinates(helix_definitions)
     avg_enrichments = []
     for leaf in ["upp", "low"]:
         rep_list = []
