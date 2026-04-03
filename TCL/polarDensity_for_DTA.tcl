@@ -420,7 +420,7 @@ proc clean_leaflet_assignments {atseltext} {
     set sel [ atomselect top "$atseltext"]
     set selnum [$sel num]
 
-    for {set update_frame $params(start_frame)} {$update_frame < ${ _frame}} {incr update_frame} {
+    for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame} {
         $sel frame $update_frame
         $sel set user2 [lrepeat $selnum 0.0]
         puts "Cleaning $selnum beads of leaflet assignments in frame $update_frame"
