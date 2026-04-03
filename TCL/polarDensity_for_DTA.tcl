@@ -144,7 +144,7 @@ proc center_and_wrap_system {inpt} {
 
     # determine if cell is orthorhombic (requirement of qwrap)
     set pbc_angles [molinfo top get {alpha beta gamma}]
-    if {(([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 0]==90.0))} {
+    if {(([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 1]==90.0) && ([lindex $pbc_angles 2]==90.0))} {
         set orthorhombic 1
     } else {
         set orthorhombic 0
@@ -154,7 +154,7 @@ proc center_and_wrap_system {inpt} {
     set com [measure center $sel weight mass]
 
     # tries to recenter box until COM is 0'ed out or proc times out (5 tries)
-    while {[expr abs([lindex $com 0])] > 1.0 &&  [expr abs([lindex $com 1])] > 1.0} {
+    while {[expr abs([lindex $com 0])] > 1.0 ||  [expr abs([lindex $com 1])] > 1.0} {
         
         ;# time-out trigger
         if {$counter_i > 5} {
