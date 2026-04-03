@@ -5,11 +5,9 @@ package require pbctools
 # get_avg_area
 #
 # Calculates the average area of a molecule in a simulation box.
-# Arguments:
-#     molid (str): The molecule ID of the molecule for which the average area needs to be calculated.
 # Results:
 #     float: The average area of the molecule in the simulation box.
-proc get_avg_area {molid} {
+proc get_avg_area {} {
     set box [pbc get -all]
     set xbox [list]
     set ybox [list]
@@ -652,7 +650,7 @@ proc polarDensityBin { config_file_script } {
         ;# outputs protein positions
         output_inclusion_centers
         ;# initialize some constants
-        set area [get_avg_area top]
+        set area [get_avg_area]
         set nframes [molinfo top get numframes]
         if { $params(start_frame) > $nframes } {
             puts "Error: specified start frame $params(start_frame) is greater than number of frames $nframes" 
