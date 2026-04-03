@@ -19,8 +19,7 @@ from dta.SiteAcrossReplicas import SiteAcrossReplicas
 
 def analyze_sample_outputs():
     colormap = make_custom_colormap()
-    root = Path(__file__).parent.resolve()
-    root_path = root.joinpath("sample_tcl_outputs", "PC_CL").resolve()  # The directory containing your replica subdirectories
+    root_path = Path(__file__).parent.joinpath("sample_tcl_outputs", "PC_CL").resolve()  # The directory containing your replica subdirectories
     DPPC_root_path = root_path.joinpath("../DPPC").resolve()  # The directory containing the outputs of PolarDensityBin from your DPPC + protein simulation
     DPPC_bulk_root_path = root_path.joinpath("../DPPC_bulk/").resolve()  # The directory that will contain the outputs of do_get_counts.tcl from your DPPC bulk simulation
     bulk_system_root_path = root_path.joinpath("../PC_CL_bulk").resolve()  # The directory that will contain the outputs of do_get_counts.tcl from your bulk simulation
