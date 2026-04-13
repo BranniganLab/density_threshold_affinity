@@ -664,12 +664,12 @@ proc polarDensityBin { config_file_script } {
         set area [get_avg_area]
         set nframes [molinfo top get numframes]
         if { $params(start_frame) > $nframes } {
-            puts "Error: specified start frame $params(start_frame) is greater than number of frames $nframes" 
-            set start_frame $nframes
+            puts "Warning: specified start frame $params(start_frame) is greater than number of frames $nframes" 
+            set params(start_frame) $nframes
         }
         if { $params(end_frame) > $nframes } {
             puts "Warning: specified end frame $params(end_frame) is greater than number of frames; setting end frame to $nframes" 
-            set end_frame $nframes
+            set params(end_frame) $nframes
         }
 
         puts "Atomselection:\t$atseltext"
