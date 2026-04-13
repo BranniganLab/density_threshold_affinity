@@ -371,6 +371,7 @@ proc validate_equal_length_lists {lists} {
 ;# Calculates the total number of lipids and beads of the given selection in each leaflet 
 ;# Assigns the leaflet to user2 
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
+;# Assumes that lipids are separable by resid.
 proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {restrict_to_Rmax 0}} {
     global params
     if {$restrict_to_Rmax == 1} {
