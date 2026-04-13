@@ -645,8 +645,7 @@ proc polarDensityBin { config_file_script } {
         error "Rmax must be evenly divisible by dr."
     }
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
-    set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
-    set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
+
     source $params(helix_assignment_script)
     foreach atseltext $params(atomsels) stem $params(filename_stems) headname $params(headnames) tailname $params(tailnames) {
         ;# make sure the atomselection exists
