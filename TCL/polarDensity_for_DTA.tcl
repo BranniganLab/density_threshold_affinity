@@ -519,7 +519,7 @@ proc loop_over_frames {shell start_frame end_frame ri rf flower fupper r_index} 
     global params
     set theta_bin_high [lrepeat [expr $params(Ntheta)+1] 0]
     set theta_bin_low [lrepeat [expr $params(Ntheta)+1] 0]
-    for {set frm $params(start_frame)} {$frm < ${end_frame}} {incr frm $params(dt)} {
+    for {set frm $start_frame} {$frm < $end_frame} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
         $shell set user3 $r_index
