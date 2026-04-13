@@ -656,9 +656,9 @@ proc polarDensityBin { config_file_script } {
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
 
     if {$params(leaflet_sorting_algorithm) == 0} {
-        validate_equal_length_lists{{$params(atomsels) $params(filename_stems) $params(headnames) $params(tailnames)}}
+        validate_equal_length_lists{[list $params(atomsels) $params(filename_stems) $params(headnames) $params(tailnames)]}
     } else {
-        validate_equal_length_lists{{$params(atomsels) $params(filename_stems)}}
+        validate_equal_length_lists{[list $params(atomsels) $params(filename_stems)]}
     }
 
     source $params(helix_assignment_script)
