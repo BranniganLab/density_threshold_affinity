@@ -301,13 +301,18 @@ proc leaflet_sorter_2 {atsel_in refsel_in frame_i} {
 ;# Compares lipid's COM z component to local midplane and sorts accordingly.
 proc leaflet_sorter_3 {atsel_in frame_i} {
     set lipidsel [atomselect top $atsel_in frame $frame_i]
-    set lipid_com [measure center $lipidsel weight mass]
-    set lipid_x [lindex $lipid_com 0]
-    set lipid_y [lindex $lipid_com 1]
-    set lipid_z [lindex $lipid_com 2]
-    
-    set local_surfaces [atomselect top "name PO4 GL1 GL2 AM1 AM2 and pbwithin 200 of $atsel_in" frame $frame_i]
+    set local_surfaces [atomselect top "name PO4 GL1 GL2 AM1 AM2 and pbwithin 50 of $atsel_in" frame $frame_i]
+
+    if {[$local_surfaces num] == 0} {
+        error "[$local_surfaces text] did not return any atoms on frame ${frame_i}"
+    }
+    if {[$lipidsel num] == 0} {
+        error "[$lipidsel text] did not return any atoms on frame ${frame_i}"
+    }
+
+    set lipid_z [lindex [measure center $lipidsel weight mass] 2]
     set local_midplane [lindex [measure center $local_surfaces weight mass] 2]
+
     $local_surfaces delete
 
     if {$lipid_z < $local_midplane} {
