@@ -452,15 +452,9 @@ proc clean_leaflet_assignments {atseltext} {
 #test to see if two floats are evenly divisible. Return 1 if evenly divisible.
 #Return 0 if not evenly divisible.
 proc test_if_evenly_divisible {dividend divisor} {
-    set TOLERANCE [expr 10.0**-12]
-    set float_quotient [expr $dividend / double($divisor)]
-    set int_quotient [expr int($float_quotient)]
-    set diff [expr $float_quotient - $int_quotient]
-    if {$diff <= $TOLERANCE} {
-        return 1
-    } else {
-        return 0
-    }
+    set tolerance 1.0e-12
+    set q [expr {$dividend / double($divisor)}]
+    return [expr {abs($q - round($q)) <= $tolerance}]
 }
     
 #write radial and theta bin output to file 
