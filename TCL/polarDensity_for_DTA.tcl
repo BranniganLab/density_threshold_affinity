@@ -354,6 +354,20 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
 }
 
 
+;# Validates that multiple lists are same length. For use before a foreach,
+;# which will silently fail if lists are not the same length.
+proc validate_equal_length_lists {lists} {
+    set expected_len ""
+    foreach {name value} $lists {
+        set this_len [llength $value]
+        if {$expected_len eq ""} {
+            set expected_len $this_len
+        } elseif {$this_len != $expected_len} {
+            error "List length mismatch: $name has length $this_len, expected $expected_len"
+        }
+    }
+}
+
 ;# Calculates the total number of lipids and beads of the given selection in each leaflet 
 ;# Assigns the leaflet to user2 
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
@@ -639,6 +653,12 @@ proc polarDensityBin { config_file_script } {
         error "Rmax must be evenly divisible by dr."
     }
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
+
+    if {$params(leaflet_sorting_algorithm) == 0} {
+        validate_equal_length_lists{{$params(atomsels) $params(filename_stems) $params(headnames) $params(tailnames)}}
+    } else {
+        validate_equal_length_lists{{$params(atomsels) $params(filename_stems)}}
+    }
 
     source $params(helix_assignment_script)
     foreach atseltext $params(atomsels) stem $params(filename_stems) headname $params(headnames) tailname $params(tailnames) {
