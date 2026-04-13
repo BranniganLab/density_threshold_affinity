@@ -113,11 +113,11 @@ jobs:
             echo "VMD installation verified successfully."
           fi
 
-      # Step 8: Generate new values for regression testing
-      - name: Generate new values for regression testing
+      # Step 8: Generate new values for acceptance testing
+      - name: Generate new values for acceptance testing
         run: |
           cd $GITHUB_WORKSPACE/test_files/
-          echo "Running polarDensityBin.tcl on test systems in preparation for regression testing."
+          echo "Running polarDensityBin.tcl on test systems in preparation for acceptance testing."
           vmd -dispdev none -e ./run_dta_for_regr_test.tcl 2>&1 | tee ./run_dta_for_regr_test.log
           if grep -q -e "can't" -e "couldn't" ./run_dta_for_regr_test.log
           then
@@ -125,9 +125,9 @@ jobs:
             exit 1
           fi
 
-      # Step 9: Regression testing
-      - name: Regression testing
+      # Step 9: Acceptance testing
+      - name: Acceptance testing
         run: |
           cd $GITHUB_WORKSPACE/test_files/
-          echo "Regression testing start"
+          echo "Acceptance testing start"
           python3 -m pytest ./tcl_regr_test.py
