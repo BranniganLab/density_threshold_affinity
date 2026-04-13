@@ -1,5 +1,6 @@
-set script_path [pwd]
-source $script_path/../TCL/polarDensity_for_DTA.tcl
+set scriptDir [file dirname [file normalize [info script]]]
+set DTA_path [file join $scriptDir "../TCL/polarDensity_for_DTA.tcl"]
+source $DTA_path
 
 
 proc load_and_run_test {trajpath groname xtcname config home} {
@@ -17,7 +18,7 @@ proc load_and_run_test {trajpath groname xtcname config home} {
 ;# Put your tests below
 
 ;# ELIC in 95% POPC 5% Cardiolipin membrane
-set path "${script_path}/MD_files/rep1/test_vals"
+set path [file join $scriptDir "MD_files/rep1/test_vals"]
 load_and_run_test $path ../example.gro ../example.xtc ${path}/../config_for_regr_test.tcl $scriptDir
 
 exit
