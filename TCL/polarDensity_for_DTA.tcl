@@ -5,11 +5,9 @@ package require pbctools
 # get_avg_area
 #
 # Calculates the average area of a molecule in a simulation box.
-# Arguments:
-#     molid (str): The molecule ID of the molecule for which the average area needs to be calculated.
 # Results:
 #     float: The average area of the molecule in the simulation box.
-proc get_avg_area {molid} {
+proc get_avg_area {} {
     set box [pbc get -all]
     set xbox [list]
     set ybox [list]
@@ -162,7 +160,7 @@ proc center_and_wrap_system {inpt} {
 
     # determine if cell is orthorhombic (requirement of qwrap)
     set pbc_angles [molinfo top get {alpha beta gamma}]
-    if {(([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 0]==90.0))} {
+    if {(([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 1]==90.0) && ([lindex $pbc_angles 2]==90.0))} {
         set orthorhombic 1
     } else {
         set orthorhombic 0
@@ -172,7 +170,7 @@ proc center_and_wrap_system {inpt} {
     set com [measure center $sel weight mass]
 
     # tries to recenter box until COM is 0'ed out or proc times out (5 tries)
-    while {[expr abs([lindex $com 0])] > 1.0 &&  [expr abs([lindex $com 1])] > 1.0} {
+    while {[expr abs([lindex $com 0])] > 1.0 ||  [expr abs([lindex $com 1])] > 1.0} {
         
         ;# time-out trigger
         if {$counter_i > 5} {
@@ -303,13 +301,18 @@ proc leaflet_sorter_2 {atsel_in refsel_in frame_i} {
 ;# Compares lipid's COM z component to local midplane and sorts accordingly.
 proc leaflet_sorter_3 {atsel_in frame_i} {
     set lipidsel [atomselect top $atsel_in frame $frame_i]
-    set lipid_com [measure center $lipidsel weight mass]
-    set lipid_x [lindex $lipid_com 0]
-    set lipid_y [lindex $lipid_com 1]
-    set lipid_z [lindex $lipid_com 2]
-    
     set local_surfaces [atomselect top "name PO4 GL1 GL2 AM1 AM2 and pbwithin 200 of $atsel_in" frame $frame_i]
+
+    if {[$local_surfaces num] == 0} {
+        error "[$local_surfaces text] did not return any atoms on frame ${frame_i}"
+    }
+    if {[$lipidsel num] == 0} {
+        error "[$lipidsel text] did not return any atoms on frame ${frame_i}"
+    }
+
+    set lipid_z [lindex [measure center $lipidsel weight mass] 2]
     set local_midplane [lindex [measure center $local_surfaces weight mass] 2]
+
     $local_surfaces delete
 
     if {$lipid_z < $local_midplane} {
@@ -351,9 +354,24 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
 }
 
 
+;# Validates that multiple lists are same length. For use before a foreach,
+;# which will silently fail if lists are not the same length.
+proc validate_equal_length_lists {lists} {
+    set expected_len ""
+    foreach {name value} $lists {
+        set this_len [llength $value]
+        if {$expected_len eq ""} {
+            set expected_len $this_len
+        } elseif {$this_len != $expected_len} {
+            error "List length mismatch: $name has length $this_len, expected $expected_len"
+        }
+    }
+}
+
 ;# Calculates the total number of lipids and beads of the given selection in each leaflet 
 ;# Assigns the leaflet to user2 
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
+;# Assumes that lipids are separable by resid.
 proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {restrict_to_Rmax 0}} {
     global params
     if {$restrict_to_Rmax == 1} {
@@ -438,7 +456,7 @@ proc clean_leaflet_assignments {atseltext} {
     set sel [ atomselect top "$atseltext"]
     set selnum [$sel num]
 
-    for {set update_frame $params(start_frame)} {$update_frame < ${ _frame}} {incr update_frame} {
+    for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame} {
         $sel frame $update_frame
         $sel set user2 [lrepeat $selnum 0.0]
         puts "Cleaning $selnum beads of leaflet assignments in frame $update_frame"
@@ -449,15 +467,9 @@ proc clean_leaflet_assignments {atseltext} {
 #test to see if two floats are evenly divisible. Return 1 if evenly divisible.
 #Return 0 if not evenly divisible.
 proc test_if_evenly_divisible {dividend divisor} {
-    set TOLERANCE [expr 10.0**-12]
-    set float_quotient [expr $dividend / double($divisor)]
-    set int_quotient [expr int($float_quotient)]
-    set diff [expr $float_quotient - $int_quotient]
-    if {$diff <= $TOLERANCE} {
-        return 1
-    } else {
-        return 0
-    }
+    set tolerance 1.0e-12
+    set q [expr {$dividend / double($divisor)}]
+    return [expr {abs($q - round($q)) <= $tolerance}]
 }
     
 #write radial and theta bin output to file 
@@ -521,7 +533,7 @@ proc loop_over_frames {shell start_frame end_frame ri rf flower fupper r_index} 
     global params
     set theta_bin_high [lrepeat [expr $params(Ntheta)+1] 0]
     set theta_bin_low [lrepeat [expr $params(Ntheta)+1] 0]
-    for {set frm $params(start_frame)} {$frm < ${end_frame}} {incr frm $params(dt)} {
+    for {set frm $start_frame} {$frm < $end_frame} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
         $shell set user3 $r_index
@@ -642,8 +654,13 @@ proc polarDensityBin { config_file_script } {
         error "Rmax must be evenly divisible by dr."
     }
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
-    set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
-    set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
+
+    if {$params(leaflet_sorting_algorithm) == 0} {
+        validate_equal_length_lists "$params(atomsels) $params(filename_stems) $params(headnames) $params(tailnames)"
+    } else {
+        validate_equal_length_lists "$params(atomsels) $params(filename_stems)"
+    }
+
     source $params(helix_assignment_script)
     foreach atseltext $params(atomsels) stem $params(filename_stems) headname $params(headnames) tailname $params(tailnames) {
         ;# make sure the atomselection exists
@@ -663,15 +680,15 @@ proc polarDensityBin { config_file_script } {
         ;# outputs protein positions
         output_inclusion_centers
         ;# initialize some constants
-        set area [get_avg_area top]
+        set area [get_avg_area]
         set nframes [molinfo top get numframes]
         if { $params(start_frame) > $nframes } {
-            puts "Error: specified start frame $params(start_frame) is greater than number of frames $nframes" 
-            set start_frame $nframes
+            puts "Warning: specified start frame $params(start_frame) is greater than number of frames $nframes" 
+            set params(start_frame) $nframes
         }
         if { $params(end_frame) > $nframes } {
             puts "Warning: specified end frame $params(end_frame) is greater than number of frames; setting end frame to $nframes" 
-            set end_frame $nframes
+            set params(end_frame) $nframes
         }
 
         puts "Atomselection:\t$atseltext"
