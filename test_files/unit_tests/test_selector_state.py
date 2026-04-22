@@ -57,20 +57,16 @@ def test_selector_drag_state_start_drag_latches_operation_and_initializes_positi
     assert s.operation is SelectionOperation.ADD
 
 
-def test_selector_drag_state_update_theta_and_clear_reset_state():
-    """Verify that update_theta advances theta tracking and clear resets the drag state."""
+def test_selector_drag_state_resets_state():
+    """Verify that clear() resets the drag state."""
     s = SelectorDragState()
     s.start_drag(
         at=Coordinate(r_coord=2.0, theta_coord=1.0),
         operation=SelectionOperation.SUBTRACT,
     )
 
-    # Verify update_theta replaces the tracked theta for the active drag.
-    s.update_theta(6.1)
-    assert s.last_theta == 6.1
-
     # Verify clear resets all drag-related state back to the default empty values.
-    s.clear()
+    s.reset()
     assert s.drag_start is None
     assert s.last_theta is None
     assert s.operation is SelectionOperation.REPLACE
