@@ -18,7 +18,7 @@ TWO_PI = 2.0 * np.pi
 @pytest.fixture()
 def grid():
     # Edges aren't used by bin_in_theta_arc, but PolarBinGrid needs valid arrays.
-    return PolarBinGrid(theta_edges=np.linspace(0.0, TWO_PI, 5), r_edges=np.linspace(0.0, 1.0, 3))
+    return PolarBinGrid(0, 1, 2, 4)
 
 
 # -----------------------------------------------------------------------------
