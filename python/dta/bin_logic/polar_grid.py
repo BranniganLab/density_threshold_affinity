@@ -52,6 +52,8 @@ class PolarBinGrid:
         """
         self.n_r = n_r
         self.n_theta = n_theta
+        self.d_r = (r_max - r_min) / n_r
+        self.d_theta = (2 * np.pi) / n_theta
         self.r_edges = np.linspace(r_min, r_max, n_r + 1)
         self.theta_edges = np.linspace(0.0, 2.0 * np.pi, n_theta + 1)
         self.theta_grid, self.r_grid = np.meshgrid(self.theta_edges, self.r_edges)
@@ -71,8 +73,8 @@ class PolarBinGrid:
             The (radial index, angular index) of the bin,
             or None if the point lies outside the grid.
         """
-        theta_idx = np.searchsorted(self.theta_edges, coord[1] % (2 * np.pi), side="right") - 1
-        r_idx = np.searchsorted(self.r_edges, coord[0], side="right") - 1
+        theta_idx = (coord[1] % (2 * np.pi)) // self.d_theta
+        r_idx = coord[0] // self.d_r
 
         if 0 <= r_idx < self.n_r and 0 <= theta_idx < self.n_theta:
             return BinAddress(r_idx, theta_idx)
