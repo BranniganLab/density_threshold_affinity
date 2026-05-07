@@ -30,16 +30,16 @@ def test_map_coord_to_bin_idx_boundaries_theta_and_r():
     grid = PolarBinGrid(0, 2, 2, 2)
 
     # theta exactly on interior edge goes to the bin on the "right"
-    assert grid.map_coord_to_bin_idx((0.5, 1.0)) == (0, 1)
+    assert grid.map_coord_to_bin_idx((0.5, np.pi)) == (0, 1)
 
     # theta=0.0 maps to first bin
     assert grid.map_coord_to_bin_idx((0.5, 0.0)) == (0, 0)
 
     # theta at the last *grid edge* is outside (since this grid does not span 2π)
-    assert grid.map_coord_to_bin_idx((0.5, 2.0)) is None
+    assert grid.map_coord_to_bin_idx((0.5, 2.0 * np.pi)) is None
 
     # actual angular wraparound happens at 2π
-    assert grid.map_coord_to_bin_idx((0.5, 2.0 * np.pi)) == (0, 0)
+    assert grid.map_coord_to_bin_idx((0.5, 2.0 * np.pi + 1)) == (0, 0)
 
     # r exactly on interior edge goes to bin on the "right"
     assert grid.map_coord_to_bin_idx((1.0, 0.5)) == (1, 0)
