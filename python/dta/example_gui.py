@@ -4,6 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from dta.gui import SiteSelectorManager, SiteSelector
+from dta.bin_logic import PolarBinGrid
 
 
 def example_usage():
@@ -25,10 +26,7 @@ def example_usage():
     interactive environment. It creates two polar pcolormesh plots and registers
     a separate selector for each Axes.
     """
-    theta_edges = np.linspace(0.0, 2.0 * np.pi, 49)
-    r_edges = np.linspace(0.0, 1.0, 21)
-
-    theta, r = np.meshgrid(theta_edges, r_edges)
+    grid = PolarBinGrid(0, 1, 20, 48)
     data = np.random.rand(20, 48)
 
     fig, (ax1, ax2) = plt.subplots(
@@ -39,8 +37,8 @@ def example_usage():
     )
 
     pcm1 = ax1.pcolormesh(
-        theta,
-        r,
+        grid.theta_grid,
+        grid.r_grid,
         data,
         shading="auto",
         cmap="viridis",
@@ -49,8 +47,8 @@ def example_usage():
     fig.colorbar(pcm1, ax=ax1, pad=0.1)
 
     pcm2 = ax2.pcolormesh(
-        theta,
-        r,
+        grid.theta_grid,
+        grid.r_grid,
         data,
         shading="auto",
         cmap="plasma",
@@ -66,8 +64,7 @@ def example_usage():
 
     selector_a = SiteSelector(
         ax1,
-        theta_edges=theta_edges,
-        r_edges=r_edges,
+        grid=grid,
         plot_kwargs=plotting_kwargs,
     )
 
@@ -75,8 +72,7 @@ def example_usage():
 
     selector_b = SiteSelector(
         ax2,
-        theta_edges=theta_edges,
-        r_edges=r_edges,
+        grid=grid,
         plot_kwargs=plotting_kwargs,
     )
 
