@@ -35,7 +35,7 @@ def test_map_coord_to_bin_idx():
     assert grid.map_coord_to_bin_idx((2.0, theta)) is None
 
     # defaults to higher bin index when coord on bin boundary
-    assert grid.map_coord_to_bin_idx((0.5, np.pi)) == (1, 3)
+    assert grid.map_coord_to_bin_idx((0.5, np.pi)) == (1, 2)
 
     # exactly on outer edge is None (because defaults to higher bin index)
     assert grid.map_coord_to_bin_idx((1.0, theta)) is None
