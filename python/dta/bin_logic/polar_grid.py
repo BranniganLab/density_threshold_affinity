@@ -75,8 +75,8 @@ class PolarBinGrid:
             The (radial index, angular index) of the bin,
             or None if the point lies outside the grid.
         """
-        theta_idx = (coord[1] % (2 * np.pi)) // self.d_theta
-        r_idx = coord[0] // self.d_r
+        theta_idx = int((coord[1] % (2 * np.pi)) // self.d_theta)
+        r_idx = int(coord[0] // self.d_r)
 
         if 0 <= r_idx < self.n_r and 0 <= theta_idx < self.n_theta:
             return BinAddress(r_idx, theta_idx)
@@ -107,8 +107,8 @@ class PolarBinGrid:
         set[BinAddress]
             All bins intersecting the region.
         """
-        start_bin = int(self.map_coord_to_bin_idx(corner1))
-        end_bin = int(self.map_coord_to_bin_idx(corner2))
+        start_bin = self.map_coord_to_bin_idx(corner1)
+        end_bin = self.map_coord_to_bin_idx(corner2)
 
         start_r_index, end_r_index = sorted((start_bin[0], end_bin[0]))
         r_indices = list(range(start_r_index, end_r_index + 1))
