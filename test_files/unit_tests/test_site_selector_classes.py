@@ -10,6 +10,7 @@ import numpy as np
 from dta.gui import SiteSelector, SiteSelectorManager
 from dta.gui.selector_state import SelectionOperation
 from dta.bin_logic.utils import Coordinate
+from dta.bin_logic import PolarBinGrid
 
 
 @dataclass
@@ -46,9 +47,8 @@ class DummyArtist:
 
 def _make_selector(ax):
     """Construct a selector over a small polar grid for test use."""
-    theta_edges = np.linspace(0, 2 * np.pi, 9)  # 8 angular bins
-    r_edges = np.linspace(0, 1, 5)              # 4 radial bins
-    return SiteSelector(ax, theta_edges, r_edges, plot_kwargs={"zorder": 20})
+    grid = PolarBinGrid(0, 1, 4, 8)
+    return SiteSelector(ax, grid, plot_kwargs={"zorder": 20})
 
 
 # ============================================================================
