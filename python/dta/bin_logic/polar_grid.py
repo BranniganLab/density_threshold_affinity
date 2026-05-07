@@ -30,21 +30,31 @@ class PolarBinGrid:
     It contains no rendering logic and no mutable selection state.
     """
 
-    def __init__(self, theta_edges, r_edges):
+    def __init__(self,
+                 r_min: float,
+                 r_max: float,
+                 n_r: int,
+                 n_theta: int,
+                 ) -> None:
         """
         Create a polar bin grid.
 
         Parameters
         ----------
-        theta_edges : array-like
-            Angular bin edges in radians.
-        r_edges : array-like
-            Radial bin edges.
+        r_min : float
+            The minimum r value in the grid. The beginning of the first bin.
+        r_max : float
+            The maximum r value in the grid. The end of the last bin.
+        n_r : int
+            Number of radial (r) bins.
+        n_theta : int
+            Number of angular (theta) bins.
         """
-        self.theta_edges = np.asarray(theta_edges)
-        self.r_edges = np.asarray(r_edges)
-        self.n_t = len(theta_edges) - 1
-        self.n_r = len(r_edges) - 1
+        self.n_r = n_r
+        self.n_theta = n_theta
+        self.r_edges = np.linspace(r_min, r_max, n_r + 1)
+        self.theta_edges = np.linspace(0.0, 2.0 * np.pi, n_theta + 1)
+        self.theta_grid, self.r_grid = np.meshgrid(self.theta_edges, self.r_edges)
 
     def map_coord_to_bin_idx(self, coord):
         """
