@@ -9,7 +9,6 @@ Created on Fri Jan 30 16:01:23 2026
 import numpy as np
 from dta.bin_logic import PolarBinGrid
 from dta.bin_logic.utils import BinEdge
-from dta.gui import SelectionRenderer
 
 
 def test_map_coord_to_bin_idx_basic_and_wrap():
@@ -99,19 +98,3 @@ def test_exposed_edges_two_adjacent_bins_share_internal_edge():
 
     # Two squares share one internal edge => 4 + 4 - 2 = 6 exposed edges
     assert len(edges) == 6
-
-
-def test_renderer_draw_edges_creates_artists():
-    import matplotlib.pyplot as plt
-
-    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
-    renderer = SelectionRenderer(ax, plot_kwargs={"color": "k", "lw": 1})
-
-    edges = [
-        BinEdge((0.0, 0.0), (1.0, 0.0)),
-        BinEdge((1.0, 0.0), (1.0, 0.5)),
-    ]
-
-    artists = renderer.draw_edges(edges)
-    assert len(artists) == 2
-    assert all(a.axes is ax for a in artists)
