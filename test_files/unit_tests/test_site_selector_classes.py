@@ -3,9 +3,7 @@
 """Tests for SiteSelector and SiteSelectorManager."""
 
 from dataclasses import dataclass
-
 import matplotlib.pyplot as plt
-import numpy as np
 
 from dta.gui import SiteSelector, SiteSelectorManager
 from dta.gui.selector_state import SelectionOperation
