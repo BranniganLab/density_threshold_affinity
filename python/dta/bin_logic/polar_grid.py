@@ -71,11 +71,11 @@ class PolarBinGrid:
             The (radial index, angular index) of the bin,
             or None if the point lies outside the grid.
         """
-        ti = np.searchsorted(self.theta_edges, coord[1] % (2 * np.pi), side="right") - 1
-        ri = np.searchsorted(self.r_edges, coord[0], side="right") - 1
+        theta_idx = np.searchsorted(self.theta_edges, coord[1] % (2 * np.pi), side="right") - 1
+        r_idx = np.searchsorted(self.r_edges, coord[0], side="right") - 1
 
-        if 0 <= ri < self.n_r and 0 <= ti < self.n_theta:
-            return BinAddress(ri, ti)
+        if 0 <= r_idx < self.n_r and 0 <= theta_idx < self.n_theta:
+            return BinAddress(r_idx, theta_idx)
         return None
 
     def bins_in_region(self, start, end):
