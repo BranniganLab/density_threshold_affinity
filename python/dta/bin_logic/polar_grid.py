@@ -14,6 +14,8 @@ The grid:
 
 It is pure domain code and is shared by GUI and analysis layers.
 """
+import itertools
+from collections.abc import Iterable
 import numpy as np
 from dta.bin_logic.utils import Coordinate, BinAddress, BinEdge
 
@@ -80,7 +82,11 @@ class PolarBinGrid:
             return BinAddress(r_idx, theta_idx)
         return None
 
-    def bins_in_region(self, start: Coordinate, end: Coordinate) -> set[BinAddress]:
+    def bins_in_region(self,
+                       corner1: Coordinate,
+                       corner2: Coordinate,
+                       span_two_pi: bool = False,
+                       ) -> set[BinAddress]:
         """
         Return all bins intersecting a polar region.
 
@@ -89,31 +95,40 @@ class PolarBinGrid:
 
         Parameters
         ----------
-        start : Coordinate
+        corner1 : Coordinate
             Coordinate of first corner of the region.
-        end : Coordinate
+        corner2 : Coordinate
             Coordinate of opposite corner of the region.
+        span_two_pi : bool, optional
+            Whether the region spans two pi or not.
 
         Returns
         -------
-        list[BinAddress]
+        set[BinAddress]
             All bins intersecting the region.
         """
-        r_min, r_max = sorted((start[0], end[0]))
-        bins = []
+        start_bin = self.map_coord_to_bin_idx(corner1)
+        end_bin = self.map_coord_to_bin_idx(corner2)
 
-        for ti in range(self.n_theta):
-            t_low = self.theta_edges[ti]
-            t_high = self.theta_edges[ti + 1]
-            if self.bin_in_theta_arc(start[1], end[1], t_low, t_high):
-                for ri in range(self.n_r):
-                    r_low = self.r_edges[ri]
-                    r_high = self.r_edges[ri + 1]
-                    if r_high >= r_min and r_low <= r_max:
-                        bins.append(BinAddress(ri, ti))
+        start_r_index, end_r_index = sorted((start_bin[0], end_bin[0]))
+        r_indices = np.range(start_r_index, end_r_index + 1)
+
+        if not span_two_pi:
+            start_theta_index, end_theta_index = sorted((start_bin[1], end_bin[1]))
+            theta_indices = np.range(start_theta_index, end_theta_index + 1)
+        else:
+            start_theta_index, end_theta_index = sorted((start_bin[1], end_bin[1]))
+            if start_theta_index > end_theta_index:
+                theta_indices = np.range(0, end_theta_index + 1)
+                theta_indices.extend(np.range(start_theta_index, self.n_theta))
+            else:
+                theta_indices = np.range(0, start_theta_index + 1)
+                theta_indices.extend(end_theta_index, self.n_theta)
+
+        bins = list(itertools.product(r_indices, theta_indices))
         return set(bins)
 
-    def exposed_edges(self, bins):
+    def exposed_edges(self, bins: Iterable[BinAddress]) -> list[BinEdge]:
         """
         Compute all externally visible edges of a set of bins.
 
@@ -142,7 +157,7 @@ class PolarBinGrid:
 
         return edges
 
-    def _determine_exposed_edges(self, mask, bin_address):
+    def _determine_exposed_edges(self, mask: np.ndarray, bin_address: BinAddress) -> list[BinEdge]:
         """
         Determine which edges of a bin are exposed.
 
@@ -173,7 +188,7 @@ class PolarBinGrid:
 
         return edges
 
-    def _edge_geometry(self, bin_address, side):
+    def _edge_geometry(self, bin_address: BinAddress, side: str) -> BinEdge:
         """
         Construct the geometry for a specific edge of a bin.
 
@@ -205,7 +220,12 @@ class PolarBinGrid:
         raise ValueError(f"Unknown edge type: {side}")
 
     # pylint: disable=no-else-return
-    def bin_in_theta_arc(self, theta_start, theta_end, bin_start, bin_end):
+    def bin_in_theta_arc(self,
+                         theta_start: float,
+                         theta_end: float,
+                         bin_start,
+                         bin_end,
+                         ) -> bool:
         """Determine if theta arc contains a particular bin.
 
         Return True if the bin [bin_start, bin_end] intersects the directed angular
