@@ -58,7 +58,7 @@ class PolarBinGrid:
         self.theta_edges = np.linspace(0.0, 2.0 * np.pi, n_theta + 1)
         self.theta_grid, self.r_grid = np.meshgrid(self.theta_edges, self.r_edges)
 
-    def map_coord_to_bin_idx(self, coord):
+    def map_coord_to_bin_idx(self, coord: Coordinate) -> BinAddress | None:
         """
         Determine which bin contains a given polar coordinate.
 
@@ -80,9 +80,9 @@ class PolarBinGrid:
             return BinAddress(r_idx, theta_idx)
         return None
 
-    def bins_in_region(self, start, end):
+    def bins_in_region(self, start: Coordinate, end: Coordinate) -> set[BinAddress]:
         """
-        Return all bins intersecting a dragged polar region.
+        Return all bins intersecting a polar region.
 
         The region is defined by two polar coordinates. Angular wraparound
         across 0 / 2π is handled correctly.
