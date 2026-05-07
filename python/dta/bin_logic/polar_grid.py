@@ -74,7 +74,7 @@ class PolarBinGrid:
         ti = np.searchsorted(self.theta_edges, coord[1] % (2 * np.pi), side="right") - 1
         ri = np.searchsorted(self.r_edges, coord[0], side="right") - 1
 
-        if 0 <= ri < self.n_r and 0 <= ti < self.n_t:
+        if 0 <= ri < self.n_r and 0 <= ti < self.n_theta:
             return BinAddress(ri, ti)
         return None
 
@@ -100,7 +100,7 @@ class PolarBinGrid:
         r_min, r_max = sorted((start[0], end[0]))
         bins = []
 
-        for ti in range(self.n_t):
+        for ti in range(self.n_theta):
             t_low = self.theta_edges[ti]
             t_high = self.theta_edges[ti + 1]
             if self.bin_in_theta_arc(start[1], end[1], t_low, t_high):
@@ -130,7 +130,7 @@ class PolarBinGrid:
         if not bins:
             return []
 
-        mask = np.zeros((self.n_r, self.n_t), dtype=bool)
+        mask = np.zeros((self.n_r, self.n_theta), dtype=bool)
         for bin_address in bins:
             mask[bin_address] = True
 
@@ -189,7 +189,7 @@ class PolarBinGrid:
         r0 = self.r_edges[bin_address[0]]
         r1 = self.r_edges[bin_address[0] + 1]
         t0 = self.theta_edges[bin_address[1]]
-        t1 = self.theta_edges[(bin_address[1] + 1) % self.n_t]
+        t1 = self.theta_edges[(bin_address[1] + 1) % self.n_theta]
 
         if side == "outer":
             return BinEdge(Coordinate(r1, t0), Coordinate(r1, t1))
