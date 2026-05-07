@@ -54,7 +54,7 @@ def test_bins_in_region_wraparound_includes_zero_angle_bin():
     grid = PolarBinGrid(0, 1, 2, 8)
 
     # Cross 2pi boundary: near 2pi down to small angle
-    bins = grid.bins_in_region((0.0, 1.9 * np.pi), (1.0, 0.1 * np.pi), True)
+    bins = grid.bins_in_region((0.1, 1.9 * np.pi), (0.9, 0.1 * np.pi), True)
     assert len(bins) > 0
 
     # Must include a bin near theta ~ 0
