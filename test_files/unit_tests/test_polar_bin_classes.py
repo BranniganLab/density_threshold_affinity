@@ -8,14 +8,10 @@ Created on Fri Jan 30 16:01:23 2026
 
 import numpy as np
 from dta.bin_logic import PolarBinGrid
-from dta.bin_logic.utils import BinEdge
 
 
 def test_map_coord_to_bin_idx_basic_and_wrap():
-    grid = PolarBinGrid(
-        theta_edges=np.linspace(0.0, 2.0 * np.pi, 5),  # 4 bins
-        r_edges=np.linspace(0.0, 1.0, 3),              # 2 bins
-    )
+    grid = PolarBinGrid(0, 1, 2, 4)
 
     r = 0.25
     theta = 0.25 * np.pi
@@ -31,9 +27,7 @@ def test_map_coord_to_bin_idx_basic_and_wrap():
 
 
 def test_map_coord_to_bin_idx_boundaries_theta_and_r():
-    theta_edges = np.array([0.0, 1.0, 2.0])  # 2 theta bins: [0,1), [1,2)
-    r_edges = np.array([0.0, 1.0, 2.0])      # 2 r bins: [0,1), [1,2)
-    grid = PolarBinGrid(theta_edges, r_edges)
+    grid = PolarBinGrid(0, 1, 2, 2)
 
     # theta exactly on interior edge goes to the bin on the "right"
     assert grid.map_coord_to_bin_idx((0.5, 1.0)) == (0, 1)
@@ -55,9 +49,7 @@ def test_map_coord_to_bin_idx_boundaries_theta_and_r():
 
 
 def test_bins_in_region_nonempty_and_indices_valid():
-    theta_edges = np.linspace(0, 2 * np.pi, 9)  # 8 bins
-    r_edges = np.linspace(0, 1, 5)           # 4 bins
-    grid = PolarBinGrid(theta_edges, r_edges)
+    grid = PolarBinGrid(0, 1, 4, 8)
 
     bins = grid.bins_in_region((0.1, 0.1), (0.6, 0.6))
 
@@ -66,9 +58,7 @@ def test_bins_in_region_nonempty_and_indices_valid():
 
 
 def test_bins_in_region_wraparound_includes_zero_angle_bin():
-    theta_edges = np.linspace(0, 2 * np.pi, 9)  # 8 bins
-    r_edges = np.linspace(0, 1, 3)            # 2 bins
-    grid = PolarBinGrid(theta_edges, r_edges)
+    grid = PolarBinGrid(0, 1, 2, 8)
 
     # Cross 2pi boundary: near 2pi down to small angle
     bins = grid.bins_in_region((0.0, 1.9 * np.pi), (1.0, 0.1 * np.pi))
@@ -79,19 +69,13 @@ def test_bins_in_region_wraparound_includes_zero_angle_bin():
 
 
 def test_exposed_edges_single_bin_has_four():
-    grid = PolarBinGrid(
-        theta_edges=np.linspace(0, 2 * np.pi, 5),
-        r_edges=np.linspace(0, 1, 3),
-    )
+    grid = PolarBinGrid(0, 1, 2, 4)
     edges = grid.exposed_edges({(0, 0)})
     assert len(edges) == 4
 
 
 def test_exposed_edges_two_adjacent_bins_share_internal_edge():
-    grid = PolarBinGrid(
-        theta_edges=np.linspace(0, 2 * np.pi, 5),  # 4 theta bins
-        r_edges=np.linspace(0, 1, 3),            # 2 r bins
-    )
+    grid = PolarBinGrid(0, 1, 2, 4)
 
     # adjacent in theta at same r
     edges = grid.exposed_edges({(0, 0), (0, 1)})
