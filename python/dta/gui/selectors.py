@@ -18,12 +18,11 @@ The intended usage pattern is:
 The implementation is designed to work in interactive backends (including
 Jupyter widget backends) where modifier keys may not be reported consistently.
 """
-
+import matplotlib
 from dta.bin_logic import PolarBinGrid, BinSelection
 from dta.bin_logic.utils import unwrap_theta, Coordinate
 from .selector_state import SelectionOperation, SelectorDragState
 from .renderers import SelectionRenderer
-import matplotlib
 
 
 class SiteSelectorManager:
