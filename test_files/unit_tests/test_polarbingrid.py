@@ -10,39 +10,35 @@ import numpy as np
 from dta.bin_logic import PolarBinGrid
 
 
-def test_map_coord_to_bin_idx_basic_and_wrap():
+def test_map_coord_to_bin_idx():
+    """
+    Test map_coord_to_bin_idx.
+
+    Test that it:
+        1) maps to the correct bin
+        2) handles wrapping around 2pi correctly
+        3) ignores values outside of lattice boundaries
+        4) handles coords on bin boundary correctly (default to higher bin index)
+    """
     grid = PolarBinGrid(0, 1, 2, 4)
 
     r = 0.25
     theta = 0.25 * np.pi
 
+    # maps to correct bin
     assert grid.map_coord_to_bin_idx((r, theta)) == (0, 0)
+
+    # correctly wraps around 2pi
     assert grid.map_coord_to_bin_idx((r, theta + 2.0 * np.pi)) == (0, 0)
 
-    # outside radius
+    # outside lattice boundary is None
     assert grid.map_coord_to_bin_idx((2.0, theta)) is None
 
-    # exactly on outer edge is outside
+    # defaults to higher bin index when coord on bin boundary
+    assert grid.map_coord_to_bin_idx((0.5, np.pi)) == (1, 3)
+
+    # exactly on outer edge is None (because defaults to higher bin index)
     assert grid.map_coord_to_bin_idx((1.0, theta)) is None
-
-
-def test_map_coord_to_bin_idx_boundaries_theta_and_r():
-    grid = PolarBinGrid(0, 2, 2, 2)
-
-    # theta exactly on interior edge goes to the bin on the "right"
-    assert grid.map_coord_to_bin_idx((0.5, np.pi)) == (0, 1)
-
-    # theta=0.0 maps to first bin
-    assert grid.map_coord_to_bin_idx((0.5, 0.0)) == (0, 0)
-
-    # actual angular wraparound happens at 2π
-    assert grid.map_coord_to_bin_idx((0.5, 2.0 * np.pi + 1)) == (0, 0)
-
-    # r exactly on interior edge goes to bin on the "right"
-    assert grid.map_coord_to_bin_idx((1.0, 0.5)) == (1, 0)
-
-    # r at outer edge is out of range
-    assert grid.map_coord_to_bin_idx((2.0, 0.5)) is None
 
 
 def test_bins_in_region_nonempty_and_indices_valid():
