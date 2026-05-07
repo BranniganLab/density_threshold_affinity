@@ -107,8 +107,8 @@ class PolarBinGrid:
         set[BinAddress]
             All bins intersecting the region.
         """
-        start_bin = self.map_coord_to_bin_idx(corner1)
-        end_bin = self.map_coord_to_bin_idx(corner2)
+        start_bin = int(self.map_coord_to_bin_idx(corner1))
+        end_bin = int(self.map_coord_to_bin_idx(corner2))
 
         start_r_index, end_r_index = sorted((start_bin[0], end_bin[0]))
         r_indices = list(range(start_r_index, end_r_index + 1))
@@ -117,7 +117,7 @@ class PolarBinGrid:
             start_theta_index, end_theta_index = sorted((start_bin[1], end_bin[1]))
             theta_indices = list(range(start_theta_index, end_theta_index + 1))
         else:
-            start_theta_index, end_theta_index = sorted((start_bin[1], end_bin[1]))
+            start_theta_index, end_theta_index = (start_bin[1], end_bin[1])
             if start_theta_index > end_theta_index:
                 theta_indices = list(range(0, end_theta_index + 1))
                 theta_indices.extend(list(range(start_theta_index, self.n_theta)))
