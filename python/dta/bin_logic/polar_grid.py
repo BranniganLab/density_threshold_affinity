@@ -111,19 +111,19 @@ class PolarBinGrid:
         end_bin = self.map_coord_to_bin_idx(corner2)
 
         start_r_index, end_r_index = sorted((start_bin[0], end_bin[0]))
-        r_indices = np.range(start_r_index, end_r_index + 1)
+        r_indices = list(range(start_r_index, end_r_index + 1))
 
         if not span_two_pi:
             start_theta_index, end_theta_index = sorted((start_bin[1], end_bin[1]))
-            theta_indices = np.range(start_theta_index, end_theta_index + 1)
+            theta_indices = list(range(start_theta_index, end_theta_index + 1))
         else:
             start_theta_index, end_theta_index = sorted((start_bin[1], end_bin[1]))
             if start_theta_index > end_theta_index:
-                theta_indices = np.range(0, end_theta_index + 1)
-                theta_indices.extend(np.range(start_theta_index, self.n_theta))
+                theta_indices = list(range(0, end_theta_index + 1))
+                theta_indices.extend(list(range(start_theta_index, self.n_theta)))
             else:
-                theta_indices = np.range(0, start_theta_index + 1)
-                theta_indices.extend(end_theta_index, self.n_theta)
+                theta_indices = list(range(0, start_theta_index + 1))
+                theta_indices.extend(list(range(end_theta_index, self.n_theta)))
 
         bins = list(itertools.product(r_indices, theta_indices))
         return set(bins)
