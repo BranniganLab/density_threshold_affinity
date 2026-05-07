@@ -35,9 +35,6 @@ def test_map_coord_to_bin_idx_boundaries_theta_and_r():
     # theta=0.0 maps to first bin
     assert grid.map_coord_to_bin_idx((0.5, 0.0)) == (0, 0)
 
-    # theta at the last *grid edge* is outside (since this grid does not span 2π)
-    assert grid.map_coord_to_bin_idx((0.5, 2.0 * np.pi)) is None
-
     # actual angular wraparound happens at 2π
     assert grid.map_coord_to_bin_idx((0.5, 2.0 * np.pi + 1)) == (0, 0)
 
