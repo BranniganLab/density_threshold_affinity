@@ -23,6 +23,7 @@ from dta.bin_logic import PolarBinGrid, BinSelection
 from dta.bin_logic.utils import unwrap_theta, Coordinate
 from .selector_state import SelectionOperation, SelectorDragState
 from .renderers import SelectionRenderer
+import matplotlib
 
 
 class SiteSelectorManager:
@@ -262,7 +263,7 @@ class SiteSelector:
     the gesture ends.
     """
 
-    def __init__(self, ax, theta_edges, r_edges, plot_kwargs=None):
+    def __init__(self, ax: matplotlib.axes.Axes, grid: PolarBinGrid, plot_kwargs: dict = None) -> None:
         """
         Construct a selector bound to a single Axes.
 
@@ -275,7 +276,7 @@ class SiteSelector:
         plot_kwargs : dict, optional
             Default Matplotlib plotting keywords for drawing committed edges.
         """
-        self.grid = PolarBinGrid(theta_edges, r_edges)
+        self.grid = grid
         self.renderer = SelectionRenderer(ax, plot_kwargs)
         self.selection = BinSelection()
         self.drag_tracker = SelectorDragState()
