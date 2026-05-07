@@ -54,7 +54,7 @@ def test_bins_in_region_nonempty_and_indices_valid():
     bins = grid.bins_in_region((0.1, 0.1), (0.6, 0.6))
 
     assert len(bins) > 0
-    assert all(0 <= ri < grid.n_r and 0 <= ti < grid.n_t for (ri, ti) in bins)
+    assert all(0 <= ri < grid.n_r and 0 <= ti < grid.n_theta for (ri, ti) in bins)
 
 
 def test_bins_in_region_wraparound_includes_zero_angle_bin():
