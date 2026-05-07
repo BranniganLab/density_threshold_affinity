@@ -27,7 +27,7 @@ def test_map_coord_to_bin_idx_basic_and_wrap():
 
 
 def test_map_coord_to_bin_idx_boundaries_theta_and_r():
-    grid = PolarBinGrid(0, 1, 2, 2)
+    grid = PolarBinGrid(0, 1, 1, 1)
 
     # theta exactly on interior edge goes to the bin on the "right"
     assert grid.map_coord_to_bin_idx((0.5, 1.0)) == (0, 1)
