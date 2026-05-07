@@ -74,7 +74,8 @@ class PolarBinGrid:
             The (radial index, angular index) of the bin,
             or None if the point lies outside the grid.
         """
-        theta_idx = int((coord[1] % (2 * np.pi)) // ((2 * np.pi) / self.n_theta))
+        dtheta = (2 * np.pi) / self.n_theta
+        theta_idx = int((coord[1] % (2 * np.pi)) // dtheta)
         r_idx = int(coord[0] // self.d_r)
 
         if 0 <= r_idx < self.n_r and 0 <= theta_idx < self.n_theta:
