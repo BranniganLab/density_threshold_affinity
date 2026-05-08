@@ -354,13 +354,17 @@ class SiteSelector:
         if event.xdata is None or event.ydata is None:
             return False
 
-        # Store drag start as (r, theta).
         click_coordinate = Coordinate(event.ydata, event.xdata)
+
+        clicked_bin = self.grid.map_coord_to_bin_idx(click_coordinate)
+        if clicked_bin is None:
+            return False
+
+        # Store drag start.
         self.drag_tracker.start_drag(click_coordinate, operation=operation)
 
         # Establish an initial preview.
-        clicked_bin = self.grid.map_coord_to_bin_idx(click_coordinate)
-        updated_preview_bins = self._calculate_preview_bins(clicked_bin)
+        updated_preview_bins = self._calculate_preview_bins({clicked_bin})
         self.current_preview_bins = updated_preview_bins
         self._draw_preview(updated_preview_bins)
         return True
@@ -400,8 +404,8 @@ class SiteSelector:
         span_two_pi = abs(theta_delta) >= 2.0 * np.pi
 
         bins = self.grid.get_bins_in_region(
-            self.drag_tracker.drag_start,
-            current_location,
+            corner1=self.drag_tracker.drag_start,
+            corner2=current_location,
             span_two_pi=span_two_pi,
         )
 
