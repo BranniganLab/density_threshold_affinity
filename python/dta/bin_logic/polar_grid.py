@@ -85,11 +85,11 @@ class PolarBinGrid:
             return BinAddress(r_idx, theta_idx)
         return None
 
-    def bins_in_region(self,
-                       corner1: Coordinate,
-                       corner2: Coordinate,
-                       span_two_pi: bool = False,
-                       ) -> set[BinAddress]:
+    def get_bins_in_region(self,
+                           corner1: Coordinate,
+                           corner2: Coordinate,
+                           span_two_pi: bool = False,
+                           ) -> set[BinAddress]:
         """
         Return all bins intersecting a polar region.
 
@@ -139,7 +139,7 @@ class PolarBinGrid:
         bins = set(itertools.product(r_indices, theta_indices))
         return bins
 
-    def exposed_edges(self, bins: Iterable[BinAddress]) -> list[BinEdge]:
+    def list_all_exposed_edges(self, bins: Iterable[BinAddress]) -> list[BinEdge]:
         """
         Compute all externally visible edges of a set of bins.
 
@@ -164,11 +164,11 @@ class PolarBinGrid:
 
         edges = []
         for bin_address in bins:
-            edges.extend(self._determine_exposed_edges(mask, bin_address))
+            edges.extend(self._determine_exposed_bin_edges(mask, bin_address))
 
         return edges
 
-    def _determine_exposed_edges(self, mask: np.ndarray, bin_address: BinAddress) -> list[BinEdge]:
+    def _determine_exposed_bin_edges(self, mask: np.ndarray, bin_address: BinAddress) -> list[BinEdge]:
         """
         Determine which edges of a bin are exposed.
 
