@@ -107,23 +107,25 @@ class PolarBinGrid:
         set[BinAddress]
             All bins intersecting the region.
         """
-        start_bin = self.map_coord_to_bin_idx(corner1)
-        end_bin = self.map_coord_to_bin_idx(corner2)
+        corner1_bin = self.map_coord_to_bin_idx(corner1)
+        corner2_bin = self.map_coord_to_bin_idx(corner2)
 
-        start_r_index, end_r_index = sorted((start_bin[0], end_bin[0]))
-        r_indices = list(range(start_r_index, end_r_index + 1))
+        r_index1, r_index2 = sorted((corner1_bin[0], corner2_bin[0]))
+        r_indices = list(range(r_index1, r_index2 + 1))
 
-        if not span_two_pi:
-            start_theta_index, end_theta_index = sorted((start_bin[1], end_bin[1]))
-            theta_indices = list(range(start_theta_index, end_theta_index + 1))
+        if span_two_pi is False:
+            # Treat this as a regular rectangular region
+            theta_index1, theta_index2 = sorted((corner1_bin[1], corner2_bin[1]))
+            theta_indices = list(range(theta_index1, theta_index2 + 1))
         else:
-            start_theta_index, end_theta_index = (start_bin[1], end_bin[1])
-            if start_theta_index > end_theta_index:
-                theta_indices = list(range(0, end_theta_index + 1))
-                theta_indices.extend(list(range(start_theta_index, self.n_theta)))
+            # Treat this as two rectangular regions
+            theta_index1, theta_index2 = (corner1_bin[1], corner2_bin[1])
+            if theta_index1 > theta_index2:
+                theta_indices = list(range(0, theta_index2 + 1))
+                theta_indices.extend(list(range(theta_index1, self.n_theta)))
             else:
-                theta_indices = list(range(0, start_theta_index + 1))
-                theta_indices.extend(list(range(end_theta_index, self.n_theta)))
+                theta_indices = list(range(0, theta_index1 + 1))
+                theta_indices.extend(list(range(theta_index2, self.n_theta)))
 
         bins = list(itertools.product(r_indices, theta_indices))
         return set(bins)
