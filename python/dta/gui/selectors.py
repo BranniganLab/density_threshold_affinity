@@ -19,6 +19,7 @@ The implementation is designed to work in interactive backends (including
 Jupyter widget backends) where modifier keys may not be reported consistently.
 """
 import matplotlib
+import numpy as np
 from dta.bin_logic import PolarBinGrid, BinSelection
 from dta.bin_logic.utils import unwrap_theta, Coordinate
 from .selector_state import SelectionOperation, SelectorDragState
