@@ -19,6 +19,7 @@ The implementation is designed to work in interactive backends (including
 Jupyter widget backends) where modifier keys may not be reported consistently.
 """
 import matplotlib
+import numpy as np
 from dta.bin_logic import PolarBinGrid, BinSelection
 from dta.bin_logic.utils import unwrap_theta, Coordinate
 from .selector_state import SelectionOperation, SelectorDragState
@@ -391,16 +392,17 @@ class SiteSelector:
         if event.xdata is None or event.ydata is None:
             return False
 
-        current_location = Coordinate(
-            event.ydata,
-            unwrap_theta(self.drag_tracker.last_theta, event.xdata)
-        )
-        self.drag_tracker.last_theta = current_location.theta_coord
+        current_theta = unwrap_theta(self.drag_tracker.last_theta, event.xdata)
+        current_location = Coordinate(event.ydata, current_theta)
+        self.drag_tracker.last_theta = current_theta
+
+        theta_delta = current_theta - self.drag_tracker.drag_start.theta_coord
+        span_two_pi = abs(theta_delta) >= 2.0 * np.pi
 
         bins = self.grid.get_bins_in_region(
-            start=self.drag_tracker.drag_start,
-            end=current_location,
-            span_two_pi=False
+            self.drag_tracker.drag_start,
+            current_location,
+            span_two_pi=span_two_pi,
         )
 
         updated_preview_bins = self._calculate_preview_bins(bins)
