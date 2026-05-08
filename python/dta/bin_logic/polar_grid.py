@@ -192,18 +192,18 @@ class PolarBinGrid:
             # Bin is in outermost radial shell
             # OR
             # the bin in the next radial shell is not selected
-            edges.append(self.__determine_bin_edge(bin_address, "outer"))
+            edges.append(self._determine_bin_edge(bin_address, "outer"))
         if ri == 0 or not mask[ri - 1, ti]:
             # Bin is in innermost radial shell
             # OR
             # the bin in the previous radial shell is not selected
-            edges.append(self.__determine_bin_edge(bin_address, "inner"))
+            edges.append(self._determine_bin_edge(bin_address, "inner"))
         if not mask[ri, (ti - 1) % n_t]:
             # The bin to the "left" is empty
-            edges.append(self.__determine_bin_edge(bin_address, "left"))
+            edges.append(self._determine_bin_edge(bin_address, "left"))
         if not mask[ri, (ti + 1) % n_t]:
             # The bin to the "right" is empty
-            edges.append(self.__determine_bin_edge(bin_address, "right"))
+            edges.append(self._determine_bin_edge(bin_address, "right"))
 
         return edges
 
