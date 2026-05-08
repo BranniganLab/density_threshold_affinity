@@ -122,7 +122,7 @@ class PolarBinGrid:
             or None if the point lies outside the grid.
         """
         theta_idx = int((coord[1] % (2 * np.pi)) // self.d_theta)
-        r_idx = int(coord[0] // self.d_r)
+        r_idx = int((coord[0] - self.r_min) // self.d_r)
 
         if 0 <= r_idx < self.n_r and 0 <= theta_idx < self.n_theta:
             return BinAddress(r_idx, theta_idx)
