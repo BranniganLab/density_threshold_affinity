@@ -288,3 +288,25 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
             return BinEdge(Coordinate(r0, t1), Coordinate(r1, t1))
 
         raise ValueError(f"Unknown edge type: {side}")
+
+        def calc_bin_area(self, bin_address: BinAddress) -> float:
+            r"""
+            Calculate bin area.
+
+            Formula for bin area in polar lattice is
+            $r_i * \delta r * \delta \theta$,
+            where $r_i$ is the radial distance to the midpoint of the bin.
+
+            Parameters
+            ----------
+            bin_address : BinAddress
+                The r and theta indices of this bin in the lattice.
+
+            Returns
+            -------
+            float
+                The area of the bin.
+            """
+            lower_r_bound = bin_address[0] * self.d_r + self.r_min
+            r_i = lower_r_bound + (self.d_r * 0.5)
+            return r_i * self.d_r * self.d_theta
