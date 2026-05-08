@@ -46,7 +46,7 @@ def test_selector_draw_selection_matches_expected(fig_test, fig_ref):
 
     # reference figure: compute edges and draw manually
     ax_r = fig_ref.add_subplot(111, projection="polar")
-    edges = grid.exposed_edges(bins)
+    edges = grid.list_all_exposed_edges(bins)
     for e in edges:
         theta_endpoints = e.endpoint1[1], e.endpoint2[1]
         r_endpoints = e.endpoint1[0], e.endpoint2[0]
