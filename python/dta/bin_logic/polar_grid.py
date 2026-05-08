@@ -127,13 +127,13 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
     def get_bins_in_region(self,
                            corner1: Coordinate,
                            corner2: Coordinate,
-                           span_two_pi: bool = False,
+                           crosses_theta_boundary: bool = False,
                            ) -> set[BinAddress]:
         """
         Return all bins intersecting a polar region.
 
         The region is defined by two polar coordinates. Angular wraparound
-        across 0 / 2π is handled depending on the span_two_pi flag.
+        across 0 / 2π is controlled by crosses_theta_boundary.
 
         Parameters
         ----------
@@ -141,8 +141,9 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
             Coordinate of first corner of the region.
         corner2 : Coordinate
             Coordinate of opposite corner of the region.
-        span_two_pi : bool, optional
-            Whether the region spans 2*pi or not.
+        crosses_theta_boundary : bool, optional
+            Whether the directed angular interval crosses the periodic 0 / 2π
+            boundary. Default is False.
 
         Returns
         -------
@@ -155,27 +156,25 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
         if not (corner1_bin and corner2_bin):
             raise ValueError("One or both corners were outside of the grid domain.")
 
+        # Drag order doesn't matter. Sort the r values from low to high.
         r_index1, r_index2 = sorted((corner1_bin[0], corner2_bin[0]))
         r_indices = list(range(r_index1, r_index2 + 1))
 
-        if span_two_pi is False:
-            # Treat this as a singular rectangular region
+        if not crosses_theta_boundary:
+            # Treat this as a single rectangular region. Drag order doesn't matter.
             theta_index1, theta_index2 = sorted((corner1_bin[1], corner2_bin[1]))
             theta_indices = list(range(theta_index1, theta_index2 + 1))
         else:
-            # Treat this as two rectangular regions
-            theta_index1, theta_index2 = (corner1_bin[1], corner2_bin[1])
-            if theta_index1 == theta_index2:
-                # Select all theta values
-                theta_indices = list(range(0, self.n_theta))
-            elif theta_index1 < theta_index2:
-                # Select from 0 to theta1 and from theta2 to ntheta
+            # Treat this as two rectangular regions. Drag order matters.
+            theta_index1, theta_index2 = corner1_bin[1], corner2_bin[1]
+            if theta_index1 <= theta_index2:
+                # Select from 0 to theta_index1 and from theta_index2 to 2pi
                 theta_indices = list(range(0, theta_index1 + 1))
-                theta_indices.extend(list(range(theta_index2, self.n_theta)))
+                theta_indices.extend(range(theta_index2, self.n_theta))
             else:
-                # Select from 0 to theta2 and from theta1 to ntheta
-                theta_indices = list(range(0, theta_index2 + 1))
-                theta_indices.extend(list(range(theta_index1, self.n_theta)))
+                # Select from 0 to theta_index2 and from theta_index1 to 2pi
+                theta_indices = list(range(theta_index1, self.n_theta))
+                theta_indices.extend(range(0, theta_index2 + 1))
 
         # Calculate Cartesian product to produce all ordered pairs
         bin_pairs = set(itertools.product(r_indices, theta_indices))
