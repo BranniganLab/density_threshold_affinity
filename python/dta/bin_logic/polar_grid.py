@@ -127,7 +127,7 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
     def get_bins_in_region(self,
                            corner1: Coordinate,
                            corner2: Coordinate,
-                           span_two_pi: bool = False,
+                           crosses_theta_boundary: bool = False,
                            ) -> set[BinAddress]:
         """
         Return all bins intersecting a polar region.
@@ -158,24 +158,18 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
         r_index1, r_index2 = sorted((corner1_bin[0], corner2_bin[0]))
         r_indices = list(range(r_index1, r_index2 + 1))
 
-        if span_two_pi is False:
-            # Treat this as a singular rectangular region
+        if not crosses_theta_boundary:
             theta_index1, theta_index2 = sorted((corner1_bin[1], corner2_bin[1]))
             theta_indices = list(range(theta_index1, theta_index2 + 1))
         else:
-            # Treat this as two rectangular regions
-            theta_index1, theta_index2 = (corner1_bin[1], corner2_bin[1])
-            if theta_index1 == theta_index2:
-                # Select all theta values
-                theta_indices = list(range(0, self.n_theta))
-            elif theta_index1 < theta_index2:
-                # Select from 0 to theta1 and from theta2 to ntheta
+            theta_index1, theta_index2 = corner1_bin[1], corner2_bin[1]
+
+            if theta_index1 <= theta_index2:
                 theta_indices = list(range(0, theta_index1 + 1))
-                theta_indices.extend(list(range(theta_index2, self.n_theta)))
+                theta_indices.extend(range(theta_index2, self.n_theta))
             else:
-                # Select from 0 to theta2 and from theta1 to ntheta
-                theta_indices = list(range(0, theta_index2 + 1))
-                theta_indices.extend(list(range(theta_index1, self.n_theta)))
+                theta_indices = list(range(theta_index1, self.n_theta))
+                theta_indices.extend(range(0, theta_index2 + 1))
 
         # Calculate Cartesian product to produce all ordered pairs
         bin_pairs = set(itertools.product(r_indices, theta_indices))
