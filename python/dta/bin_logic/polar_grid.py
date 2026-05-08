@@ -24,7 +24,7 @@ from dta.bin_logic.utils import Coordinate, BinAddress, BinEdge
 BinSide = Literal["outer", "inner", "left", "right"]
 
 
-class PolarBinGrid:
+class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
     """
     Regular polar grid with radial and angular bin indexing.
 
