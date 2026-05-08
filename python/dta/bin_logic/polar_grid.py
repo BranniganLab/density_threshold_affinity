@@ -38,6 +38,24 @@ class PolarBinGrid:
     enumerate the bins intersected by a polar region, and identify the outer
     boundary edges of an arbitrary collection of bins. It does not track which
     bins are selected and does not perform any rendering.
+
+    Attributes
+    ----------
+    n_r : int
+        Number of radial bins in the grid.
+    d_r : float
+        Width of each radial bin.
+    n_theta : int
+        Number of angular bins in the grid.
+    r_edges : ndarray
+        Radial bin edge coordinates with shape ``(n_r + 1,)``.
+    theta_edges : ndarray
+        Angular bin edge coordinates with shape ``(n_theta + 1,)`` spanning
+        ``0`` to ``2*pi``.
+    theta_grid : ndarray
+        Meshgrid array of angular edge coordinates suitable for plotting.
+    r_grid : ndarray
+        Meshgrid array of radial edge coordinates suitable for plotting.
     """
 
     def __init__(self,
