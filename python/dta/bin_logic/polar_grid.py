@@ -1,33 +1,69 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Polar bin grid geometry and indexing.
+Utilities for describing and querying a regularly binned polar grid.
 
-This module defines immutable geometric and topological primitives for
-polar binning, including angular and radial bin edges and their indexing
-relationships.
+This module defines :class:`PolarBinGrid`, a small geometry object that
+represents a polar coordinate grid divided into radial and angular bins. The
+grid covers radii from ``r_min`` to ``r_max`` and angles from ``0`` to
+``2*pi``. Each bin is addressed by a ``BinAddress`` containing a radial index
+and an angular index.
 
-The grid:
-- provides bin edge definitions and bin index mapping,
-- supports geometric queries needed by selection and rendering,
-- contains no selection state and no GUI or plotting logic.
-
-It is pure domain code and is shared by GUI and analysis layers.
+The module provides operations for converting polar coordinates to bin
+indices, finding all bins touched by a rectangular polar region, and computing
+the exposed boundary edges of a set of bins. These operations are useful for
+analysis code, plotting code, and interactive selection tools, but the module
+itself does not store selections, draw figures, or depend on a GUI backend.
 """
+import itertools
+from collections.abc import Iterable
+from typing import Literal
 import numpy as np
 from dta.bin_logic.utils import Coordinate, BinAddress, BinEdge
 
+BinSide = Literal["outer", "inner", "left", "right"]
 
-class PolarBinGrid:
+
+class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
     """
-    Geometry and topology of a polar bin grid.
+    Regular polar grid with radial and angular bin indexing.
 
-    This class provides purely computational functionality:
-    - Mapping points to bins
-    - Determining which bins intersect a polar region
-    - Computing which bin edges are externally visible
+    A ``PolarBinGrid`` divides a polar coordinate domain into ``n_r`` radial
+    bins and ``n_theta`` angular bins. Radial bins span the interval from
+    ``r_min`` to ``r_max``. Angular bins span the full circle from ``0`` to
+    ``2*pi`` and wrap periodically at the angular boundary.
 
-    It contains no rendering logic and no mutable selection state.
+    The class is responsible for geometric and topological queries on that
+    grid. It can map an ``(r, theta)`` coordinate to the bin containing it,
+    enumerate the bins intersected by a polar region, and identify the outer
+    boundary edges of an arbitrary collection of bins. It does not track which
+    bins are selected and does not perform any rendering.
+
+    Attributes
+    ----------
+    r_min : float
+        Minimum radial coordinate included in the grid.
+    r_max : float
+        Maximum radial coordinate at the outer edge of the grid.
+    n_r : int
+        Number of radial bins in the grid.
+    d_r : float
+        Width of each radial bin.
+    n_theta : int
+        Number of angular bins in the grid.
+    d_theta : float
+        Width of each angular bin in radians.
+    r_edges : ndarray
+        Radial bin edge coordinates with shape ``(n_r + 1,)``.
+    theta_edges : ndarray
+        Angular bin edge coordinates with shape ``(n_theta + 1,)`` spanning
+        ``0`` to ``2*pi``.
+    r_grid : ndarray
+        Meshgrid array of radial edge coordinates suitable for plotting with
+        polar grid data.
+    theta_grid : ndarray
+        Meshgrid array of angular edge coordinates suitable for plotting with
+        polar grid data.
     """
 
     def __init__(self,
@@ -50,13 +86,23 @@ class PolarBinGrid:
         n_theta : int
             Number of angular (theta) bins.
         """
+        if r_max <= r_min:
+            raise ValueError("r_max must be greater than r_min.")
+        if n_r <= 0:
+            raise ValueError("n_r must be positive.")
+        if n_theta <= 0:
+            raise ValueError("n_theta must be positive.")
+        self.r_min = r_min
+        self.r_max = r_max
         self.n_r = n_r
+        self.d_r = (r_max - r_min) / n_r
         self.n_theta = n_theta
+        self.d_theta = (2 * np.pi) / n_theta
         self.r_edges = np.linspace(r_min, r_max, n_r + 1)
         self.theta_edges = np.linspace(0.0, 2.0 * np.pi, n_theta + 1)
         self.theta_grid, self.r_grid = np.meshgrid(self.theta_edges, self.r_edges)
 
-    def map_coord_to_bin_idx(self, coord):
+    def map_coord_to_bin_idx(self, coord: Coordinate) -> BinAddress | None:
         """
         Determine which bin contains a given polar coordinate.
 
@@ -71,47 +117,74 @@ class PolarBinGrid:
             The (radial index, angular index) of the bin,
             or None if the point lies outside the grid.
         """
-        ti = np.searchsorted(self.theta_edges, coord[1] % (2 * np.pi), side="right") - 1
-        ri = np.searchsorted(self.r_edges, coord[0], side="right") - 1
+        theta_idx = int((coord[1] % (2.0 * np.pi)) // self.d_theta)
+        r_idx = int((coord[0] - self.r_min) // self.d_r)
 
-        if 0 <= ri < self.n_r and 0 <= ti < self.n_theta:
-            return BinAddress(ri, ti)
+        if 0 <= r_idx < self.n_r and 0 <= theta_idx < self.n_theta:
+            return BinAddress(r_idx, theta_idx)
         return None
 
-    def bins_in_region(self, start, end):
+    def get_bins_in_region(self,
+                           corner1: Coordinate,
+                           corner2: Coordinate,
+                           span_two_pi: bool = False,
+                           ) -> set[BinAddress]:
         """
-        Return all bins intersecting a dragged polar region.
+        Return all bins intersecting a polar region.
 
         The region is defined by two polar coordinates. Angular wraparound
-        across 0 / 2π is handled correctly.
+        across 0 / 2π is handled depending on the span_two_pi flag.
 
         Parameters
         ----------
-        start : Coordinate
+        corner1 : Coordinate
             Coordinate of first corner of the region.
-        end : Coordinate
+        corner2 : Coordinate
             Coordinate of opposite corner of the region.
+        span_two_pi : bool, optional
+            Whether the region spans 2*pi or not.
 
         Returns
         -------
-        list[BinAddress]
+        set[BinAddress]
             All bins intersecting the region.
         """
-        r_min, r_max = sorted((start[0], end[0]))
-        bins = []
+        corner1_bin = self.map_coord_to_bin_idx(corner1)
+        corner2_bin = self.map_coord_to_bin_idx(corner2)
 
-        for ti in range(self.n_theta):
-            t_low = self.theta_edges[ti]
-            t_high = self.theta_edges[ti + 1]
-            if self.bin_in_theta_arc(start[1], end[1], t_low, t_high):
-                for ri in range(self.n_r):
-                    r_low = self.r_edges[ri]
-                    r_high = self.r_edges[ri + 1]
-                    if r_high >= r_min and r_low <= r_max:
-                        bins.append(BinAddress(ri, ti))
-        return set(bins)
+        if not (corner1_bin and corner2_bin):
+            raise ValueError("One or both corners were outside of the grid domain.")
 
-    def exposed_edges(self, bins):
+        r_index1, r_index2 = sorted((corner1_bin[0], corner2_bin[0]))
+        r_indices = list(range(r_index1, r_index2 + 1))
+
+        if span_two_pi is False:
+            # Treat this as a singular rectangular region
+            theta_index1, theta_index2 = sorted((corner1_bin[1], corner2_bin[1]))
+            theta_indices = list(range(theta_index1, theta_index2 + 1))
+        else:
+            # Treat this as two rectangular regions
+            theta_index1, theta_index2 = (corner1_bin[1], corner2_bin[1])
+            if theta_index1 == theta_index2:
+                # Select all theta values
+                theta_indices = list(range(0, self.n_theta))
+            elif theta_index1 < theta_index2:
+                # Select from 0 to theta1 and from theta2 to ntheta
+                theta_indices = list(range(0, theta_index1 + 1))
+                theta_indices.extend(list(range(theta_index2, self.n_theta)))
+            else:
+                # Select from 0 to theta2 and from theta1 to ntheta
+                theta_indices = list(range(0, theta_index2 + 1))
+                theta_indices.extend(list(range(theta_index1, self.n_theta)))
+
+        # Calculate Cartesian product to produce all ordered pairs
+        bin_pairs = set(itertools.product(r_indices, theta_indices))
+
+        # Convert to set of BinAddress objects
+        bins = {BinAddress(r_idx, theta_idx) for r_idx, theta_idx in bin_pairs}
+        return bins
+
+    def list_all_exposed_edges(self, bins: Iterable[BinAddress]) -> list[BinEdge]:
         """
         Compute all externally visible edges of a set of bins.
 
@@ -127,6 +200,7 @@ class PolarBinGrid:
         list[BinEdge]
             Visible boundary edges.
         """
+        bins = set(bins)
         if not bins:
             return []
 
@@ -135,21 +209,24 @@ class PolarBinGrid:
             mask[bin_address] = True
 
         edges = []
-        for bin_address in zip(*np.where(mask)):
-            edges.extend(self._determine_exposed_edges(mask, bin_address))
+        for bin_address in bins:
+            edges.extend(self._determine_exposed_bin_edges(mask, bin_address))
 
         return edges
 
-    def _determine_exposed_edges(self, mask, bin_address):
+    def _determine_exposed_bin_edges(self,
+                                     mask: np.ndarray,
+                                     bin_address: BinAddress
+                                     ) -> list[BinEdge]:
         """
         Determine which edges of a bin are exposed.
 
         Parameters
         ----------
         mask : ndarray
-            Boolean array indicating selected bins.
+            Boolean array indicating all selected bins.
         bin_address : BinAddress
-            Bin indices.
+            The r and theta index of the bin whose edges you wish to check.
 
         Returns
         -------
@@ -161,19 +238,30 @@ class PolarBinGrid:
         ri, ti = bin_address
 
         if ri == n_r - 1 or not mask[ri + 1, ti]:
-            edges.append(self._edge_geometry(bin_address, "outer"))
+            # Bin is in outermost radial shell
+            # OR
+            # the bin in the next radial shell is not selected
+            edges.append(self._determine_bin_edge(bin_address, "outer"))
         if ri == 0 or not mask[ri - 1, ti]:
-            edges.append(self._edge_geometry(bin_address, "inner"))
+            # Bin is in innermost radial shell
+            # OR
+            # the bin in the previous radial shell is not selected
+            edges.append(self._determine_bin_edge(bin_address, "inner"))
         if not mask[ri, (ti - 1) % n_t]:
-            edges.append(self._edge_geometry(bin_address, "left"))
+            # The bin to the "left" is empty
+            edges.append(self._determine_bin_edge(bin_address, "left"))
         if not mask[ri, (ti + 1) % n_t]:
-            edges.append(self._edge_geometry(bin_address, "right"))
+            # The bin to the "right" is empty
+            edges.append(self._determine_bin_edge(bin_address, "right"))
 
         return edges
 
-    def _edge_geometry(self, bin_address, side):
+    def _determine_bin_edge(self,
+                            bin_address: BinAddress,
+                            side: BinSide,
+                            ) -> BinEdge:
         """
-        Construct the geometry for a specific edge of a bin.
+        Compute the coordinates that define a BinEdge from an address and side.
 
         Parameters
         ----------
@@ -184,7 +272,7 @@ class PolarBinGrid:
         Returns
         -------
         BinEdge
-            Edge geometry.
+            The two coordinates that define a bin's edge on the polar lattice.
         """
         r0 = self.r_edges[bin_address[0]]
         r1 = self.r_edges[bin_address[0] + 1]
@@ -201,69 +289,3 @@ class PolarBinGrid:
             return BinEdge(Coordinate(r0, t1), Coordinate(r1, t1))
 
         raise ValueError(f"Unknown edge type: {side}")
-
-    # pylint: disable=no-else-return
-    def bin_in_theta_arc(self, theta_start, theta_end, bin_start, bin_end):
-        """Determine if theta arc contains a particular bin.
-
-        Return True if the bin [bin_start, bin_end] intersects the directed angular
-        interval from theta_start to theta_end.
-
-        Parameters
-        ----------
-        theta_start : float
-            The starting value for the theta arc.
-        theta_end : float
-            The ending value for the theta arc.
-        bin_start : float
-            The starting value for the bin in question.
-        bin_end : float
-            The ending value for the bin in question.
-
-        Returns
-        -------
-        Boolean
-        """
-        TWO_PI = 2 * np.pi
-
-        # Directed arc length
-        dtheta = theta_end - theta_start
-
-        # Full circle selects everything
-        if abs(dtheta) >= TWO_PI:
-            return True
-
-        # Normalize arc start only
-        theta_start = theta_start % TWO_PI
-        theta_end = theta_start + dtheta
-
-        # Bin edges
-        bin_start_n = bin_start % TWO_PI
-        if bin_end <= TWO_PI:
-            # DO NOT modulo bin_end if it is exactly 2π (or less)
-            bin_end_n = bin_end
-        else:
-            bin_end_n = bin_end % TWO_PI
-
-        if dtheta >= 0:
-            # CCW arc
-            if theta_end <= TWO_PI:
-                # no wrap
-                return not (bin_end_n <= theta_start or bin_start_n >= theta_end)
-            else:
-                # wraps past 2π
-                return not (
-                    (bin_end_n <= theta_start) and
-                    (bin_start_n >= (theta_end - TWO_PI))
-                )
-        else:
-            # CW arc
-            if theta_end >= 0:
-                # no wrap
-                return not (bin_end_n <= theta_end or bin_start_n >= theta_start)
-            else:
-                # wraps below 0
-                return not (
-                    (bin_end_n <= (theta_end + TWO_PI)) and
-                    (bin_start_n >= theta_start)
-                )
