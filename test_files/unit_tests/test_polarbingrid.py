@@ -333,27 +333,43 @@ def test_determine_bin_edge_returns_expected_coordinates():
     bin_address = BinAddress(0, 0)
 
     # returns expected outer radial edge
-    assert grid._determine_bin_edge(bin_address, "outer") == (
-        (0.5, 0.0),
-        (0.5, 0.5 * np.pi),
+    outer = grid._determine_bin_edge(bin_address, "outer")
+    np.testing.assert_allclose(
+        outer,
+        (
+            (0.5, 0.0),
+            (0.5, 0.5 * np.pi),
+        ),
     )
 
     # returns expected inner radial edge
-    assert grid._determine_bin_edge(bin_address, "inner") == (
-        (0.0, 0.0),
-        (0.0, 0.5 * np.pi),
+    inner = grid._determine_bin_edge(bin_address, "inner")
+    np.testing.assert_allclose(
+        inner,
+        (
+            (0.0, 0.0),
+            (0.0, 0.5 * np.pi),
+        ),
     )
 
     # returns expected left angular edge
-    assert grid._determine_bin_edge(bin_address, "left") == (
-        (0.0, 0.0),
-        (0.5, 0.0),
+    left = grid._determine_bin_edge(bin_address, "left")
+    np.testing.assert_allclose(
+        left,
+        (
+            (0.0, 0.0),
+            (0.5, 0.0),
+        ),
     )
 
     # returns expected right angular edge
-    assert grid._determine_bin_edge(bin_address, "right") == (
-        (0.0, 0.5 * np.pi),
-        (0.5, 0.5 * np.pi),
+    right = grid._determine_bin_edge(bin_address, "right")
+    np.testing.assert_allclose(
+        right,
+        (
+            (0.0, 0.5 * np.pi),
+            (0.5, 0.5 * np.pi),
+        ),
     )
 
 
