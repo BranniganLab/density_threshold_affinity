@@ -386,3 +386,69 @@ def test_determine_bin_edge_rejects_unknown_side():
     # rejects invalid edge side names
     with pytest.raises(ValueError, match="Unknown edge type"):
         grid._determine_bin_edge(BinAddress(0, 0), "diagonal")
+
+
+def test_calc_bin_area_returns_expected_area_for_inner_radial_bin():
+    """
+    Test calc_bin_area for the innermost radial bin.
+
+    Test that it:
+        1) uses the radial midpoint of the bin
+        2) multiplies by radial bin width
+        3) multiplies by angular bin width
+    """
+    grid = PolarBinGrid(0.0, 1.0, 2, 4)
+
+    area = grid.calc_bin_area(BinAddress(0, 0))
+
+    expected = 0.25 * 0.5 * (0.5 * np.pi)
+    np.testing.assert_allclose(area, expected)
+
+
+def test_calc_bin_area_returns_expected_area_for_outer_radial_bin():
+    """
+    Test calc_bin_area for an outer radial bin.
+
+    Test that it:
+        1) uses the correct radial index
+        2) calculates the correct radial midpoint
+        3) returns the larger area expected for a larger radius
+    """
+    grid = PolarBinGrid(0.0, 1.0, 2, 4)
+
+    area = grid.calc_bin_area(BinAddress(1, 0))
+
+    expected = 0.75 * 0.5 * (0.5 * np.pi)
+    np.testing.assert_allclose(area, expected)
+
+
+def test_calc_bin_area_is_independent_of_theta_index():
+    """
+    Test calc_bin_area for bins in the same radial shell.
+
+    Test that it:
+        1) returns the same area for different theta indices
+        2) depends only on radial position for a regular polar grid
+    """
+    grid = PolarBinGrid(0.0, 1.0, 2, 4)
+
+    area_0 = grid.calc_bin_area(BinAddress(1, 0))
+    area_3 = grid.calc_bin_area(BinAddress(1, 3))
+
+    np.testing.assert_allclose(area_0, area_3)
+
+
+def test_calc_bin_area_handles_nonzero_r_min():
+    """
+    Test calc_bin_area with a nonzero radial minimum.
+
+    Test that it:
+        1) includes r_min when calculating the lower radial bound
+        2) uses the midpoint of the requested radial bin
+    """
+    grid = PolarBinGrid(1.0, 3.0, 2, 4)
+
+    area = grid.calc_bin_area(BinAddress(0, 0))
+
+    expected = 1.5 * 1.0 * (0.5 * np.pi)
+    np.testing.assert_allclose(area, expected)
