@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Polar bin grid geometry and indexing.
+Utilities for describing and querying a regularly binned polar grid.
 
-This module defines immutable geometric and topological primitives for
-polar binning, including angular and radial bin edges and their indexing
-relationships.
+This module defines :class:`PolarBinGrid`, a small geometry object that
+represents a polar coordinate grid divided into radial and angular bins. The
+grid covers radii from ``r_min`` to ``r_max`` and angles from ``0`` to
+``2*pi``. Each bin is addressed by a ``BinAddress`` containing a radial index
+and an angular index.
 
-The grid:
-- provides bin edge definitions and bin index mapping,
-- supports geometric queries needed by selection and rendering,
-- contains no selection state and no GUI or plotting logic.
-
-It is pure domain code and is shared by GUI and analysis layers.
+The module provides operations for converting polar coordinates to bin
+indices, finding all bins touched by a rectangular polar region, and computing
+the exposed boundary edges of a set of bins. These operations are useful for
+analysis code, plotting code, and interactive selection tools, but the module
+itself does not store selections, draw figures, or depend on a GUI backend.
 """
 import itertools
 from collections.abc import Iterable
@@ -25,14 +26,18 @@ BinSide = Literal["outer", "inner", "left", "right"]
 
 class PolarBinGrid:
     """
-    Geometry and topology of a polar bin grid.
+    Regular polar grid with radial and angular bin indexing.
 
-    This class provides purely computational functionality:
-    - Mapping points to bins
-    - Determining which bins intersect a polar region
-    - Computing which bin edges are externally visible
+    A ``PolarBinGrid`` divides a polar coordinate domain into ``n_r`` radial
+    bins and ``n_theta`` angular bins. Radial bins span the interval from
+    ``r_min`` to ``r_max``. Angular bins span the full circle from ``0`` to
+    ``2*pi`` and wrap periodically at the angular boundary.
 
-    It contains no rendering logic and no mutable selection state.
+    The class is responsible for geometric and topological queries on that
+    grid. It can map an ``(r, theta)`` coordinate to the bin containing it,
+    enumerate the bins intersected by a polar region, and identify the outer
+    boundary edges of an arbitrary collection of bins. It does not track which
+    bins are selected and does not perform any rendering.
     """
 
     def __init__(self,
