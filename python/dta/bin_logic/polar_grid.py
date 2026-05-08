@@ -50,10 +50,10 @@ class PolarBinGrid:
     theta_edges : ndarray
         Angular bin edge coordinates with shape ``(n_theta + 1,)`` spanning
         ``0`` to ``2*pi``.
-    theta_grid : ndarray
-        Meshgrid array of angular edge coordinates suitable for plotting.
     r_grid : ndarray
         Meshgrid array of radial edge coordinates suitable for plotting.
+    theta_grid : ndarray
+        Meshgrid array of angular edge coordinates suitable for plotting.
 
     Properties
     ----------
