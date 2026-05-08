@@ -248,8 +248,8 @@ class SiteSelector:
     ----------
     ax : matplotlib.axes.Axes
         Polar axes used for interaction and drawing.
-    theta_edges, r_edges : array-like
-        Bin edge definitions for the polar grid.
+    grid : PolarBinGrid
+        The polar grid object that contains geometric information.
     plot_kwargs : dict, optional
         Default Matplotlib line properties forwarded to the renderer. These
         apply to committed selection edges. Hover edges are drawn with a
@@ -358,10 +358,7 @@ class SiteSelector:
         self.drag_tracker.start_drag(click_coordinate, operation=operation)
 
         # Establish an initial preview.
-        clicked_bin = self.grid.bins_in_region(
-            start=click_coordinate,
-            end=click_coordinate
-        )
+        clicked_bin = self.grid.map_coord_to_bin_idx(click_coordinate)
         updated_preview_bins = self._calculate_preview_bins(clicked_bin)
         self.current_preview_bins = updated_preview_bins
         self._draw_preview(updated_preview_bins)
@@ -400,7 +397,7 @@ class SiteSelector:
         )
         self.drag_tracker.last_theta = current_location.theta_coord
 
-        bins = self.grid.bins_in_region(
+        bins = self.grid.get_bins_in_region(
             start=self.drag_tracker.drag_start,
             end=current_location
         )
@@ -500,7 +497,7 @@ class SiteSelector:
         - Draws new hover artists on this selector's Axes.
         """
         self._clear_artists(self.renderer.hover_artists)
-        edges = self.grid.exposed_edges(bins)
+        edges = self.grid.list_all_exposed_edges(bins)
 
         hover_kwargs = {
             "color": "orange",
@@ -522,7 +519,7 @@ class SiteSelector:
         - Draws the boundary edges of the committed selection.
         """
         self._clear_artists(self.renderer.selected_artists)
-        edges = self.grid.exposed_edges(self.selection.get_bins())
+        edges = self.grid.list_all_exposed_edges(self.selection.get_bins())
         self.renderer.selected_artists.extend(
             self.renderer.draw_edges(edges, self.renderer.plot_kwargs)
         )
