@@ -114,18 +114,23 @@ class PolarBinGrid:
         r_indices = list(range(r_index1, r_index2 + 1))
 
         if span_two_pi is False:
-            # Treat this as a regular rectangular region
+            # Treat this as a singular rectangular region
             theta_index1, theta_index2 = sorted((corner1_bin[1], corner2_bin[1]))
             theta_indices = list(range(theta_index1, theta_index2 + 1))
         else:
             # Treat this as two rectangular regions
             theta_index1, theta_index2 = (corner1_bin[1], corner2_bin[1])
-            if theta_index1 > theta_index2:
-                theta_indices = list(range(0, theta_index2 + 1))
-                theta_indices.extend(list(range(theta_index1, self.n_theta)))
-            else:
+            if theta_index1 == theta_index2:
+                # Select all theta values
+                theta_indices = list(range(0, self.n_theta))
+            elif theta_index1 < theta_index2:
+                # Select from 0 to theta1 and from theta2 to ntheta
                 theta_indices = list(range(0, theta_index1 + 1))
                 theta_indices.extend(list(range(theta_index2, self.n_theta)))
+            else:
+                # Select from 0 to theta2 and from theta1 to ntheta
+                theta_indices = list(range(0, theta_index2 + 1))
+                theta_indices.extend(list(range(theta_index1, self.n_theta)))
 
         bins = list(itertools.product(r_indices, theta_indices))
         return set(bins)
@@ -146,7 +151,7 @@ class PolarBinGrid:
         list[BinEdge]
             Visible boundary edges.
         """
-        if not bins:
+        if len(bins) == 0:
             return []
 
         mask = np.zeros((self.n_r, self.n_theta), dtype=bool)
@@ -154,7 +159,7 @@ class PolarBinGrid:
             mask[bin_address] = True
 
         edges = []
-        for bin_address in zip(*np.where(mask)):
+        for bin_address in bins:
             edges.extend(self._determine_exposed_edges(mask, bin_address))
 
         return edges
