@@ -43,8 +43,6 @@ class PolarBinGrid:
     ----------
     n_r : int
         Number of radial bins in the grid.
-    d_r : float
-        Width of each radial bin.
     n_theta : int
         Number of angular bins in the grid.
     r_edges : ndarray
@@ -56,6 +54,10 @@ class PolarBinGrid:
         Meshgrid array of angular edge coordinates suitable for plotting.
     r_grid : ndarray
         Meshgrid array of radial edge coordinates suitable for plotting.
+
+    Properties
+    ----------
+    r_min, r_max, d_r, d_theta.
     """
 
     def __init__(self,
@@ -79,11 +81,30 @@ class PolarBinGrid:
             Number of angular (theta) bins.
         """
         self.n_r = n_r
-        self.d_r = (r_max - r_min) / n_r
         self.n_theta = n_theta
         self.r_edges = np.linspace(r_min, r_max, n_r + 1)
         self.theta_edges = np.linspace(0.0, 2.0 * np.pi, n_theta + 1)
         self.theta_grid, self.r_grid = np.meshgrid(self.theta_edges, self.r_edges)
+
+    @property
+    def r_min(self) -> float:
+        """The minimum radial value (beginning of first bin)."""
+        return self.r_edges[0]
+
+    @property
+    def r_max(self) -> float:
+        """The maximum radial value (end of last bin)."""
+        return self.r_edges[-1]
+
+    @property
+    def d_r(self) -> float:
+        """The radial step size dr."""
+        return (self.r_max - self.r_min) / self.n_r
+
+    @property
+    def d_theta(self) -> float:
+        """The angular step size dtheta."""
+        return (2 * np.pi) / self.n_theta
 
     def map_coord_to_bin_idx(self, coord: Coordinate) -> BinAddress | None:
         """
@@ -100,8 +121,7 @@ class PolarBinGrid:
             The (radial index, angular index) of the bin,
             or None if the point lies outside the grid.
         """
-        dtheta = (2 * np.pi) / self.n_theta
-        theta_idx = int((coord[1] % (2 * np.pi)) // dtheta)
+        theta_idx = int((coord[1] % (2 * np.pi)) // self.d_theta)
         r_idx = int(coord[0] // self.d_r)
 
         if 0 <= r_idx < self.n_r and 0 <= theta_idx < self.n_theta:
