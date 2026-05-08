@@ -16,8 +16,11 @@ It is pure domain code and is shared by GUI and analysis layers.
 """
 import itertools
 from collections.abc import Iterable
+from typing import Literal
 import numpy as np
 from dta.bin_logic.utils import Coordinate, BinAddress, BinEdge
+
+BinSide = Literal["outer", "inner", "left", "right"]
 
 
 class PolarBinGrid:
@@ -91,7 +94,7 @@ class PolarBinGrid:
         Return all bins intersecting a polar region.
 
         The region is defined by two polar coordinates. Angular wraparound
-        across 0 / 2π is handled correctly.
+        across 0 / 2π is handled depending on the span_two_pi flag.
 
         Parameters
         ----------
@@ -100,7 +103,7 @@ class PolarBinGrid:
         corner2 : Coordinate
             Coordinate of opposite corner of the region.
         span_two_pi : bool, optional
-            Whether the region spans two pi or not.
+            Whether the region spans 2*pi or not.
 
         Returns
         -------
@@ -132,8 +135,9 @@ class PolarBinGrid:
                 theta_indices = list(range(0, theta_index2 + 1))
                 theta_indices.extend(list(range(theta_index1, self.n_theta)))
 
-        bins = list(itertools.product(r_indices, theta_indices))
-        return set(bins)
+        # Calculate Cartesian product to produce all ordered pairs
+        bins = set(itertools.product(r_indices, theta_indices))
+        return bins
 
     def exposed_edges(self, bins: Iterable[BinAddress]) -> list[BinEdge]:
         """
@@ -171,9 +175,9 @@ class PolarBinGrid:
         Parameters
         ----------
         mask : ndarray
-            Boolean array indicating selected bins.
+            Boolean array indicating all selected bins.
         bin_address : BinAddress
-            Bin indices.
+            The r and theta index of the bin whose edges you wish to check.
 
         Returns
         -------
@@ -185,19 +189,30 @@ class PolarBinGrid:
         ri, ti = bin_address
 
         if ri == n_r - 1 or not mask[ri + 1, ti]:
-            edges.append(self._edge_geometry(bin_address, "outer"))
+            # Bin is in outermost radial shell
+            # OR
+            # the bin in the next radial shell is not selected
+            edges.append(self.__determine_bin_edge(bin_address, "outer"))
         if ri == 0 or not mask[ri - 1, ti]:
-            edges.append(self._edge_geometry(bin_address, "inner"))
+            # Bin is in innermost radial shell
+            # OR
+            # the bin in the previous radial shell is not selected
+            edges.append(self.__determine_bin_edge(bin_address, "inner"))
         if not mask[ri, (ti - 1) % n_t]:
-            edges.append(self._edge_geometry(bin_address, "left"))
+            # The bin to the "left" is empty
+            edges.append(self.__determine_bin_edge(bin_address, "left"))
         if not mask[ri, (ti + 1) % n_t]:
-            edges.append(self._edge_geometry(bin_address, "right"))
+            # The bin to the "right" is empty
+            edges.append(self.__determine_bin_edge(bin_address, "right"))
 
         return edges
 
-    def _edge_geometry(self, bin_address: BinAddress, side: str) -> BinEdge:
+    def _determine_bin_edge(self,
+                            bin_address: BinAddress,
+                            side: BinSide,
+                            ) -> BinEdge:
         """
-        Construct the geometry for a specific edge of a bin.
+        Compute the coordinates that define a BinEdge from an address and side.
 
         Parameters
         ----------
@@ -208,7 +223,7 @@ class PolarBinGrid:
         Returns
         -------
         BinEdge
-            Edge geometry.
+            The two coordinates that define a bin's edge on the polar lattice.
         """
         r0 = self.r_edges[bin_address[0]]
         r1 = self.r_edges[bin_address[0] + 1]
