@@ -19,7 +19,6 @@ The implementation is designed to work in interactive backends (including
 Jupyter widget backends) where modifier keys may not be reported consistently.
 """
 import matplotlib
-import numpy as np
 from dta.bin_logic import PolarBinGrid, BinSelection
 from dta.bin_logic.utils import unwrap_theta, Coordinate
 from .selector_state import SelectionOperation, SelectorDragState
@@ -404,12 +403,12 @@ class SiteSelector:
 
         theta_min, theta_max = sorted((start_theta, current_theta))
 
-        crosses_theta_boundary = theta_min < 0.0 or theta_max >= 2.0 * np.pi
+        crosses_periodic_boundary = theta_min < 0.0 or theta_max >= 2.0 * np.pi
 
         bins = self.grid.get_bins_in_region(
             corner1=self.drag_tracker.drag_start,
             corner2=current_location,
-            crosses_theta_boundary=crosses_theta_boundary,
+            crosses_theta_boundary=crosses_periodic_boundary,
         )
 
         updated_preview_bins = self._calculate_preview_bins(bins)
