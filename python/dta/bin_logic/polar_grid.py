@@ -41,23 +41,29 @@ class PolarBinGrid:
 
     Attributes
     ----------
+    r_min : float
+        Minimum radial coordinate included in the grid.
+    r_max : float
+        Maximum radial coordinate at the outer edge of the grid.
     n_r : int
         Number of radial bins in the grid.
+    d_r : float
+        Width of each radial bin.
     n_theta : int
         Number of angular bins in the grid.
+    d_theta : float
+        Width of each angular bin in radians.
     r_edges : ndarray
         Radial bin edge coordinates with shape ``(n_r + 1,)``.
     theta_edges : ndarray
         Angular bin edge coordinates with shape ``(n_theta + 1,)`` spanning
         ``0`` to ``2*pi``.
     r_grid : ndarray
-        Meshgrid array of radial edge coordinates suitable for plotting.
+        Meshgrid array of radial edge coordinates suitable for plotting with
+        polar grid data.
     theta_grid : ndarray
-        Meshgrid array of angular edge coordinates suitable for plotting.
-
-    Properties
-    ----------
-    r_min, r_max, d_r, d_theta.
+        Meshgrid array of angular edge coordinates suitable for plotting with
+        polar grid data.
     """
 
     def __init__(self,
@@ -80,31 +86,21 @@ class PolarBinGrid:
         n_theta : int
             Number of angular (theta) bins.
         """
+        if r_max <= r_min:
+            raise ValueError("r_max must be greater than r_min.")
+        if n_r <= 0:
+            raise ValueError("n_r must be positive.")
+        if n_theta <= 0:
+            raise ValueError("n_theta must be positive.")
+        self.r_min = r_min
+        self.r_max = r_max
         self.n_r = n_r
+        self.d_r = (r_max - r_min) / n_r
         self.n_theta = n_theta
+        self.d_theta = (2 * np.pi) / n_theta
         self.r_edges = np.linspace(r_min, r_max, n_r + 1)
         self.theta_edges = np.linspace(0.0, 2.0 * np.pi, n_theta + 1)
         self.theta_grid, self.r_grid = np.meshgrid(self.theta_edges, self.r_edges)
-
-    @property
-    def r_min(self) -> float:
-        """The minimum radial value (beginning of first bin)."""
-        return self.r_edges[0]
-
-    @property
-    def r_max(self) -> float:
-        """The maximum radial value (end of last bin)."""
-        return self.r_edges[-1]
-
-    @property
-    def d_r(self) -> float:
-        """The radial step size dr."""
-        return (self.r_max - self.r_min) / self.n_r
-
-    @property
-    def d_theta(self) -> float:
-        """The angular step size dtheta."""
-        return (2 * np.pi) / self.n_theta
 
     def map_coord_to_bin_idx(self, coord: Coordinate) -> BinAddress | None:
         """
@@ -121,7 +117,7 @@ class PolarBinGrid:
             The (radial index, angular index) of the bin,
             or None if the point lies outside the grid.
         """
-        theta_idx = int((coord[1] % (2 * np.pi)) // self.d_theta)
+        theta_idx = int((coord[1] % (2.0 * np.pi)) // self.d_theta)
         r_idx = int((coord[0] - self.r_min) // self.d_r)
 
         if 0 <= r_idx < self.n_r and 0 <= theta_idx < self.n_theta:
@@ -156,6 +152,9 @@ class PolarBinGrid:
         corner1_bin = self.map_coord_to_bin_idx(corner1)
         corner2_bin = self.map_coord_to_bin_idx(corner2)
 
+        if not (corner1_bin and corner2_bin):
+            raise ValueError("One or both corners were outside of the grid domain.")
+
         r_index1, r_index2 = sorted((corner1_bin[0], corner2_bin[0]))
         r_indices = list(range(r_index1, r_index2 + 1))
 
@@ -179,7 +178,10 @@ class PolarBinGrid:
                 theta_indices.extend(list(range(theta_index1, self.n_theta)))
 
         # Calculate Cartesian product to produce all ordered pairs
-        bins = set(itertools.product(r_indices, theta_indices))
+        bin_pairs = set(itertools.product(r_indices, theta_indices))
+
+        # Convert to set of BinAddress objects
+        bins = {BinAddress(r_idx, theta_idx) for r_idx, theta_idx in bin_pairs}
         return bins
 
     def list_all_exposed_edges(self, bins: Iterable[BinAddress]) -> list[BinEdge]:
@@ -198,7 +200,8 @@ class PolarBinGrid:
         list[BinEdge]
             Visible boundary edges.
         """
-        if len(bins) == 0:
+        bins = set(bins)
+        if not bins:
             return []
 
         mask = np.zeros((self.n_r, self.n_theta), dtype=bool)
@@ -211,7 +214,10 @@ class PolarBinGrid:
 
         return edges
 
-    def _determine_exposed_bin_edges(self, mask: np.ndarray, bin_address: BinAddress) -> list[BinEdge]:
+    def _determine_exposed_bin_edges(self,
+                                     mask: np.ndarray,
+                                     bin_address: BinAddress
+                                     ) -> list[BinEdge]:
         """
         Determine which edges of a bin are exposed.
 
