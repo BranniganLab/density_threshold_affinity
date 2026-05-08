@@ -396,17 +396,27 @@ class SiteSelector:
         if event.xdata is None or event.ydata is None:
             return False
 
+        start_theta = self.drag_tracker.drag_start.theta_coord
         current_theta = unwrap_theta(self.drag_tracker.last_theta, event.xdata)
+
         current_location = Coordinate(event.ydata, current_theta)
         self.drag_tracker.last_theta = current_theta
 
-        theta_delta = current_theta - self.drag_tracker.drag_start.theta_coord
-        span_two_pi = abs(theta_delta) >= 2.0 * np.pi
+        theta_min, theta_max = sorted((start_theta, current_theta))
+
+        crosses_theta_boundary = theta_min < 0.0 or theta_max >= 2.0 * np.pi
+
+        print(
+            "start=", self.drag_tracker.drag_start.theta_coord,
+            "current=", current_theta,
+            "event=", event.xdata,
+            "span=", crosses_theta_boundary,
+        )
 
         bins = self.grid.get_bins_in_region(
             corner1=self.drag_tracker.drag_start,
             corner2=current_location,
-            span_two_pi=span_two_pi,
+            crosses_theta_boundary=crosses_theta_boundary,
         )
 
         updated_preview_bins = self._calculate_preview_bins(bins)
