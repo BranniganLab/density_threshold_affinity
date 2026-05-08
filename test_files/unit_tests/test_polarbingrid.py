@@ -29,7 +29,7 @@ def test_init_sets_expected_grid_attributes():
 
     # stores bin widths
     assert grid.d_r == 1.0
-    assert grid.d_theta == 0.5 * np.pi
+    np.testing.assert_allclose(grid.d_theta, 0.5 * np.pi)
 
     # creates expected bin edge arrays
     np.testing.assert_allclose(grid.r_edges, np.array([1.0, 2.0, 3.0]))
