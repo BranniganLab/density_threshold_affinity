@@ -406,13 +406,6 @@ class SiteSelector:
 
         crosses_theta_boundary = theta_min < 0.0 or theta_max >= 2.0 * np.pi
 
-        print(
-            "start=", self.drag_tracker.drag_start.theta_coord,
-            "current=", current_theta,
-            "event=", event.xdata,
-            "span=", crosses_theta_boundary,
-        )
-
         bins = self.grid.get_bins_in_region(
             corner1=self.drag_tracker.drag_start,
             corner2=current_location,
