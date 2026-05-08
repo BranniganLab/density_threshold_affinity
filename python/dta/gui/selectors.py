@@ -399,7 +399,8 @@ class SiteSelector:
 
         bins = self.grid.get_bins_in_region(
             start=self.drag_tracker.drag_start,
-            end=current_location
+            end=current_location,
+            span_two_pi=False
         )
 
         updated_preview_bins = self._calculate_preview_bins(bins)
