@@ -247,10 +247,10 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
             # the bin in the previous radial shell is not selected
             edges.append(self._determine_bin_edge(bin_address, "inner"))
         if not mask[ri, (ti - 1) % n_t]:
-            # The bin to the "left" is empty
+            # The bin to the "left" is not selected
             edges.append(self._determine_bin_edge(bin_address, "left"))
         if not mask[ri, (ti + 1) % n_t]:
-            # The bin to the "right" is empty
+            # The bin to the "right" is not selected
             edges.append(self._determine_bin_edge(bin_address, "right"))
 
         return edges
