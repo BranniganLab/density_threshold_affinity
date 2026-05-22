@@ -36,9 +36,9 @@ class GridDim:
     def __post_init__(self):
         """Calculate bin width and edges from input variables."""
         bin_width = (self.upper_bound - self.lower_bound) / self.n_bins
-        self.__setattr__('bin_width', bin_width)
+        object.__setattr__(self, 'bin_width', bin_width)
         edges = np.linspace(self.lower_bound, self.upper_bound, self.n_bins + 1)
-        self.__setattr__('bin_edges', edges)
+        object.__setattr__(self, 'bin_edges', edges)
 
 
 class PolarBinGrid:
