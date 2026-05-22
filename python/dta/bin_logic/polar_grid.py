@@ -27,7 +27,7 @@ BinSide = Literal["outer", "inner", "left", "right"]
 
 @dataclass(frozen=True)
 class GridDim:
-    lower_bound: float = 0
+    lower_bound: float
     upper_bound: float
     n_bins: int
     bin_width: float = field(init=False)
