@@ -274,7 +274,7 @@ class PolarBinGrid:
         r0 = self.r.bin_edges[bin_address[0]]
         r1 = self.r.bin_edges[bin_address[0] + 1]
         t0 = self.theta.bin_edges[bin_address[1]]
-        t1 = self.theta.bin_edges[(bin_address[1] + 1) % self.n_theta]
+        t1 = self.theta.bin_edges[(bin_address[1] + 1) % self.theta.n_bins]
 
         if side == "outer":
             return BinEdge(Coordinate(r1, t0), Coordinate(r1, t1))
