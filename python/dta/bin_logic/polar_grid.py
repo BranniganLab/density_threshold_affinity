@@ -1,19 +1,49 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Utilities for describing and querying a regularly binned polar grid.
+Utilities for describing and querying regularly binned polar grids.
 
-This module defines :class:`PolarBinGrid`, a small geometry object that
-represents a polar coordinate grid divided into radial and angular bins. The
-grid covers radii from ``r_min`` to ``r_max`` and angles from ``0`` to
-``2*pi``. Each bin is addressed by a ``BinAddress`` containing a radial index
-and an angular index.
+This module defines geometry objects used to represent polar coordinate
+lattices composed of discrete radial and angular bins. The primary object,
+:class:`PolarBinGrid`, models a polar domain partitioned into regularly spaced
+radial and angular intervals and provides geometric operations on that grid.
 
-The module provides operations for converting polar coordinates to bin
-indices, finding all bins touched by a rectangular polar region, and computing
-the exposed boundary edges of a set of bins. These operations are useful for
-analysis code, plotting code, and interactive selection tools, but the module
-itself does not store selections, draw figures, or depend on a GUI backend.
+The grid itself stores only lattice geometry. It does not store selections,
+perform rendering, or depend on GUI backends. Geometry utilities provided by
+this module support analysis workflows, plotting code, and interactive tools
+that operate on polar bin structures.
+
+Contents
+--------
+GridDim
+    Immutable description of a single discretized dimension. Stores bounds,
+    bin count, derived bin width, and bin edge coordinates.
+
+PolarBinGrid
+    Polar coordinate lattice supporting coordinate-to-bin mapping, region
+    queries, exposed-edge determination, and bin geometry calculations.
+
+Examples
+--------
+Create a polar grid with radial bounds from 0 to 5 and 72 angular bins::
+
+    grid = PolarBinGrid(
+        r_min=0.0,
+        r_max=5.0,
+        n_r=40,
+        n_theta=72,
+    )
+
+Determine which lattice bin contains a coordinate::
+
+    address = grid.map_coord_to_bin_idx((2.5, np.pi))
+
+Find all bins touched by a drag-selection region::
+
+    bins = grid.get_bins_in_region(
+        corner1=(1.0, 0.1),
+        corner2=(3.0, 0.5),
+    )
 """
 import itertools
 from collections.abc import Iterable
@@ -27,6 +57,39 @@ BinSide = Literal["outer", "inner", "left", "right"]
 
 @dataclass(frozen=True)
 class GridDim:
+    """
+    Immutable description of a discretized coordinate dimension.
+
+    A ``GridDim`` defines one regularly spaced dimension of a lattice by
+    storing lower and upper bounds together with the number of bins spanning
+    that interval. Derived geometric quantities including bin width and bin
+    edge coordinates are calculated automatically during initialization.
+
+    ``GridDim`` is intended to separate dimension-specific geometry from
+    higher-level grid logic. For example, a polar grid may contain one
+    ``GridDim`` describing radial spacing and another describing angular
+    spacing.
+
+    Attributes
+    ----------
+    lower_bound : float
+        Lower boundary of the dimension.
+
+    upper_bound : float
+        Upper boundary of the dimension.
+
+    n_bins : int
+        Number of regularly spaced bins.
+
+    bin_width : float
+        Width of each bin, calculated as
+        ``(upper_bound - lower_bound) / n_bins``.
+
+    bin_edges : ndarray
+        Array containing bin boundary coordinates. Length is
+        ``n_bins + 1``.
+    """
+
     lower_bound: float
     upper_bound: float
     n_bins: int
