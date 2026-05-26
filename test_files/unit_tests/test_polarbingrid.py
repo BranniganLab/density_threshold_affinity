@@ -1,14 +1,72 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Unit tests for PolarBinGrid.
-"""
+"""Unit tests for GridDim and PolarBinGrid."""
+
+from dataclasses import FrozenInstanceError
 
 import numpy as np
 import pytest
 
-from dta.bin_logic import PolarBinGrid
+from dta.bin_logic.polar_grid import GridDim, PolarBinGrid
 from dta.bin_logic.utils import BinAddress
+
+
+def test_griddim_calculates_expected_attributes():
+    """
+    Test GridDim initialization.
+
+    Test that it:
+        1) stores lower and upper bounds
+        2) stores the number of bins
+        3) calculates bin width
+        4) creates bin edge array with expected values
+    """
+    dim = GridDim(1.0, 3.0, 2)
+
+    assert dim.lower_bound == 1.0
+    assert dim.upper_bound == 3.0
+    assert dim.n_bins == 2
+    np.testing.assert_allclose(dim.bin_width, 1.0)
+    np.testing.assert_allclose(dim.bin_edges, np.array([1.0, 2.0, 3.0]))
+
+
+def test_griddim_calculates_expected_angular_dimension():
+    """
+    Test GridDim initialization for an angular dimension.
+
+    Test that it:
+        1) accepts zero as the lower bound
+        2) accepts 2pi as the upper bound
+        3) calculates angular bin width
+        4) creates angular bin edge array with expected values
+    """
+    dim = GridDim(0.0, 2.0 * np.pi, 4)
+
+    assert dim.lower_bound == 0.0
+    np.testing.assert_allclose(dim.upper_bound, 2.0 * np.pi)
+    assert dim.n_bins == 4
+    np.testing.assert_allclose(dim.bin_width, 0.5 * np.pi)
+    np.testing.assert_allclose(
+        dim.bin_edges,
+        np.array([0.0, 0.5 * np.pi, np.pi, 1.5 * np.pi, 2.0 * np.pi]),
+    )
+
+
+def test_griddim_is_frozen():
+    """
+    Test GridDim immutability.
+
+    Test that it:
+        1) prevents reassignment of input attributes
+        2) prevents reassignment of calculated attributes
+    """
+    dim = GridDim(1.0, 3.0, 2)
+
+    with pytest.raises(FrozenInstanceError):
+        dim.lower_bound = 0.0
+
+    with pytest.raises(FrozenInstanceError):
+        dim.bin_width = 10.0
 
 
 def test_init_sets_expected_grid_attributes():
@@ -24,17 +82,17 @@ def test_init_sets_expected_grid_attributes():
     grid = PolarBinGrid(1.0, 3.0, 2, 4)
 
     # stores bin counts
-    assert grid.n_r == 2
-    assert grid.n_theta == 4
+    assert grid.r.n_bins == 2
+    assert grid.theta.n_bins == 4
 
     # stores bin widths
-    assert grid.d_r == 1.0
-    assert grid.d_theta == 0.5 * np.pi
+    assert grid.r.bin_width == 1.0
+    np.testing.assert_allclose(grid.theta.bin_width, 0.5 * np.pi)
 
     # creates expected bin edge arrays
-    np.testing.assert_allclose(grid.r_edges, np.array([1.0, 2.0, 3.0]))
+    np.testing.assert_allclose(grid.r.bin_edges, np.array([1.0, 2.0, 3.0]))
     np.testing.assert_allclose(
-        grid.theta_edges,
+        grid.theta.bin_edges,
         np.array([0.0, 0.5 * np.pi, np.pi, 1.5 * np.pi, 2.0 * np.pi]),
     )
 
@@ -209,8 +267,8 @@ def test_get_bins_in_region_wraparound_matching_theta_bins_selects_all_theta():
 
     expected = {
         BinAddress(r_idx, theta_idx)
-        for r_idx in range(grid.n_r)
-        for theta_idx in range(grid.n_theta)
+        for r_idx in range(grid.r.n_bins)
+        for theta_idx in range(grid.theta.n_bins)
     }
 
     # selecting across 2pi with matching theta bins selects all angular bins
@@ -333,27 +391,43 @@ def test_determine_bin_edge_returns_expected_coordinates():
     bin_address = BinAddress(0, 0)
 
     # returns expected outer radial edge
-    assert grid._determine_bin_edge(bin_address, "outer") == (
-        (0.5, 0.0),
-        (0.5, 0.5 * np.pi),
+    outer = grid._determine_bin_edge(bin_address, "outer")
+    np.testing.assert_allclose(
+        outer,
+        (
+            (0.5, 0.0),
+            (0.5, 0.5 * np.pi),
+        ),
     )
 
     # returns expected inner radial edge
-    assert grid._determine_bin_edge(bin_address, "inner") == (
-        (0.0, 0.0),
-        (0.0, 0.5 * np.pi),
+    inner = grid._determine_bin_edge(bin_address, "inner")
+    np.testing.assert_allclose(
+        inner,
+        (
+            (0.0, 0.0),
+            (0.0, 0.5 * np.pi),
+        ),
     )
 
     # returns expected left angular edge
-    assert grid._determine_bin_edge(bin_address, "left") == (
-        (0.0, 0.0),
-        (0.5, 0.0),
+    left = grid._determine_bin_edge(bin_address, "left")
+    np.testing.assert_allclose(
+        left,
+        (
+            (0.0, 0.0),
+            (0.5, 0.0),
+        ),
     )
 
     # returns expected right angular edge
-    assert grid._determine_bin_edge(bin_address, "right") == (
-        (0.0, 0.5 * np.pi),
-        (0.5, 0.5 * np.pi),
+    right = grid._determine_bin_edge(bin_address, "right")
+    np.testing.assert_allclose(
+        right,
+        (
+            (0.0, 0.5 * np.pi),
+            (0.5, 0.5 * np.pi),
+        ),
     )
 
 
@@ -370,3 +444,69 @@ def test_determine_bin_edge_rejects_unknown_side():
     # rejects invalid edge side names
     with pytest.raises(ValueError, match="Unknown edge type"):
         grid._determine_bin_edge(BinAddress(0, 0), "diagonal")
+
+
+def test_calc_bin_area_returns_expected_area_for_inner_radial_bin():
+    """
+    Test calc_bin_area for the innermost radial bin.
+
+    Test that it:
+        1) uses the radial midpoint of the bin
+        2) multiplies by radial bin width
+        3) multiplies by angular bin width
+    """
+    grid = PolarBinGrid(0.0, 1.0, 2, 4)
+
+    area = grid.calc_bin_area(BinAddress(0, 0))
+
+    expected = 0.25 * 0.5 * (0.5 * np.pi)
+    np.testing.assert_allclose(area, expected)
+
+
+def test_calc_bin_area_returns_expected_area_for_outer_radial_bin():
+    """
+    Test calc_bin_area for an outer radial bin.
+
+    Test that it:
+        1) uses the correct radial index
+        2) calculates the correct radial midpoint
+        3) returns the larger area expected for a larger radius
+    """
+    grid = PolarBinGrid(0.0, 1.0, 2, 4)
+
+    area = grid.calc_bin_area(BinAddress(1, 0))
+
+    expected = 0.75 * 0.5 * (0.5 * np.pi)
+    np.testing.assert_allclose(area, expected)
+
+
+def test_calc_bin_area_is_independent_of_theta_index():
+    """
+    Test calc_bin_area for bins in the same radial shell.
+
+    Test that it:
+        1) returns the same area for different theta indices
+        2) depends only on radial position for a regular polar grid
+    """
+    grid = PolarBinGrid(0.0, 1.0, 2, 4)
+
+    area_0 = grid.calc_bin_area(BinAddress(1, 0))
+    area_3 = grid.calc_bin_area(BinAddress(1, 3))
+
+    np.testing.assert_allclose(area_0, area_3)
+
+
+def test_calc_bin_area_handles_nonzero_r_min():
+    """
+    Test calc_bin_area with a nonzero radial minimum.
+
+    Test that it:
+        1) includes r_min when calculating the lower radial bound
+        2) uses the midpoint of the requested radial bin
+    """
+    grid = PolarBinGrid(1.0, 3.0, 2, 4)
+
+    area = grid.calc_bin_area(BinAddress(0, 0))
+
+    expected = 1.5 * 1.0 * (0.5 * np.pi)
+    np.testing.assert_allclose(area, expected)
