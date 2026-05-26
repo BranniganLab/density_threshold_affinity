@@ -1,22 +1,53 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Utilities for describing and querying a regularly binned polar grid.
+Utilities for describing and querying regularly binned polar grids.
 
-This module defines :class:`PolarBinGrid`, a small geometry object that
-represents a polar coordinate grid divided into radial and angular bins. The
-grid covers radii from ``r_min`` to ``r_max`` and angles from ``0`` to
-``2*pi``. Each bin is addressed by a ``BinAddress`` containing a radial index
-and an angular index.
+This module defines geometry objects used to represent polar coordinate
+lattices composed of discrete radial and angular bins. The primary object,
+:class:`PolarBinGrid`, models a polar domain partitioned into regularly spaced
+radial and angular intervals and provides geometric operations on that grid.
 
-The module provides operations for converting polar coordinates to bin
-indices, finding all bins touched by a rectangular polar region, and computing
-the exposed boundary edges of a set of bins. These operations are useful for
-analysis code, plotting code, and interactive selection tools, but the module
-itself does not store selections, draw figures, or depend on a GUI backend.
+The grid itself stores only lattice geometry. It does not store selections,
+perform rendering, or depend on GUI backends. Geometry utilities provided by
+this module support analysis workflows, plotting code, and interactive tools
+that operate on polar bin structures.
+
+Contents
+--------
+GridDim
+    Immutable description of a single discretized dimension. Stores bounds,
+    bin count, derived bin width, and bin edge coordinates.
+
+PolarBinGrid
+    Polar coordinate lattice supporting coordinate-to-bin mapping, region
+    queries, exposed-edge determination, and bin geometry calculations.
+
+Examples
+--------
+Create a polar grid with radial bounds from 0 to 5 and 72 angular bins::
+
+    grid = PolarBinGrid(
+        r_min=0.0,
+        r_max=5.0,
+        n_r=40,
+        n_theta=72,
+    )
+
+Determine which lattice bin contains a coordinate::
+
+    address = grid.map_coord_to_bin_idx((2.5, np.pi))
+
+Find all bins touched by a drag-selection region::
+
+    bins = grid.get_bins_in_region(
+        corner1=(1.0, 0.1),
+        corner2=(3.0, 0.5),
+    )
 """
 import itertools
 from collections.abc import Iterable
+from dataclasses import dataclass, field
 from typing import Literal
 import numpy as np
 from dta.bin_logic.utils import Coordinate, BinAddress, BinEdge
@@ -24,7 +55,56 @@ from dta.bin_logic.utils import Coordinate, BinAddress, BinEdge
 BinSide = Literal["outer", "inner", "left", "right"]
 
 
-class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
+@dataclass(frozen=True)
+class GridDim:
+    """
+    Immutable description of a discretized coordinate dimension.
+
+    A ``GridDim`` defines one regularly spaced dimension of a lattice by
+    storing lower and upper bounds together with the number of bins spanning
+    that interval. Derived geometric quantities including bin width and bin
+    edge coordinates are calculated automatically during initialization.
+
+    ``GridDim`` is intended to separate dimension-specific geometry from
+    higher-level grid logic. For example, a polar grid may contain one
+    ``GridDim`` describing radial spacing and another describing angular
+    spacing.
+
+    Attributes
+    ----------
+    lower_bound : float
+        Lower boundary of the dimension.
+
+    upper_bound : float
+        Upper boundary of the dimension.
+
+    n_bins : int
+        Number of regularly spaced bins.
+
+    bin_width : float
+        Width of each bin, calculated as
+        ``(upper_bound - lower_bound) / n_bins``.
+
+    bin_edges : ndarray
+        Array containing bin boundary coordinates. Length is
+        ``n_bins + 1``.
+    """
+
+    lower_bound: float
+    upper_bound: float
+    n_bins: int
+    bin_width: float = field(init=False)
+    bin_edges: np.ndarray = field(init=False)
+
+    def __post_init__(self):
+        """Calculate bin width and edges from input variables."""
+        bin_width = (self.upper_bound - self.lower_bound) / self.n_bins
+        object.__setattr__(self, 'bin_width', bin_width)
+        edges = np.linspace(self.lower_bound, self.upper_bound, self.n_bins + 1)
+        object.__setattr__(self, 'bin_edges', edges)
+
+
+class PolarBinGrid:
     """
     Regular polar grid with radial and angular bin indexing.
 
@@ -41,23 +121,10 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
 
     Attributes
     ----------
-    r_min : float
-        Minimum radial coordinate included in the grid.
-    r_max : float
-        Maximum radial coordinate at the outer edge of the grid.
-    n_r : int
-        Number of radial bins in the grid.
-    d_r : float
-        Width of each radial bin.
-    n_theta : int
-        Number of angular bins in the grid.
-    d_theta : float
-        Width of each angular bin in radians.
-    r_edges : ndarray
-        Radial bin edge coordinates with shape ``(n_r + 1,)``.
-    theta_edges : ndarray
-        Angular bin edge coordinates with shape ``(n_theta + 1,)`` spanning
-        ``0`` to ``2*pi``.
+    r : GridDim
+        The radial dimension of the polar lattice.
+    theta : GridDim
+        The angular dimension of the polar lattice.
     r_grid : ndarray
         Meshgrid array of radial edge coordinates suitable for plotting with
         polar grid data.
@@ -92,15 +159,9 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
             raise ValueError("n_r must be positive.")
         if n_theta <= 0:
             raise ValueError("n_theta must be positive.")
-        self.r_min = r_min
-        self.r_max = r_max
-        self.n_r = n_r
-        self.d_r = (r_max - r_min) / n_r
-        self.n_theta = n_theta
-        self.d_theta = (2 * np.pi) / n_theta
-        self.r_edges = np.linspace(r_min, r_max, n_r + 1)
-        self.theta_edges = np.linspace(0.0, 2.0 * np.pi, n_theta + 1)
-        self.theta_grid, self.r_grid = np.meshgrid(self.theta_edges, self.r_edges)
+        self.r = GridDim(r_min, r_max, n_r)
+        self.theta = GridDim(0, 2 * np.pi, n_theta)
+        self.theta_grid, self.r_grid = np.meshgrid(self.theta.bin_edges, self.r.bin_edges)
 
     def map_coord_to_bin_idx(self, coord: Coordinate) -> BinAddress | None:
         """
@@ -117,10 +178,10 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
             The (radial index, angular index) of the bin,
             or None if the point lies outside the grid.
         """
-        theta_idx = int((coord[1] % (2.0 * np.pi)) // self.d_theta)
-        r_idx = int((coord[0] - self.r_min) // self.d_r)
+        theta_idx = int((coord[1] % (2.0 * np.pi)) // self.theta.bin_width)
+        r_idx = int((coord[0] - self.r.lower_bound) // self.r.bin_width)
 
-        if 0 <= r_idx < self.n_r and 0 <= theta_idx < self.n_theta:
+        if 0 <= r_idx < self.r.n_bins and 0 <= theta_idx < self.theta.n_bins:
             return BinAddress(r_idx, theta_idx)
         return None
 
@@ -170,10 +231,10 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
             if theta_index1 <= theta_index2:
                 # Select from 0 to theta_index1 and from theta_index2 to 2pi
                 theta_indices = list(range(0, theta_index1 + 1))
-                theta_indices.extend(range(theta_index2, self.n_theta))
+                theta_indices.extend(range(theta_index2, self.theta.n_bins))
             else:
                 # Select from 0 to theta_index2 and from theta_index1 to 2pi
-                theta_indices = list(range(theta_index1, self.n_theta))
+                theta_indices = list(range(theta_index1, self.theta.n_bins))
                 theta_indices.extend(range(0, theta_index2 + 1))
 
         # Calculate Cartesian product to produce all ordered pairs
@@ -203,7 +264,7 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
         if not bins:
             return []
 
-        mask = np.zeros((self.n_r, self.n_theta), dtype=bool)
+        mask = np.zeros((self.r.n_bins, self.theta.n_bins), dtype=bool)
         for bin_address in bins:
             mask[bin_address] = True
 
@@ -273,10 +334,10 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
         BinEdge
             The two coordinates that define a bin's edge on the polar lattice.
         """
-        r0 = self.r_edges[bin_address[0]]
-        r1 = self.r_edges[bin_address[0] + 1]
-        t0 = self.theta_edges[bin_address[1]]
-        t1 = self.theta_edges[(bin_address[1] + 1) % self.n_theta]
+        r0 = self.r.bin_edges[bin_address[0]]
+        r1 = self.r.bin_edges[bin_address[0] + 1]
+        t0 = self.theta.bin_edges[bin_address[1]]
+        t1 = self.theta.bin_edges[(bin_address[1] + 1) % self.theta.n_bins]
 
         if side == "outer":
             return BinEdge(Coordinate(r1, t0), Coordinate(r1, t1))
@@ -307,6 +368,6 @@ class PolarBinGrid:  # pylint: disable=too-many-instance-attributes
         float
             The area of the bin.
         """
-        lower_r_bound = bin_address[0] * self.d_r + self.r_min
-        r_i = lower_r_bound + (self.d_r * 0.5)
-        return r_i * self.d_r * self.d_theta
+        bin_lower_r_bound = bin_address[0] * self.r.bin_width + self.r.lower_bound
+        r_i = bin_lower_r_bound + (self.r.bin_width * 0.5)
+        return r_i * self.r.bin_width * self.theta.bin_width
