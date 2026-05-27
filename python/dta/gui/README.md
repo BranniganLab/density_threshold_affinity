@@ -209,10 +209,10 @@ SiteSelector *-- BinSelection : holds & updates bin selection
 SiteSelector *-- SelectorDragState : keeps track of mouse drags and key-press modifiers
 SelectorDragState ..> SelectionOperations : enumerates allowed modes
 
-SelectionRenderer o-- matplotlib.pyplot.Axes
+SelectionRenderer o-- matplotlib.axes.Axes
 
 SiteSelectorManager o-- SiteSelector : coordinates behavior for one Axes
-SiteSelectorManager o-- matplotlib.pyplot.Fig
+SiteSelectorManager o-- matplotlib.figure.Figure
 
 NamedTuple <|-- BinAddress : is a
 NamedTuple <|-- Coordinate : is a
