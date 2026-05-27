@@ -139,7 +139,7 @@ class SelectionRenderer {
     +draw_edges(edges: List~BinEdge~, plot_kwargs: dict | None) List~Artist~
     +shade_interior_region()*
 }
-class matplotlib.pyplot.Axes {}
+class matplotlib.axes.Axes {}
 }
 
 %% =========================
@@ -197,7 +197,7 @@ class SiteSelectorManager {
     -mods_from_mouse_event(event: MouseEvent) Set~str~
     -determine_operation_from_key_presses(event: MouseEvent) SelectionOperation
 }
-class matplotlib.pyplot.Fig {}
+class matplotlib.figure.Figure {}
 }
 %% =========================
 %% Relationships
