@@ -57,7 +57,7 @@ class SelectionRenderer:::view
 class SiteSelector:::controller
 class SiteSelectorManager:::controller
 class SelectorDragState:::controller
-class SelectorOperations:::controller
+class SelectionOperations:::controller
 
 <<Model>> PolarBinGrid
 <<Model>> GridDim
@@ -71,7 +71,7 @@ class SelectorOperations:::controller
 <<Controller>> SiteSelector
 <<Controller>> SiteSelectorManager
 <<Controller>> SelectorDragState
-<<Controller>> SelectorOperations
+<<Controller>> SelectionOperations
 
 
 %% =========================
@@ -80,10 +80,10 @@ class SelectorOperations:::controller
 
 namespace DTA.bin_logic.polar_grid {
 class PolarBinGrid {
-    -r: GridDim
-    -theta: GridDim
-    -r_grid: ndarray
-    -theta_grid: ndarray
+    +r: GridDim
+    +theta: GridDim
+    +r_grid: ndarray
+    +theta_grid: ndarray
     +map_coord_to_bin_idx(coord: Coordinate) BinAddress | None
     +bins_in_region(corner1: Coordinate, corner2: Coordinate, crosses_theta_boundary: bool) Set~BinAddress~
     +list_all_exposed_edges(bins: Set~BinAddress) List~BinEdge~
@@ -92,11 +92,11 @@ class PolarBinGrid {
     -determine_bin_edge(bin_address: BinAddress, side: str) BinEdge
 }
 class GridDim {
-    -lower_bound: float
-    -upper_bound: float
-    -n_bins: int
-    -bin_width: float
-    -bin_edges: ndarray
+    +lower_bound: float
+    +upper_bound: float
+    +n_bins: int
+    +bin_width: float
+    +bin_edges: ndarray
 }
 }
 
@@ -117,11 +117,11 @@ class BinEdge {
 }
 namespace DTA.bin_logic.bin_selection {
 class BinSelection {
-    -bins : Set~BinAddress~
+    +bins : Set~BinAddress~
     -selection_history*
     +set_bins(bins: Set~BinAddress~)
     +get_bins() Set~BinAddress~
-    +clear()
+    +reset()
     +undo()*
     +redo()*
 }
@@ -132,13 +132,14 @@ class BinSelection {
 %% =========================
 namespace DTA.gui.renderers {
 class SelectionRenderer {
-    -ax: Axes
+    +ax: Axes
     +plot_kwargs : dict
     +selected_artists: List~Artist~
     +hover_artists: List~Artist~
     +draw_edges(edges: List~BinEdge~, plot_kwargs: dict | None) List~Artist~
     +shade_interior_region()*
 }
+class matplotlib.pyplot.Axes {}
 }
 
 %% =========================
@@ -146,7 +147,7 @@ class SelectionRenderer {
 %% =========================
 
 namespace DTA.gui.selector_state {
-class SelectorOperations {
+class SelectionOperations {
     <<enumeration>>
     REPLACE
     ADD
@@ -155,9 +156,11 @@ class SelectorOperations {
 
 class SelectorDragState {
     <<dataclass>>
-    +drag_start: Coordinate | None
-    +last_theta: float | None
-    +mods: FrozenSet~string~
+    -drag_start: Coordinate | None
+    -last_theta: float | None
+    -operation: SelectionOperation
+    +start_drag() None
+    +reset() None
 }
 }
 
@@ -167,18 +170,17 @@ class SiteSelector {
     +grid: PolarBinGrid
     +renderer: SelectionRenderer
     +drag_tracker: SelectorDragState
-    +operation: SelectorOperations
     +current_preview_bins: Set~BinAddress~ | None
-    +on_activate()
-    +on_press(event)
-    +on_motion(event)
-    +on_release(event)
-    +on_deactivate()
+    +on_activate() None
+    +on_press(event: MouseEvent, operation: SelectionOperation) bool
+    +on_motion(event: MouseEvent) bool
+    +on_release(_event: MouseEvent) bool
+    +on_deactivate() None
     -calculate_preview_bins(bins: Set~BinAddress~) Set~BinAddress~
-    -draw_preview(bins: Set~BinAddress~)
-    -draw_selection()
-    -clear_artists(artists: List~Artist~)
-    -save_to_selection_history(before: Set~BinAddress~, after: Set~BinAddress~)*
+    -draw_preview(bins: Set~BinAddress~) None
+    -draw_selection() None
+    -clear_artists(artists: List~Artist~) None
+    -save_to_selection_history(last_bins: Set~BinAddress~)*
 }
 
 class SiteSelectorManager {
@@ -190,10 +192,12 @@ class SiteSelectorManager {
     +register(selector: SiteSelector, active: bool)
     +set_active(selector: SiteSelector)
     -on_press_event(event: MouseEvent)
-    -on_drag_event(event: MouseEvent)
+    -on_motion_event(event: MouseEvent)
     -on_release_event(event: MouseEvent)
     -mods_from_mouse_event(event: MouseEvent) Set~str~
+    -determine_operation_from_key_presses(event: MouseEvent) SelectionOperation
 }
+class matplotlib.pyplot.Fig {}
 }
 %% =========================
 %% Relationships
@@ -203,9 +207,12 @@ SiteSelector *-- PolarBinGrid : defines polar lattice logic
 SiteSelector *-- SelectionRenderer : draws things & keeps track of what's drawn
 SiteSelector *-- BinSelection : holds & updates bin selection
 SiteSelector *-- SelectorDragState : keeps track of mouse drags and key-press modifiers
-SiteSelector ..> SelectorOperations : enumerates allowed modes
+SelectorDragState ..> SelectionOperations : enumerates allowed modes
+
+SelectionRenderer o-- matplotlib.pyplot.Axes
 
 SiteSelectorManager o-- SiteSelector : coordinates behavior for one Axes
+SiteSelectorManager o-- matplotlib.pyplot.Fig
 
 NamedTuple <|-- BinAddress : is a
 NamedTuple <|-- Coordinate : is a
