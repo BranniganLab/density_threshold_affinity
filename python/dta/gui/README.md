@@ -46,6 +46,7 @@ classDiagram
 %% =========================
 
 class PolarBinGrid:::model
+class GridDim:::model
 class BinAddress:::model
 class Coordinate:::model
 class BinEdge:::model
@@ -59,6 +60,7 @@ class SelectorDragState:::controller
 class SelectorOperations:::controller
 
 <<Model>> PolarBinGrid
+<<Model>> GridDim
 <<Model>> BinAddress
 <<Model>> Coordinate
 <<Model>> BinEdge
@@ -78,15 +80,23 @@ class SelectorOperations:::controller
 
 namespace DTA.bin_logic.polar_grid {
 class PolarBinGrid {
-    -r_edges: ndarray
-    -theta_edges: ndarray
-    -n_r: int
-    -n_t: int
+    -r: GridDim
+    -theta: GridDim
+    -r_grid: ndarray
+    -theta_grid: ndarray
     +map_coord_to_bin_idx(coord: Coordinate) BinAddress | None
-    +bins_in_region(start: Coordinate, end: Coordinate) Set~BinAddress~
-    +exposed_edges(bins: Set~BinAddress) List~BinEdge~
-    +bin_in_theta_arc(theta_start: float, theta_end: float, bin_start: float, bin_end: float) bool
-    -_edge_geometry(bin: BinAddress, side: str) BinEdge
+    +bins_in_region(corner1: Coordinate, corner2: Coordinate, crosses_theta_boundary: bool) Set~BinAddress~
+    +list_all_exposed_edges(bins: Set~BinAddress) List~BinEdge~
+    +calc_bin_area(bin_address: BinAddress) float
+    -determine_exposed_bin_edges(mask: ndarray, bin_address: BinAddress) list~BinEdge~
+    -determine_bin_edge(bin_address: BinAddress, side: str) BinEdge
+}
+class GridDim {
+    -lower_bound: float
+    -upper_bound: float
+    -n_bins: int
+    -bin_width: float
+    -bin_edges: ndarray
 }
 }
 
