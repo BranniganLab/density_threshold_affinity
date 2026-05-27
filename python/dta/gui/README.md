@@ -211,6 +211,8 @@ NamedTuple <|-- BinAddress : is a
 NamedTuple <|-- Coordinate : is a
 NamedTuple <|-- BinEdge : is a
 
+PolarBinGrid o-- GridDim
+
 %% =========================
 %% Styling (MVC color coding)
 %% =========================
