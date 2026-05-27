@@ -246,7 +246,7 @@ classDiagram
 ```
 
 
-## Sequence Diagram Depicting User Actions and Code Response
+## Sequence Diagram Depicting SiteSelectorManager Response to Mouse Events
 
 ```mermaid
 flowchart TD
