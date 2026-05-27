@@ -183,7 +183,7 @@ class SiteSelector {
 
 class SiteSelectorManager {
     +fig: Figure
-    -selectors: dict
+    -selectors: dict~SiteSelector~
     -active: dict
     -drag_owner: SiteSelector | None
     -cids: List~int~
