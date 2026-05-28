@@ -16,6 +16,9 @@ All event handling and gesture interpretation is handled by
 Matplotlib controllers in selectors.py. Persistent selection
 state lives in dta.core.selection.
 """
+from collections.abc import Iterable
+import matplotlib
+from dta.bin_logic.utils import BinEdge
 
 
 class SelectionRenderer:
@@ -26,7 +29,11 @@ class SelectionRenderer:
     coordinate order expected by matplotlib polar plots.
     """
 
-    def __init__(self, ax, plot_kwargs=None):
+    def __init__(
+        self,
+        ax: matplotlib.axes.Axes,
+        plot_kwargs: dict = None
+    ) -> None:
         """
         Create a SelectionRenderer object and tie it to an Axes instance.
 
@@ -50,7 +57,11 @@ class SelectionRenderer:
         self.selected_artists = []
         self.hover_artists = []
 
-    def draw_edges(self, edges, plot_kwargs=None):
+    def draw_edges(
+        self,
+        edges: Iterable[BinEdge],
+        plot_kwargs: dict = None
+    ) -> list[matplotlib.artist.Artist]:
         """
         Draw a collection of bin edges.
 
@@ -77,5 +88,5 @@ class SelectionRenderer:
             artists.append(self.ax.plot(theta_endpoints, r_endpoints, **kwargs)[0])
         return artists
 
-    def shade_interior_region(self):
+    def shade_interior_region(self) -> None:
         """Hold space for future method."""
