@@ -56,7 +56,7 @@ def example_usage():
     ax2.set_title("Polar Data B")
     fig.colorbar(pcm2, ax=ax2, pad=0.1)
 
-    plotting_kwargs = {
+    plotting_kwargs_a = {
         "color": "red",
         "lw": 2.0,
         "zorder": 20,
@@ -65,15 +65,19 @@ def example_usage():
     selector_a = SiteSelector(
         ax1,
         grid=grid,
-        plot_kwargs=plotting_kwargs,
+        plot_kwargs=plotting_kwargs_a,
     )
 
-    plotting_kwargs["color"] = "cyan"
+    plotting_kwargs_b = {
+        "color": "cyan",
+        "lw": 2.0,
+        "zorder": 20,
+    }
 
     selector_b = SiteSelector(
         ax2,
         grid=grid,
-        plot_kwargs=plotting_kwargs,
+        plot_kwargs=plotting_kwargs_b,
     )
 
     manager = SiteSelectorManager(fig)
