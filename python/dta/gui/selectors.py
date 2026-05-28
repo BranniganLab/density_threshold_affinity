@@ -35,7 +35,7 @@ class SiteSelector:
 
     This class converts mouse gestures (press / drag / release) into semantic
     selection operations, updates an internal selection model, and draws both
-    hover previews and committed selection outlines.
+    previews and committed selection outlines.
 
     Parameters
     ----------
@@ -45,8 +45,7 @@ class SiteSelector:
         The polar grid object that contains geometric information.
     plot_kwargs : dict, optional
         Default Matplotlib line properties forwarded to the renderer. These
-        apply to committed selection edges. Hover edges are drawn with a
-        derived style.
+        apply to committed selection edges. Preview edges are drawn with in orange.
 
     Notes
     -----
@@ -71,13 +70,14 @@ class SiteSelector:
         theta_edges, r_edges : array-like
             Bin edge definitions for the polar grid.
         plot_kwargs : dict, optional
-            Default Matplotlib plotting keywords for drawing committed edges.
+            Matplotlib plotting keywords for drawing committed edges.
         """
         self.grid = grid
-        self.renderer = SelectionRenderer(ax, plot_kwargs)
+        self.renderer = SelectionRenderer(ax)
         self.selection = BinSelection()
         self.drag_tracker = SelectorDragState()
         self.current_preview_bins = None
+        self.plot_kwargs = plot_kwargs
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -172,7 +172,7 @@ class SiteSelector:
 
     def on_motion(self, event: matplotlib.backend_bases.MouseEvent) -> bool:
         """
-        Update hover preview during a drag gesture.
+        Update preview during a drag gesture.
 
         Parameters
         ----------
@@ -183,15 +183,15 @@ class SiteSelector:
         --------
         - If no drag is active, this method does nothing.
         - If the cursor is outside this selector's Axes, this method does
-          nothing (hover preview is frozen).
+          nothing (preview is frozen).
         - If data coordinates are valid, updates the preview selection based on
           the drag rectangle/sector implied by the drag start and current cursor
-          location, then redraws the hover outline.
+          location, then redraws the preview outline.
         """
         if self.drag_tracker.drag_start is None:
             return False
 
-        # Freeze hover updates unless the cursor is inside this Axes.
+        # Freeze preview updates unless the cursor is inside this Axes.
         if event.inaxes is not self.renderer.ax:
             return False
         if event.xdata is None or event.ydata is None:
@@ -234,7 +234,7 @@ class SiteSelector:
         ------------
         - Commits the selection.
         - Calls :meth:`save_to_selection_history` bin snapshot.
-        - Redraws committed selection edges and clears hover edges.
+        - Redraws committed selection edges and clears preview edges.
         - Resets gesture state (including latched operation).
         """
         if self.drag_tracker.drag_start is None:
@@ -299,7 +299,7 @@ class SiteSelector:
         Parameters
         ----------
         bins : set[BinAddress]
-            Bins whose boundary should be rendered as a hover preview.
+            Bins whose boundary should be rendered as a preview.
 
         Side Effects
         ------------
@@ -323,7 +323,7 @@ class SiteSelector:
         self.renderer.clear_artists(clear_preview=True)
         self.renderer.clear_artists(clear_preview=False)
         edges = self.grid.list_all_exposed_edges(self.selection.get_bins())
-        self.renderer.draw_edges(edges, draw_preview=False)
+        self.renderer.draw_edges(edges, draw_preview=False, plot_kwargs=self.plot_kwargs)
 
     # ------------------------------------------------------------------
     # Undo hook

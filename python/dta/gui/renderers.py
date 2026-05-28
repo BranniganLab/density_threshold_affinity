@@ -98,10 +98,10 @@ class SelectionRenderer:
         Side Effects
         ------------
         - Calls ``artist.remove()`` on each artist.
-        - Empties the hover_artists or selection_artists attribute in-place.
+        - Empties the preview_artists or selection_artists attribute in-place.
         """
         if clear_preview:
-            artists = self.hover_artists
+            artists = self.preview_artists
         else:
             artists = self.selection_artists
 
