@@ -17,7 +17,7 @@ from dta.bin_logic.utils import BinEdge
 class SelectionRenderer:
     """Renderer for drawing polar objects on a matplotlib Axes."""
 
-    def __init__(self, ax: matplotlib.axes.Axes) -> None:
+    def __init__(self, ax: matplotlib.axes.Axes, plot_kwargs: dict = None) -> None:
         """
         Create a SelectionRenderer object and tie it to an Axes instance.
 
@@ -32,24 +32,27 @@ class SelectionRenderer:
             Dictionary of matplotlib.pyplot keywords for drawing bin edges.
         """
         self.ax = ax
-        self.default_selection_kwargs = {
-            "color": "red",
-            "lw": 2.0,
-            "zorder": 20
-        }
+        self.preview_artists = []
+        self.selection_artists = []
+
         self.default_preview_kwargs = {
             "color": "orange",
             "lw": 2.0,
             "zorder": 1000
         }
-        self.preview_artists = []
-        self.selection_artists = []
+        default_selection_kwargs = {
+            "color": "red",
+            "lw": 2.0,
+            "zorder": 20
+        }
+        if plot_kwargs is not None:
+            default_selection_kwargs.update(plot_kwargs)
+        self.selection_kwargs = default_selection_kwargs
 
     def draw_edges(
         self,
         edges: Iterable[BinEdge],
-        draw_preview: bool = True,
-        plot_kwargs: dict = None
+        draw_preview: bool = True
     ) -> None:
         """
         Draw a collection of bin edges.
@@ -61,8 +64,6 @@ class SelectionRenderer:
         draw_preview : bool, optional
             If True, draw an orange selection preview. If False, use plot_kwargs
             and draw actual selection.
-        plot_kwargs : dict
-            Keyword arguments passed to ``Axes.plot``.
 
         Side Effects
         ------------
@@ -72,12 +73,8 @@ class SelectionRenderer:
             kwargs = self.default_preview_kwargs
             artists = self.preview_artists
         else:
-            kwargs = self.default_selection_kwargs
+            kwargs = self.selection_kwargs
             artists = self.selection_artists
-
-        # update/override default if possible.
-        if plot_kwargs is not None:
-            kwargs.update(plot_kwargs)
 
         # plot each BinEdge individually
         for edge in edges:

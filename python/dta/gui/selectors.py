@@ -73,11 +73,10 @@ class SiteSelector:
             Matplotlib plotting keywords for drawing committed edges.
         """
         self.grid = grid
-        self.renderer = SelectionRenderer(ax)
+        self.renderer = SelectionRenderer(ax, plot_kwargs)
         self.selection = BinSelection()
         self.drag_tracker = SelectorDragState()
         self.current_preview_bins = None
-        self.plot_kwargs = plot_kwargs
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -323,7 +322,7 @@ class SiteSelector:
         self.renderer.clear_artists(clear_preview=True)
         self.renderer.clear_artists(clear_preview=False)
         edges = self.grid.list_all_exposed_edges(self.selection.get_bins())
-        self.renderer.draw_edges(edges, draw_preview=False, plot_kwargs=self.plot_kwargs)
+        self.renderer.draw_edges(edges, draw_preview=False)
 
     # ------------------------------------------------------------------
     # Undo hook
