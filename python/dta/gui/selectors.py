@@ -95,12 +95,12 @@ class SiteSelector:
 
     def on_deactivate(self) -> None:
         """
-        Deactivate the selector and clear hover preview visuals.
+        Deactivate the selector and clear preview visuals.
 
-        This method removes hover artists from the Axes and resets transient
+        This method removes preview artists from the Axes and resets transient
         drag/preview state. It does not modify the committed selection.
         """
-        self._clear_artists(self.renderer.hover_artists)
+        self.renderer.clear_artists(clear_preview=True)
         self.drag_tracker.reset()
         self.current_preview_bins = None
 
@@ -246,7 +246,6 @@ class SiteSelector:
         self.selection.set_bins(self.current_preview_bins)
 
         self._draw_selection()
-        self._clear_artists(self.renderer.hover_artists)
 
         self.drag_tracker.reset()
         self.current_preview_bins = None
@@ -293,32 +292,23 @@ class SiteSelector:
     # Rendering
     # ------------------------------------------------------------------
 
-    def _draw_preview(self, bins: set[BinAddress]) -> None:
+    def _draw_preview(self, preview_bins: set[BinAddress]) -> None:
         """
-        Draw the hover preview outline for a bin set.
+        Draw the preview outline for a bin selection.
 
         Parameters
         ----------
-        bins : set[tuple[int, int]]
+        bins : set[BinAddress]
             Bins whose boundary should be rendered as a hover preview.
 
         Side Effects
         ------------
-        - Removes any previous hover artists.
-        - Draws new hover artists on this selector's Axes.
+        - Removes any previous preview artists.
+        - Draws new preview artists on this selector's Axes.
         """
-        self._clear_artists(self.renderer.hover_artists)
-        edges = self.grid.list_all_exposed_edges(bins)
-
-        hover_kwargs = {
-            "color": "orange",
-            "lw": 1.5,
-            "zorder": self.renderer.plot_kwargs["zorder"] + 1,
-        }
-
-        self.renderer.hover_artists.extend(
-            self.renderer.draw_edges(edges, hover_kwargs)
-        )
+        self.renderer.clear_artists(clear_preview=True)
+        edges = self.grid.list_all_exposed_edges(preview_bins)
+        self.renderer.draw_edges(edges)
 
     def _draw_selection(self) -> None:
         """
@@ -326,32 +316,14 @@ class SiteSelector:
 
         Side Effects
         ------------
+        - Removes any previous preview artists.
         - Removes any previous committed selection artists.
         - Draws the boundary edges of the committed selection.
         """
-        self._clear_artists(self.renderer.selected_artists)
+        self.renderer.clear_artists(clear_preview=True)
+        self.renderer.clear_artists(clear_preview=False)
         edges = self.grid.list_all_exposed_edges(self.selection.get_bins())
-        self.renderer.selected_artists.extend(
-            self.renderer.draw_edges(edges, self.renderer.plot_kwargs)
-        )
-
-    def _clear_artists(self, artists: list[matplotlib.artist.Artist]) -> None:
-        """
-        Remove a list of Matplotlib artists from the Axes.
-
-        Parameters
-        ----------
-        artists : list
-            Artists previously added to the Axes.
-
-        Side Effects
-        ------------
-        - Calls ``artist.remove()`` on each artist.
-        - Empties the input list in-place.
-        """
-        for artist in artists:
-            artist.remove()
-        artists.clear()
+        self.renderer.draw_edges(edges, draw_preview=False)
 
     # ------------------------------------------------------------------
     # Undo hook
