@@ -37,6 +37,14 @@ class SelectionRenderer:
         """
         Create a SelectionRenderer object and tie it to an Axes instance.
 
+        Default plot kwargs are
+        {
+            "color": "red",
+            "lw": 2.0,
+            "zorder": 20,
+        }
+        but can be overridden with the plot_kwargs argument.
+
         Parameters
         ----------
         ax : matplotlib.axes.Axes
@@ -78,14 +86,19 @@ class SelectionRenderer:
             Matplotlib artist objects created.
         """
         artists = []
+
+        # check if default kwargs are present; update/override if possible.
         kwargs = dict(self.plot_kwargs)
         if plot_kwargs is not None:
             kwargs.update(plot_kwargs)
 
+        # plot each BinEdge individually
         for edge in edges:
             theta_endpoints = (edge.endpoint1[1], edge.endpoint2[1])
             r_endpoints = (edge.endpoint1[0], edge.endpoint2[0])
             artists.append(self.ax.plot(theta_endpoints, r_endpoints, **kwargs)[0])
+
+        # return list of artists so they can be un-plotted in the future if desired.
         return artists
 
     def shade_interior_region(self) -> None:
