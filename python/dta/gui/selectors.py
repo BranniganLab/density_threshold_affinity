@@ -257,7 +257,7 @@ class SiteSelector:
     # ------------------------------------------------------------------
 
     def _calculate_preview_bins(self, bins: set[BinAddress]) -> set[BinAddress]:
-        """
+        r"""
         Compute the preview selection for the current gesture without mutation.
 
         Parameters
@@ -276,7 +276,7 @@ class SiteSelector:
 
         - ``REPLACE``: preview is ``bins``.
         - ``ADD``: preview is ``current ∪ bins``.
-        - ``SUBTRACT``: preview is ``current \\ bins``.
+        - ``SUBTRACT``: preview is ``current \ bins``.
         """
         current = self.selection.get_bins()
 
