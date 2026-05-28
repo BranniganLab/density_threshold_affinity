@@ -18,223 +18,15 @@ The intended usage pattern is:
 The implementation is designed to work in interactive backends (including
 Jupyter widget backends) where modifier keys may not be reported consistently.
 """
+from typing import Literal
 import matplotlib
 import numpy as np
 from dta.bin_logic import PolarBinGrid, BinSelection
-from dta.bin_logic.utils import unwrap_theta, Coordinate
+from dta.bin_logic.utils import unwrap_theta, Coordinate, BinAddress
 from .selector_state import SelectionOperation, SelectorDragState
 from .renderers import SelectionRenderer
 
-
-class SiteSelectorManager:
-    """
-    Figure-level event router for multiple `SiteSelector` instances.
-
-    The manager connects to a Matplotlib Figure's mouse events and forwards them
-    to the correct selector. During a drag gesture, the selector where the drag
-    began is treated as the "drag owner" and continues to receive motion/release
-    events even if the mouse leaves its Axes.
-
-    Parameters
-    ----------
-    fig : matplotlib.figure.Figure
-        Figure whose canvas events will be monitored and routed.
-    """
-
-    def __init__(self, fig):
-        """
-        Construct a manager and connect to Figure canvas events.
-
-        Parameters
-        ----------
-        fig : matplotlib.figure.Figure
-            Figure whose canvas events will be monitored and routed.
-
-        Side Effects
-        ------------
-        Registers Matplotlib callbacks for press, motion, and release events.
-        """
-        self.fig = fig
-        self._selectors = {}
-        self._active = {}
-        self._drag_owner = None
-
-        self._cids = [
-            fig.canvas.mpl_connect("button_press_event", self._on_press_event),
-            fig.canvas.mpl_connect("motion_notify_event", self._on_motion_event),
-            fig.canvas.mpl_connect("button_release_event", self._on_release_event),
-        ]
-
-    def register(self, selector, *, active=False):
-        """
-        Register a selector with the manager.
-
-        Parameters
-        ----------
-        selector : SiteSelector
-            Selector instance to register.
-        active : bool
-            If True, activates this selector for its Axes immediately. If False,
-            the selector may still become active if no selector is currently
-            active for that Axes.
-
-        Notes
-        -----
-        Multiple selectors may be registered for the same Axes, but only one
-        selector per Axes is considered active at a time.
-        """
-        ax = selector.renderer.ax
-        self._selectors.setdefault(ax, []).append(selector)
-        if active or ax not in self._active:
-            self.set_active(selector)
-
-    def set_active(self, selector):
-        """
-        Set the active selector for an Axes.
-
-        Parameters
-        ----------
-        selector : SiteSelector
-            Selector to activate.
-
-        Side Effects
-        ------------
-        - Deactivates the previously active selector for the same Axes (if any).
-        - Activates the new selector by calling its :meth:`SiteSelector.on_activate`.
-        """
-        ax = selector.renderer.ax
-        current = self._active.get(ax)
-        if current is selector:
-            return
-        if current:
-            current.on_deactivate()
-        self._active[ax] = selector
-        selector.on_activate()
-
-    # ------------------------------------------------------------------
-    # Matplotlib callbacks (one per event type)
-    # ------------------------------------------------------------------
-
-    def _on_press_event(self, event):
-        """Matplotlib callback: mouse press."""
-        ax = getattr(event, "inaxes", None)
-        selector = self._active.get(ax)
-        if selector is None:
-            return
-
-        # The selector that receives the press becomes the drag owner until release.
-        self._drag_owner = selector
-
-        operation = self._determine_operation_from_key_presses(event)
-        updated = bool(selector.on_press(event, operation))
-        if updated:
-            self.fig.canvas.draw_idle()
-
-    def _on_motion_event(self, event):
-        """Matplotlib callback: mouse motion."""
-        if self._drag_owner is None:
-            return
-        updated = bool(self._drag_owner.on_motion(event))
-        if updated:
-            self.fig.canvas.draw_idle()
-
-    def _on_release_event(self, event):
-        """Matplotlib callback: mouse release."""
-        if self._drag_owner is None:
-            return
-
-        selector = self._drag_owner
-        updated = bool(selector.on_release(event))
-        if updated:
-            self.fig.canvas.draw_idle()
-
-        self._drag_owner = None
-
-    def _mods_from_mouse_event(self, event) -> set[str]:
-        """
-        Query the MouseEvent to see if any keyboard buttons have been pressed.
-
-        Parameters
-        ----------
-        event : matplotlib.backend_bases.MouseEvent
-            Mouse event potentially carrying modifier state.
-
-        Returns
-        -------
-        set[str]
-            Modifier key names present at the time of the event. Keys include
-            ``"shift"`` and ``"control"``.
-
-        Notes
-        -----
-        On some interactive backends (e.g., Jupyter widget backends),
-        ``event.guiEvent`` may be a dict-like object that does not always include
-        modifier flags. This method attempts to read modifier flags from
-        ``event.guiEvent`` first and falls back to parsing ``event.key``.
-        """
-        mods: set[str] = set()
-
-        ge = getattr(event, "guiEvent", None)
-
-        # Fast path: only attempt guiEvent if it looks like it actually has modifier fields.
-        if isinstance(ge, dict) and (
-            "shiftKey" in ge or "ctrlKey" in ge or "metaKey" in ge
-        ):
-            if ge.get("shiftKey", False):
-                mods.add("shift")
-            if ge.get("ctrlKey", False) or ge.get("metaKey", False):
-                mods.add("control")
-            if mods:
-                return mods
-
-        if ge is not None and not isinstance(ge, dict):
-            # Object-style guiEvent (rare in some backends)
-            try:
-                if getattr(ge, "shiftKey", False):
-                    mods.add("shift")
-                if getattr(ge, "ctrlKey", False) or getattr(ge, "metaKey", False):
-                    mods.add("control")
-                if mods:
-                    return mods
-            except (AttributeError, TypeError):
-                pass
-
-        # Fallback: parse string representation from Matplotlib
-        k = (getattr(event, "key", None) or "").lower()
-        if "shift" in k:
-            mods.add("shift")
-        if "control" in k or "ctrl" in k or "meta" in k:
-            mods.add("control")
-        return mods
-
-    def _determine_operation_from_key_presses(self, event) -> SelectionOperation:
-        """
-        Determine the correct operation mode from keyboard presses.
-
-        Parameters
-        ----------
-        event : matplotlib.backend_bases.MouseEvent
-            Mouse event potentially carrying modifier state.
-
-        Returns
-        -------
-        SelectionOperation
-            The operation modifier for a selection.
-
-        Notes
-        -----
-        If user switches quickly between shift and ctrl, matplotlib widget in
-        Jupyter is sometimes not fast enough to capture that. If shift and ctrl
-        are logged simultaneously, default to shift behavior (ADD).
-        """
-        key_presses = self._mods_from_mouse_event(event)
-        if len(key_presses) == 0:
-            return SelectionOperation.REPLACE
-        if "shift" in key_presses:
-            return SelectionOperation.ADD
-        if "control" in key_presses:
-            return SelectionOperation.SUBTRACT
-        raise ValueError(f"fn expects 'shift', 'control', or nothing. Received {key_presses}.")
+RecognizedKeys = Literal["control", "shift"]
 
 
 class SiteSelector:
@@ -263,7 +55,12 @@ class SiteSelector:
     the gesture ends.
     """
 
-    def __init__(self, ax: matplotlib.axes.Axes, grid: PolarBinGrid, plot_kwargs: dict = None) -> None:
+    def __init__(
+        self,
+        ax: matplotlib.axes.Axes,
+        grid: PolarBinGrid,
+        plot_kwargs: dict = None
+    ) -> None:
         """
         Construct a selector bound to a single Axes.
 
@@ -286,7 +83,7 @@ class SiteSelector:
     # Lifecycle
     # ------------------------------------------------------------------
 
-    def on_activate(self):
+    def on_activate(self) -> None:
         """
         Activate the selector for interaction.
 
@@ -296,7 +93,7 @@ class SiteSelector:
         self.drag_tracker.reset()
         self.current_preview_bins = None
 
-    def on_deactivate(self):
+    def on_deactivate(self) -> None:
         """
         Deactivate the selector and clear hover preview visuals.
 
@@ -311,7 +108,11 @@ class SiteSelector:
     # Event handlers
     # ------------------------------------------------------------------
 
-    def on_press(self, event, operation) -> bool:
+    def on_press(
+        self,
+        event: matplotlib.backend_bases.MouseEvent,
+        operation: SelectionOperation
+    ) -> bool:
         """
         Begin a new selection gesture within this selector.
 
@@ -369,7 +170,7 @@ class SiteSelector:
         self._draw_preview(updated_preview_bins)
         return True
 
-    def on_motion(self, event) -> bool:
+    def on_motion(self, event: matplotlib.backend_bases.MouseEvent) -> bool:
         """
         Update hover preview during a drag gesture.
 
@@ -418,7 +219,7 @@ class SiteSelector:
         self._draw_preview(updated_preview_bins)
         return True
 
-    def on_release(self, _event) -> bool:
+    def on_release(self, _event: matplotlib.backend_bases.MouseEvent) -> bool:
         """
         Finalize a selection gesture and commit the result.
 
@@ -455,18 +256,18 @@ class SiteSelector:
     # Selection logic
     # ------------------------------------------------------------------
 
-    def _calculate_preview_bins(self, bins):
+    def _calculate_preview_bins(self, bins: set[BinAddress]) -> set[BinAddress]:
         """
         Compute the preview selection for the current gesture without mutation.
 
         Parameters
         ----------
-        bins : set[tuple[int, int]]
+        bins : set[BinAddress]
             The bin set implied by the current drag region.
 
         Returns
         -------
-        set[tuple[int, int]]
+        set[BinAddress]
             The preview selection that would result if the gesture ended now.
 
         Notes
@@ -492,7 +293,7 @@ class SiteSelector:
     # Rendering
     # ------------------------------------------------------------------
 
-    def _draw_preview(self, bins):
+    def _draw_preview(self, bins: set[BinAddress]) -> None:
         """
         Draw the hover preview outline for a bin set.
 
@@ -519,7 +320,7 @@ class SiteSelector:
             self.renderer.draw_edges(edges, hover_kwargs)
         )
 
-    def _draw_selection(self):
+    def _draw_selection(self) -> None:
         """
         Draw the committed selection outline.
 
@@ -534,7 +335,7 @@ class SiteSelector:
             self.renderer.draw_edges(edges, self.renderer.plot_kwargs)
         )
 
-    def _clear_artists(self, artists):
+    def _clear_artists(self, artists: list[matplotlib.artist.Artist]) -> None:
         """
         Remove a list of Matplotlib artists from the Axes.
 
@@ -556,7 +357,7 @@ class SiteSelector:
     # Undo hook
     # ------------------------------------------------------------------
 
-    def save_to_selection_history(self, last_bins):
+    def save_to_selection_history(self, last_bins: set[BinAddress]) -> None:
         """
         Hold this space for a future implementation of 'undo' logic.
 
@@ -566,3 +367,220 @@ class SiteSelector:
             The committed selection state immediately before the most-recent
             gesture.
         """
+
+
+class SiteSelectorManager:
+    """
+    Figure-level event router for multiple `SiteSelector` instances.
+
+    The manager connects to a Matplotlib Figure's mouse events and forwards them
+    to the correct selector. During a drag gesture, the selector where the drag
+    began is treated as the "drag owner" and continues to receive motion/release
+    events even if the mouse leaves its Axes.
+
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure
+        Figure whose canvas events will be monitored and routed.
+    """
+
+    def __init__(self, fig: matplotlib.figure.Figure) -> None:
+        """
+        Construct a manager and connect to Figure canvas events.
+
+        Parameters
+        ----------
+        fig : matplotlib.figure.Figure
+            Figure whose canvas events will be monitored and routed.
+
+        Side Effects
+        ------------
+        Registers Matplotlib callbacks for press, motion, and release events.
+        """
+        self.fig = fig
+        self._selectors = {}
+        self._active = {}
+        self._drag_owner = None
+
+        self._cids = [
+            fig.canvas.mpl_connect("button_press_event", self._on_press_event),
+            fig.canvas.mpl_connect("motion_notify_event", self._on_motion_event),
+            fig.canvas.mpl_connect("button_release_event", self._on_release_event),
+        ]
+
+    def register(self, selector: SiteSelector, *, active: bool = False) -> None:
+        """
+        Register a selector with the manager.
+
+        Parameters
+        ----------
+        selector : SiteSelector
+            Selector instance to register.
+        active : bool
+            If True, activates this selector for its Axes immediately. If False,
+            the selector may still become active if no selector is currently
+            active for that Axes.
+
+        Notes
+        -----
+        Multiple selectors may be registered for the same Axes, but only one
+        selector per Axes is considered active at a time.
+        """
+        ax = selector.renderer.ax
+        self._selectors.setdefault(ax, []).append(selector)
+        if active or ax not in self._active:
+            self.set_active(selector)
+
+    def set_active(self, selector: SiteSelector) -> None:
+        """
+        Set the active selector for an Axes.
+
+        Parameters
+        ----------
+        selector : SiteSelector
+            Selector to activate.
+
+        Side Effects
+        ------------
+        - Deactivates the previously active selector for the same Axes (if any).
+        - Activates the new selector by calling its :meth:`SiteSelector.on_activate`.
+        """
+        ax = selector.renderer.ax
+        current = self._active.get(ax)
+        if current is selector:
+            return
+        if current:
+            current.on_deactivate()
+        self._active[ax] = selector
+        selector.on_activate()
+
+    # ------------------------------------------------------------------
+    # Matplotlib callbacks (one per event type)
+    # ------------------------------------------------------------------
+
+    def _on_press_event(self, event) -> None:
+        """Matplotlib callback: mouse press."""
+        ax = getattr(event, "inaxes", None)
+        selector = self._active.get(ax)
+        if selector is None:
+            return
+
+        # The selector that receives the press becomes the drag owner until release.
+        self._drag_owner = selector
+
+        operation = self._determine_operation_from_key_presses(event)
+        updated = bool(selector.on_press(event, operation))
+        if updated:
+            self.fig.canvas.draw_idle()
+
+    def _on_motion_event(self, event) -> None:
+        """Matplotlib callback: mouse motion."""
+        if self._drag_owner is None:
+            return
+        updated = bool(self._drag_owner.on_motion(event))
+        if updated:
+            self.fig.canvas.draw_idle()
+
+    def _on_release_event(self, event) -> None:
+        """Matplotlib callback: mouse release."""
+        if self._drag_owner is None:
+            return
+
+        selector = self._drag_owner
+        updated = bool(selector.on_release(event))
+        if updated:
+            self.fig.canvas.draw_idle()
+
+        self._drag_owner = None
+
+    def _mods_from_mouse_event(
+        self,
+        event: matplotlib.backend_bases.MouseEvent
+    ) -> set[RecognizedKeys]:
+        """
+        Query the MouseEvent to see if any keyboard buttons have been pressed.
+
+        Parameters
+        ----------
+        event : matplotlib.backend_bases.MouseEvent
+            Mouse event potentially carrying modifier state.
+
+        Returns
+        -------
+        set[str]
+            Modifier key names present at the time of the event. Keys include
+            ``"shift"`` and ``"control"``.
+
+        Notes
+        -----
+        On some interactive backends (e.g., Jupyter widget backends),
+        ``event.guiEvent`` may be a dict-like object that does not always include
+        modifier flags. This method attempts to read modifier flags from
+        ``event.guiEvent`` first and falls back to parsing ``event.key``.
+        """
+        mods: set[RecognizedKeys] = set()
+
+        ge = getattr(event, "guiEvent", None)
+
+        # Fast path: only attempt guiEvent if it looks like it actually has modifier fields.
+        if isinstance(ge, dict) and (
+            "shiftKey" in ge or "ctrlKey" in ge or "metaKey" in ge
+        ):
+            if ge.get("shiftKey", False):
+                mods.add("shift")
+            if ge.get("ctrlKey", False) or ge.get("metaKey", False):
+                mods.add("control")
+            if mods:
+                return mods
+
+        if ge is not None and not isinstance(ge, dict):
+            # Object-style guiEvent (rare in some backends)
+            try:
+                if getattr(ge, "shiftKey", False):
+                    mods.add("shift")
+                if getattr(ge, "ctrlKey", False) or getattr(ge, "metaKey", False):
+                    mods.add("control")
+                if mods:
+                    return mods
+            except (AttributeError, TypeError):
+                pass
+
+        # Fallback: parse string representation from Matplotlib
+        k = (getattr(event, "key", None) or "").lower()
+        if "shift" in k:
+            mods.add("shift")
+        if "control" in k or "ctrl" in k or "meta" in k:
+            mods.add("control")
+        return mods
+
+    def _determine_operation_from_key_presses(
+        self,
+        event: matplotlib.backend_bases.MouseEvent
+    ) -> SelectionOperation:
+        """
+        Determine the correct operation mode from keyboard presses.
+
+        Parameters
+        ----------
+        event : matplotlib.backend_bases.MouseEvent
+            Mouse event potentially carrying modifier state.
+
+        Returns
+        -------
+        SelectionOperation
+            The operation modifier for a selection.
+
+        Notes
+        -----
+        If user switches quickly between shift and ctrl, matplotlib widget in
+        Jupyter is sometimes not fast enough to capture that. If shift and ctrl
+        are logged simultaneously, default to shift behavior (ADD).
+        """
+        key_presses = self._mods_from_mouse_event(event)
+        if len(key_presses) == 0:
+            return SelectionOperation.REPLACE
+        if "shift" in key_presses:
+            return SelectionOperation.ADD
+        if "control" in key_presses:
+            return SelectionOperation.SUBTRACT
+        raise ValueError(f"fn expects 'shift', 'control', or nothing. Received {key_presses}.")
