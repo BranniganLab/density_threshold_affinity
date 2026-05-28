@@ -3,18 +3,11 @@
 """
 Matplotlib renderers for polar bin selection.
 
-This module contains view-layer classes responsible for drawing
-polar bin grids, selection outlines, and transient preview geometry
-using Matplotlib.
-
-Renderers are strictly passive:
-- they read geometry and selection state from dta.core objects,
-- they draw current and preview visuals onto Matplotlib Axes,
-- they do not interpret user input or mutate selection state.
+This module contains view-layer classes responsible for drawing selection
+outlines using Matplotlib.
 
 All event handling and gesture interpretation is handled by
-Matplotlib controllers in selectors.py. Persistent selection
-state lives in dta.core.selection.
+Matplotlib controllers in selectors.py.
 """
 from collections.abc import Iterable
 import matplotlib
@@ -22,12 +15,7 @@ from dta.bin_logic.utils import BinEdge
 
 
 class SelectionRenderer:
-    """
-    Renderer for drawing polar objects on a matplotlib Axes.
-
-    This class converts internal (r, theta) geometry into the
-    coordinate order expected by matplotlib polar plots.
-    """
+    """Renderer for drawing polar objects on a matplotlib Axes."""
 
     def __init__(
         self,
@@ -43,7 +31,7 @@ class SelectionRenderer:
             "lw": 2.0,
             "zorder": 20,
         }
-        but can be overridden with the plot_kwargs argument.
+        but can be overridden or added to with the plot_kwargs argument.
 
         Parameters
         ----------
