@@ -23,7 +23,7 @@ def test_renderer_draw_edges_matches_manual(fig_test, fig_ref):
         BinEdge(Coordinate(0.0, 0.0), Coordinate(1.0, 0.0)),
         BinEdge(Coordinate(1.0, 0.0), Coordinate(1.0, np.pi / 2)),
     ]
-    renderer.draw_edges(edges)
+    renderer.draw_edges(edges, draw_preview=False)
 
     # reference figure: manual plotting of identical segments
     ax_r = fig_ref.add_subplot(111, projection="polar")

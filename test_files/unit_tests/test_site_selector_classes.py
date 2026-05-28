@@ -333,14 +333,14 @@ def test_site_selector_on_activate_resets_transient_state():
     plt.close()
 
 
-def test_site_selector_on_deactivate_clears_hover_artists_and_transient_state():
-    """Deactivation should remove hover artists and reset transient gesture state."""
+def test_site_selector_on_deactivate_clears_preview_artists_and_transient_state():
+    """Deactivation should remove preview artists and reset transient gesture state."""
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
     sel = _make_selector(ax)
 
     artist_a = DummyArtist()
     artist_b = DummyArtist()
-    sel.renderer.hover_artists.extend([artist_a, artist_b])
+    sel.renderer.preview_artists.extend([artist_a, artist_b])
 
     sel.on_press(
         FakeMouseEvent(inaxes=ax, xdata=0.2, ydata=0.2),
@@ -352,7 +352,7 @@ def test_site_selector_on_deactivate_clears_hover_artists_and_transient_state():
 
     assert artist_a.removed is True
     assert artist_b.removed is True
-    assert sel.renderer.hover_artists == []
+    assert sel.renderer.preview_artists == []
     assert sel.drag_tracker.drag_start is None
     assert sel.drag_tracker.last_theta is None
     assert sel.drag_tracker.operation is SelectionOperation.REPLACE
