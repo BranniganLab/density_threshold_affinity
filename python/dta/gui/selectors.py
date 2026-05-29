@@ -303,9 +303,11 @@ class SiteSelector:
         Side Effects
         ------------
         - Removes any previous preview artists.
+        - Removes any previous committed selection artists.
         - Draws new preview artists on this selector's Axes.
         """
         self.renderer.clear_artists(clear_preview=True)
+        self.renderer.clear_artists(clear_preview=False)
         edges = self.grid.list_all_exposed_edges(preview_bins)
         self.renderer.draw_edges(edges)
 
