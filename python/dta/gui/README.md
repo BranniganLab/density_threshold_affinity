@@ -131,10 +131,12 @@ class BinSelection {
 namespace DTA.gui.renderers {
 class SelectionRenderer {
     +ax: Axes
-    +plot_kwargs : dict
-    +selected_artists: List~Artist~
-    +hover_artists: List~Artist~
-    +draw_edges(edges: List~BinEdge~, plot_kwargs: dict | None) List~Artist~
+    +preview_artists: List~Artist~
+    +selection_artists: List~Artist~
+    +defaul_preview_kwargs : dict
+    +selection_kwargs : dict
+    +draw_edges(edges: List~BinEdge~, draw_preview: bool) None
+    +clear_artists(clear_preview: bool) None
     +shade_interior_region()*
 }
 class matplotlib.axes.Axes {}
@@ -168,16 +170,14 @@ class SiteSelector {
     +grid: PolarBinGrid
     +renderer: SelectionRenderer
     +drag_tracker: SelectorDragState
-    +current_preview_bins: Set~BinAddress~ | None
+    +current_preview_bins: Set~BinAddress~
     +on_activate() None
     +on_press(event: MouseEvent, operation: SelectionOperation) bool
     +on_motion(event: MouseEvent) bool
     +on_release(_event: MouseEvent) bool
     +on_deactivate() None
     -calculate_preview_bins(bins: Set~BinAddress~) Set~BinAddress~
-    -draw_preview(bins: Set~BinAddress~) None
-    -draw_selection() None
-    -clear_artists(artists: List~Artist~) None
+    -draw_bin_edges(preview: bool) None
     -save_to_selection_history(last_bins: Set~BinAddress~)*
 }
 
