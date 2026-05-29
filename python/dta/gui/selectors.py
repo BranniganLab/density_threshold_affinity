@@ -166,7 +166,7 @@ class SiteSelector:
         # Establish an initial preview.
         updated_preview_bins = self._calculate_preview_bins({clicked_bin})
         self.current_preview_bins = updated_preview_bins
-        self._draw_preview(updated_preview_bins)
+        self._draw_bin_edges(preview=True)
         return True
 
     def on_motion(self, event: matplotlib.backend_bases.MouseEvent) -> bool:
@@ -203,7 +203,6 @@ class SiteSelector:
         self.drag_tracker.last_theta = current_theta
 
         theta_min, theta_max = sorted((start_theta, current_theta))
-
         crosses_periodic_boundary = theta_min < 0.0 or theta_max >= 2.0 * np.pi
 
         bins = self.grid.get_bins_in_region(
@@ -215,7 +214,7 @@ class SiteSelector:
         updated_preview_bins = self._calculate_preview_bins(bins)
         self.current_preview_bins = updated_preview_bins
 
-        self._draw_preview(updated_preview_bins)
+        self._draw_bin_edges(preview=True)
         return True
 
     def on_release(self, _event: matplotlib.backend_bases.MouseEvent) -> bool:
@@ -244,7 +243,7 @@ class SiteSelector:
 
         self.selection.set_bins(self.current_preview_bins)
 
-        self._draw_selection()
+        self._draw_bin_edges(preview=False)
 
         self.drag_tracker.reset()
         self.current_preview_bins = None
@@ -291,40 +290,30 @@ class SiteSelector:
     # Rendering
     # ------------------------------------------------------------------
 
-    def _draw_preview(self, preview_bins: set[BinAddress]) -> None:
+    def _draw_bin_edges(self, preview: bool = True) -> None:
         """
-        Draw the preview outline for a bin selection.
+        Draw the outline for a bin selection.
 
         Parameters
         ----------
-        bins : set[BinAddress]
-            Bins whose boundary should be rendered as a preview.
+        preview : bool, optional
+            If True, draw current preview bins. If False, draw selection.
+            Default is True.
 
         Side Effects
         ------------
         - Removes any previous preview artists.
         - Removes any previous committed selection artists.
-        - Draws new preview artists on this selector's Axes.
+        - Draws new artists on this selector's Axes.
         """
         self.renderer.clear_artists(clear_preview=True)
         self.renderer.clear_artists(clear_preview=False)
-        edges = self.grid.list_all_exposed_edges(preview_bins)
-        self.renderer.draw_edges(edges)
-
-    def _draw_selection(self) -> None:
-        """
-        Draw the committed selection outline.
-
-        Side Effects
-        ------------
-        - Removes any previous preview artists.
-        - Removes any previous committed selection artists.
-        - Draws the boundary edges of the committed selection.
-        """
-        self.renderer.clear_artists(clear_preview=True)
-        self.renderer.clear_artists(clear_preview=False)
-        edges = self.grid.list_all_exposed_edges(self.selection.get_bins())
-        self.renderer.draw_edges(edges, draw_preview=False)
+        if preview:
+            edges = self.grid.list_all_exposed_edges(self.current_preview_bins)
+            self.renderer.draw_edges(edges, draw_preview=True)
+        else:
+            edges = self.grid.list_all_exposed_edges(self.selection.get_bins())
+            self.renderer.draw_edges(edges, draw_preview=False)
 
     # ------------------------------------------------------------------
     # Undo hook
