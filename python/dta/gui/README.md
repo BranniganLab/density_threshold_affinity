@@ -135,7 +135,8 @@ class SelectionRenderer {
     +selection_artists: List~Artist~
     +defaul_preview_kwargs : dict
     +selection_kwargs : dict
-    +draw_edges(edges: List~BinEdge~, draw_preview: bool) None
+    +draw_bin_edges(edges: List~BinEdge~, preview: bool) None
+    -draw_edge(edge: BinEdge, kwargs: dict) matplotlib.artist.Artist
     +clear_artists(clear_preview: bool) None
     +shade_interior_region()*
 }
@@ -177,7 +178,6 @@ class SiteSelector {
     +on_release(_event: MouseEvent) bool
     +on_deactivate() None
     -calculate_preview_bins(bins: Set~BinAddress~) Set~BinAddress~
-    -draw_bin_edges(preview: bool) None
     -save_to_selection_history(last_bins: Set~BinAddress~)*
 }
 
