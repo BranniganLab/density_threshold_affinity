@@ -310,10 +310,9 @@ class SiteSelector:
         self.renderer.clear_artists(clear_preview=False)
         if preview:
             edges = self.grid.list_all_exposed_edges(self.current_preview_bins)
-            self.renderer.draw_edges(edges, draw_preview=True)
         else:
             edges = self.grid.list_all_exposed_edges(self.selection.get_bins())
-            self.renderer.draw_edges(edges, draw_preview=False)
+        self.renderer.draw_edges(edges, draw_preview=preview)
 
     # ------------------------------------------------------------------
     # Undo hook
