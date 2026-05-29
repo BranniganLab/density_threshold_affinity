@@ -49,25 +49,6 @@ class SelectionRenderer:
             default_selection_kwargs.update(plot_kwargs)
         self.selection_kwargs = default_selection_kwargs
 
-    def draw_edge(self, edge: BinEdge, kwargs: dict) -> matplotlib.artist.Artist:
-        """
-        Draw a BinEdge on the polar Axes and return the artist generated.
-
-        Parameters
-        ----------
-        edge : BinEdge
-            The BinEdge you wish to plot.
-        kwargs : dict
-            The matplotlib plotting kwargs to use when plotting.
-
-        Side Effects
-        ------------
-        Plots the BinEdge on the Axes.
-        """
-        theta_endpoints = (edge.endpoint1[1], edge.endpoint2[1])
-        r_endpoints = (edge.endpoint1[0], edge.endpoint2[0])
-        return self.ax.plot(theta_endpoints, r_endpoints, **kwargs)[0]
-
     def draw_bin_edges(
         self,
         edges: set[BinEdge],
@@ -86,7 +67,8 @@ class SelectionRenderer:
 
         Side Effects
         ------------
-        Saves drawn artists to the correct SelectionRenderer attribute.
+        - Removes previous artists
+        - Saves drawn artists to the correct SelectionRenderer attribute.
         """
         self.clear_artists(clear_preview=True)
         self.clear_artists(clear_preview=False)
@@ -98,7 +80,26 @@ class SelectionRenderer:
             artists = self.selection_artists
 
         for edge in edges:
-            artists.append(self.draw_edge(edge, kwargs))
+            artists.append(self._draw_edge(edge, kwargs))
+
+    def _draw_edge(self, edge: BinEdge, kwargs: dict) -> matplotlib.artist.Artist:
+        """
+        Draw a BinEdge on the polar Axes and return the artist generated.
+
+        Parameters
+        ----------
+        edge : BinEdge
+            The BinEdge you wish to plot.
+        kwargs : dict
+            The matplotlib plotting kwargs to use when plotting.
+
+        Side Effects
+        ------------
+        Plots the BinEdge on the Axes.
+        """
+        theta_endpoints = (edge.endpoint1[1], edge.endpoint2[1])
+        r_endpoints = (edge.endpoint1[0], edge.endpoint2[0])
+        return self.ax.plot(theta_endpoints, r_endpoints, **kwargs)[0]
 
     def clear_artists(self, clear_preview: bool = True) -> None:
         """
