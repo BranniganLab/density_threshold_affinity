@@ -51,7 +51,7 @@ class SelectionRenderer:
 
     def draw_bin_edges(
         self,
-        edges: set[BinEdge],
+        edges: list[BinEdge],
         preview: bool = True
     ) -> None:
         """
