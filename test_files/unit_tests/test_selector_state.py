@@ -58,7 +58,7 @@ def test_selector_drag_state_start_drag_latches_operation_and_initializes_positi
 
 
 def test_selector_drag_state_resets_state():
-    """Verify that clear() resets the drag state."""
+    """Verify that reset() resets the drag state."""
     s = SelectorDragState()
     s.start_drag(
         at=Coordinate(r_coord=2.0, theta_coord=1.0),
