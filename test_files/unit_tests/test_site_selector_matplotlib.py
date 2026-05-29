@@ -42,7 +42,7 @@ def test_selector_draw_selection_matches_expected(fig_test, fig_ref):
     ax_t = fig_test.add_subplot(111, projection="polar")
     sel = SiteSelector(ax_t, grid, plot_kwargs={"color": "r", "lw": 2, "zorder": 20})
     sel.selection.set_bins(bins)
-    sel._draw_selection()
+    sel._draw(preview=False)
 
     # reference figure: compute edges and draw manually
     ax_r = fig_ref.add_subplot(111, projection="polar")
