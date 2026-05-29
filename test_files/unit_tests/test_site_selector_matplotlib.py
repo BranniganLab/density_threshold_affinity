@@ -23,7 +23,7 @@ def test_renderer_draw_edges_matches_manual(fig_test, fig_ref):
         BinEdge(Coordinate(0.0, 0.0), Coordinate(1.0, 0.0)),
         BinEdge(Coordinate(1.0, 0.0), Coordinate(1.0, np.pi / 2)),
     ]
-    renderer.draw_edges(edges, draw_preview=False)
+    renderer.draw_bin_edges(edges, preview=False)
 
     # reference figure: manual plotting of identical segments
     ax_r = fig_ref.add_subplot(111, projection="polar")
@@ -42,7 +42,10 @@ def test_selector_draw_selection_matches_expected(fig_test, fig_ref):
     ax_t = fig_test.add_subplot(111, projection="polar")
     sel = SiteSelector(ax_t, grid, plot_kwargs={"color": "r", "lw": 2, "zorder": 20})
     sel.selection.set_bins(bins)
-    sel._draw_bin_edges(preview=False)
+    sel.renderer.draw_bin_edges(
+        sel.grid.list_all_exposed_edges(sel.selection.get_bins()),
+        preview=False,
+    )
 
     # reference figure: compute edges and draw manually
     ax_r = fig_ref.add_subplot(111, projection="polar")
