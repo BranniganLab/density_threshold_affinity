@@ -407,12 +407,11 @@ class SiteSelectorManager:
         if selector is None:
             return
 
-        # The selector that receives the press becomes the drag owner until release.
-        self._drag_owner = selector
-
         operation = self._determine_operation_from_key_presses(event)
         updated = bool(selector.on_press(event, operation))
+
         if updated:
+            self._drag_owner = selector
             self.fig.canvas.draw_idle()
 
     def _on_motion_event(self, event) -> None:
