@@ -449,9 +449,9 @@ class SiteSelectorManager:
 
         Returns
         -------
-        set[str]
-            Modifier key names present at the time of the event. Keys include
-            ``"shift"`` and ``"control"``.
+        set[RecognizedKeys]
+            Modifier key names present at the time of the event. RecognizedKeys
+            are ``"shift"`` and/or ``"control"``.
 
         Notes
         -----
