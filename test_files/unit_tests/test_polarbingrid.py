@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Unit tests for GridDim and PolarBinGrid.
-"""
+"""Unit tests for GridDim and PolarBinGrid."""
 
 from dataclasses import FrozenInstanceError
 
