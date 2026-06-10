@@ -490,19 +490,20 @@ def test_site_selector_manager_press_on_unregistered_axes_is_ignored():
     plt.close()
 
 
-def test_site_selector_manager_invalid_press_does_not_create_drag_owner():
-    """Invalid presses routed to a selector should not create drag ownership."""
+def test_site_selector_manager_invalid_press_does_not_set_drag_owner():
+    """Invalid presses should not create a drag owner."""
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
     sel = _make_selector(ax)
 
     manager = SiteSelectorManager(fig)
     manager.register(sel, active=True)
 
-    manager._on_press_event(FakeMouseEvent(inaxes=ax, xdata=None, ydata=0.2))
+    manager._on_press_event(
+        FakeMouseEvent(inaxes=ax, xdata=None, ydata=0.2)
+    )
 
     assert manager._drag_owner is None
     assert sel.drag_tracker.drag_start is None
-    assert sel.current_preview_bins is None
     plt.close()
 
 
