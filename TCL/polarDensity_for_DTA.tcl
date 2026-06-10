@@ -5,11 +5,9 @@ package require pbctools
 # get_avg_area
 #
 # Calculates the average area of a molecule in a simulation box.
-# Arguments:
-#     molid (str): The molecule ID of the molecule for which the average area needs to be calculated.
 # Results:
 #     float: The average area of the molecule in the simulation box.
-proc get_avg_area {molid} {
+proc get_avg_area {} {
     set box [pbc get -all]
     set xbox [list]
     set ybox [list]
@@ -75,6 +73,24 @@ proc get_theta {x y} {
     return [RtoD $theta]
 }
 
+# get_theta_bins
+#
+# Gets a list of theta bin indices from lists of x- and y-coordinates
+# Arguments:
+#   list: x coordinates
+#   list: y coordinates
+#   float: step size in theta
+# Outputs:
+#   list: the theta bin indices for each atom/bead
+
+proc get_theta_bins {x_list y_list dtheta} {
+    set theta_bin_list {}
+    foreach x $x_list y $y_list {
+        set theta [get_theta $x $y]
+        lappend theta_bin_list [expr int($theta/$dtheta)]
+    }
+    return $theta_bin_list 
+}
 
 # z_mid
 #
@@ -144,7 +160,7 @@ proc center_and_wrap_system {inpt} {
 
     # determine if cell is orthorhombic (requirement of qwrap)
     set pbc_angles [molinfo top get {alpha beta gamma}]
-    if {(([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 0]==90.0))} {
+    if {(([lindex $pbc_angles 0]==90.0) && ([lindex $pbc_angles 1]==90.0) && ([lindex $pbc_angles 2]==90.0))} {
         set orthorhombic 1
     } else {
         set orthorhombic 0
@@ -154,7 +170,7 @@ proc center_and_wrap_system {inpt} {
     set com [measure center $sel weight mass]
 
     # tries to recenter box until COM is 0'ed out or proc times out (5 tries)
-    while {[expr abs([lindex $com 0])] > 1.0 &&  [expr abs([lindex $com 1])] > 1.0} {
+    while {[expr abs([lindex $com 0])] > 1.0 ||  [expr abs([lindex $com 1])] > 1.0} {
         
         ;# time-out trigger
         if {$counter_i > 5} {
@@ -285,13 +301,18 @@ proc leaflet_sorter_2 {atsel_in refsel_in frame_i} {
 ;# Compares lipid's COM z component to local midplane and sorts accordingly.
 proc leaflet_sorter_3 {atsel_in frame_i} {
     set lipidsel [atomselect top $atsel_in frame $frame_i]
-    set lipid_com [measure center $lipidsel weight mass]
-    set lipid_x [lindex $lipid_com 0]
-    set lipid_y [lindex $lipid_com 1]
-    set lipid_z [lindex $lipid_com 2]
-    
     set local_surfaces [atomselect top "name PO4 GL1 GL2 AM1 AM2 and pbwithin 200 of $atsel_in" frame $frame_i]
+
+    if {[$local_surfaces num] == 0} {
+        error "[$local_surfaces text] did not return any atoms on frame ${frame_i}"
+    }
+    if {[$lipidsel num] == 0} {
+        error "[$lipidsel text] did not return any atoms on frame ${frame_i}"
+    }
+
+    set lipid_z [lindex [measure center $lipidsel weight mass] 2]
     set local_midplane [lindex [measure center $local_surfaces weight mass] 2]
+
     $local_surfaces delete
 
     if {$lipid_z < $local_midplane} {
@@ -333,38 +354,64 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
 }
 
 
+;# Validates that multiple lists are same length. For use before a foreach,
+;# which will silently fail if lists are not the same length.
+proc validate_equal_length_lists {lists} {
+    set expected_len ""
+    foreach {name value} $lists {
+        set this_len [llength $value]
+        if {$expected_len eq ""} {
+            set expected_len $this_len
+        } elseif {$this_len != $expected_len} {
+            error "List length mismatch: $name has length $this_len, expected $expected_len"
+        }
+    }
+}
+
 ;# Calculates the total number of lipids and beads of the given selection in each leaflet 
 ;# Assigns the leaflet to user2 
 ;# Returns the following list : [["lower" lower_leaflet_beads lower_leaflet_lipids] ["upper" upper_leaflet_beads upper_leaflet_lipids]] 
+;# Assumes that lipids are separable by resid.
 proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {restrict_to_Rmax 0}} {
     global params
     if {$restrict_to_Rmax == 1} {
         set outer_r2 [expr $params(Rmax)**2]
-        set sel [ atomselect top "($atseltext) and same resid as (x*x + y*y < $outer_r2)"  frame $frame_i]
+        set sel_to_sort [ atomselect top "($atseltext) and same resid as (x*x + y*y < $outer_r2)"  frame $frame_i]
     } elseif {$restrict_to_Rmax == 0} {
-        set sel [ atomselect top "$atseltext"  frame $frame_i]
+        set sel_to_sort [ atomselect top "$atseltext"  frame $frame_i]
     } else {
         error "restrict_leaflet_sorter_to_Rmax must be 1 or 0"
     }
-    set sel_num [llength [lsort -unique [$sel get resid] ] ]
-    set sel_resid_list [lsort -unique [$sel get resid] ]
+    set sel_num [llength [lsort -unique [$sel_to_sort get resid] ] ]
+    set sel_resid_list [lsort -unique [$sel_to_sort get resid] ]
     set totals {}
     if {$sel_num < 1} {
+        # No lipids to sort. Return zeros.
+
         set totals [list "lower 0 0" "upper 0 0"] 
     } else {
-        #assign leaflets from $frame_i to user2 field of each bead for this selection
+        # Assign user2 values for of each bead of each lipid in the selection.
+
         foreach sel_resid $sel_resid_list {
             set selstring "(${atseltext}) and (resid $sel_resid)"
             leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)
         }
-        #copy leaflet values from $frame_i to all frames between $frame_i and $frame_f
-        set leaflet_list [$sel get user2] 
-        for {set interim_frame [expr $frame_i + 1]} {$interim_frame < [expr $frame_f]} {incr interim_frame} {
-            $sel frame $interim_frame
-            $sel update
-            $sel set user2 $leaflet_list
+
+        # Copy leaflet values from $frame_i to all frames between $frame_i and 
+        # $frame_f. Use index numbers for this, since $sel is based off of a 
+        # radial shell when $restrict_to_Rmax is on.
+
+        set leaflet_list [$sel_to_sort get user2] 
+        set sel_to_update [atomselect top "index [$sel_to_sort get index]"]
+        for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame < [expr $frame_f]} {incr unsorted_frame} {
+            $sel_to_update frame $unsorted_frame
+            $sel_to_update update
+            $sel_to_update set user2 $leaflet_list
         }
-        #count the number of lipids and the number of beads in each leaflet
+        $sel_to_update delete
+
+        # Count the number of lipids and the number of beads in each leaflet.
+
         foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
             set leaf_sel [ atomselect top "(${atseltext}) and $leaf"  frame $frame_i]
             set num_beads [$leaf_sel num]
@@ -373,7 +420,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
             $leaf_sel delete
         }
     }
-    $sel delete
+    $sel_to_sort delete
     return $totals
 }
 
@@ -390,8 +437,14 @@ proc trajectory_leaflet_assignment {atseltext headname tailname} {
                 puts "Defaulting to z=0 as the reference height to sort by."
         }
     }
-    for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame $params(leaflet_reassign_interval)} {
+    for {set update_frame $params(start_frame)} {$update_frame <= [expr $params(end_frame) - $params(leaflet_reassign_interval)]} {incr update_frame $params(leaflet_reassign_interval)} {
         frame_leaflet_assignment $atseltext $headname $tailname $update_frame [expr $update_frame + $params(leaflet_reassign_interval)] $params(restrict_leaflet_sorter_to_Rmax)
+        incr num_reassignments
+    }
+    if {[test_if_evenly_divisible $params(end_frame) $params(leaflet_reassign_interval)] != 1} {
+        # Run one extra iteration to finish final leftover frames at end of trajectory.
+
+        frame_leaflet_assignment $atseltext $headname $tailname $update_frame $params(end_frame) $params(restrict_leaflet_sorter_to_Rmax)
         incr num_reassignments
     }
     puts "Checked for leaflet reassignments $num_reassignments times."
@@ -403,7 +456,7 @@ proc clean_leaflet_assignments {atseltext} {
     set sel [ atomselect top "$atseltext"]
     set selnum [$sel num]
 
-    for {set update_frame $params(start_frame)} {$update_frame < ${ _frame}} {incr update_frame} {
+    for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame} {
         $sel frame $update_frame
         $sel set user2 [lrepeat $selnum 0.0]
         puts "Cleaning $selnum beads of leaflet assignments in frame $update_frame"
@@ -414,15 +467,9 @@ proc clean_leaflet_assignments {atseltext} {
 #test to see if two floats are evenly divisible. Return 1 if evenly divisible.
 #Return 0 if not evenly divisible.
 proc test_if_evenly_divisible {dividend divisor} {
-    set TOLERANCE [expr 10.0**-12]
-    set float_quotient [expr $dividend / double($divisor)]
-    set int_quotient [expr int($float_quotient)]
-    set diff [expr $float_quotient - $int_quotient]
-    if {$diff <= $TOLERANCE} {
-        return 1
-    } else {
-        return 0
-    }
+    set tolerance 1.0e-12
+    set q [expr {$dividend / double($divisor)}]
+    return [expr {abs($q - round($q)) <= $tolerance}]
 }
     
 #write radial and theta bin output to file 
@@ -457,45 +504,40 @@ proc theta_histogram {singleFrame_lower singleFrame_upper } {
 
 
 ;#The inner-most loop of the histogramming algorithm: a loop over all lipid atoms (or beads) occupying one shell in one frame. Each atom is assigned an angular bin and totals are updated.  
-proc loop_over_atoms {shell atseltext frm} {
+proc loop_over_atoms {shell frm} {
     global params
-    set indexs [$shell get index]
-    set theta_high_out [list]
-    set theta_low_out [list]
-    set leaflet 0
-    foreach indx $indexs {
-        #loop over atoms (or beads if CG) in the shell
-        set atsel "($atseltext) and index $indx"
-        set thislipid [atomselect top $atsel frame $frm]
-        set x [$thislipid get x]
-        set y [$thislipid get y]
-        set leaflet [$thislipid get user2]
-        set theta [get_theta $x $y]
-        set theta_bin [expr int($theta/$params(dtheta))]
-        if {$leaflet > 0} {
-            lappend theta_high_out $theta_bin
-        } elseif {$leaflet < 0} {
-            lappend theta_low_out $theta_bin
-        } else {
-            puts "WARNING: lipid atom $indx did not get assigned a leaflet for frame $frm"
-        }
-        $thislipid set user [expr $theta_bin]
-        $thislipid delete
+    set atseltext [$shell text]
+    set inner [atomselect top "($atseltext) and user2 '-1.0'" frame $frm]
+    set outer [atomselect top "($atseltext) and user2 1.0" frame $frm]
+    set error_check [atomselect top "($atseltext) and not user2 1.0 '-1.0'" frame $frm]
+    if {[$error_check num] != 0} {
+        set indx [$error_check get index]
+        puts "WARNING: lipid atom(s) $indx did not get assigned a leaflet for frame $frm"
     }
-    
-    return [list $theta_low_out $theta_high_out] ;#lower before upper is the convention
+    $error_check delete
+    set inner_outer_bins {}
+    foreach leaf [list $inner $outer] {
+        set x_list [$leaf get x]
+        set y_list [$leaf get y]
+        set theta_bin_list [get_theta_bins $x_list $y_list $params(dtheta)]
+        lappend inner_outer_bins $theta_bin_list
+        $leaf set user $theta_bin_list
+    }
+    $inner delete
+    $outer delete
+    return $inner_outer_bins
 }
 
 ;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
-proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper r_index} {
+proc loop_over_frames {shell start_frame end_frame ri rf flower fupper r_index} {
     global params
     set theta_bin_high [lrepeat [expr $params(Ntheta)+1] 0]
     set theta_bin_low [lrepeat [expr $params(Ntheta)+1] 0]
-    for {set frm $params(start_frame)} {$frm < ${end_frame}} {incr frm $params(dt)} {
+    for {set frm $start_frame} {$frm < $end_frame} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
         $shell set user3 $r_index
-        set singleFrame_counts [loop_over_atoms $shell $atseltext $frm]
+        set singleFrame_counts [loop_over_atoms $shell $frm]
         set singleFrame_upper [lindex $singleFrame_counts 1] 
         set singleFrame_lower [lindex $singleFrame_counts 0]
         set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper]
@@ -503,9 +545,7 @@ proc loop_over_frames {shell atseltext start_frame end_frame ri rf flower fupper
             error "theta_bin_high/low and theta_bins do not have the same length."
         }
         set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1] ]
-        #puts [lindex $theta_bins 1]
         set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
-        #puts $theta_bin_low
         output_bins $fupper $ri $rf [lindex $theta_bins 1] 
         output_bins $flower $ri $rf [lindex $theta_bins 0]   
     }
@@ -528,7 +568,7 @@ proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
         set rf2 [expr $rf*$rf]
         set ri2 [expr $ri*$ri]
         set shell [atomselect top "($atseltext) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"]
-        set theta_bin [loop_over_frames $shell $atseltext $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radial_bin_index]
+        set theta_bin [loop_over_frames $shell $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radial_bin_index]
         set theta_bin_high [lindex $theta_bin 1]
         set theta_bin_low [lindex $theta_bin 0]
         $shell delete	
@@ -614,8 +654,13 @@ proc polarDensityBin { config_file_script } {
         error "Rmax must be evenly divisible by dr."
     }
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
-    set backbone_selstr $params(backbone_selstr) ;#only necessary for backwards compatibility 
-    set protein_selstr $params(protein_selstr) ;#only necessary for backwards compatibility 
+
+    if {$params(leaflet_sorting_algorithm) == 0} {
+        validate_equal_length_lists "$params(atomsels) $params(filename_stems) $params(headnames) $params(tailnames)"
+    } else {
+        validate_equal_length_lists "$params(atomsels) $params(filename_stems)"
+    }
+
     source $params(helix_assignment_script)
     foreach atseltext $params(atomsels) stem $params(filename_stems) headname $params(headnames) tailname $params(tailnames) {
         ;# make sure the atomselection exists
@@ -635,15 +680,15 @@ proc polarDensityBin { config_file_script } {
         ;# outputs protein positions
         output_inclusion_centers
         ;# initialize some constants
-        set area [get_avg_area top]
+        set area [get_avg_area]
         set nframes [molinfo top get numframes]
         if { $params(start_frame) > $nframes } {
-            puts "Error: specified start frame $params(start_frame) is greater than number of frames $nframes" 
-            set start_frame $nframes
+            puts "Warning: specified start frame $params(start_frame) is greater than number of frames $nframes" 
+            set params(start_frame) $nframes
         }
         if { $params(end_frame) > $nframes } {
             puts "Warning: specified end frame $params(end_frame) is greater than number of frames; setting end frame to $nframes" 
-            set end_frame $nframes
+            set params(end_frame) $nframes
         }
 
         puts "Atomselection:\t$atseltext"

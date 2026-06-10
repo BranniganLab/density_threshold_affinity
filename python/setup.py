@@ -1,13 +1,13 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
-    name='DTA',
+    name='dta',
     version='1.0',
     description='Tools for Doing Density-Threshold Affinity analysis',
     url='https://github.com/BranniganLab/density_threshold_affinity',
     author='Brannigan Lab',
     author_email='grace.brannigan@rutgers.edu',
-    packages=['DTA'],
+    packages=find_packages(),
     install_requires=['numpy>=2.0.0','pandas>=2.2.2', 'matplotlib>=3.9.1', 'scipy>=1.14.0'],
 
     classifiers=[
