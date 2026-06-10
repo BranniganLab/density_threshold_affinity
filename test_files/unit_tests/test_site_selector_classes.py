@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Tests for SiteSelector and SiteSelectorManager."""
+"""Tests for SiteSelector and SiteSelectorManager.
+
+These tests focus on interaction semantics rather than rendered pixel output:
+valid/invalid gesture lifecycle behavior, preview calculation, latched modifier
+semantics, active-selector routing, and cross-Axes drag ownership. Rendering is
+checked only through observable artist bookkeeping where it affects selector
+state.
+"""
 
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
@@ -44,7 +51,12 @@ class DummyArtist:
 
 
 def _make_selector(ax):
-    """Construct a selector over a small polar grid for test use."""
+    """Construct a selector over a small polar grid for test use.
+
+    The grid spans r=[0, 1] with four radial bins and eight angular bins. Tests
+    use coordinates comfortably inside that range unless they are explicitly
+    checking invalid/out-of-grid behavior.
+    """
     grid = PolarBinGrid(0, 1, 4, 8)
     return SiteSelector(ax, grid, plot_kwargs={"zorder": 20})
 
@@ -77,6 +89,22 @@ def test_site_selector_on_press_returns_false_for_missing_data_coords():
 
     updated = sel.on_press(
         FakeMouseEvent(inaxes=ax, xdata=None, ydata=0.2),
+        SelectionOperation.REPLACE,
+    )
+
+    assert updated is False
+    assert sel.drag_tracker.drag_start is None
+    assert sel.current_preview_bins is None
+    plt.close()
+
+
+def test_site_selector_on_press_returns_false_for_out_of_grid_coordinate():
+    """Presses inside the Axes but outside the polar grid should be ignored."""
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    sel = _make_selector(ax)
+
+    updated = sel.on_press(
+        FakeMouseEvent(inaxes=ax, xdata=0.2, ydata=1.5),
         SelectionOperation.REPLACE,
     )
 
@@ -210,6 +238,29 @@ def test_site_selector_release_commits_last_preview_exactly():
     assert sel.drag_tracker.drag_start is None
     assert sel.drag_tracker.last_theta is None
     assert sel.drag_tracker.operation is SelectionOperation.REPLACE
+    assert sel.current_preview_bins is None
+    plt.close()
+
+
+def test_site_selector_release_after_click_without_motion_commits_initial_preview():
+    """Click-only gestures should commit the initial single-bin preview."""
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    sel = _make_selector(ax)
+
+    updated_press = sel.on_press(
+        FakeMouseEvent(inaxes=ax, xdata=0.3, ydata=0.3),
+        SelectionOperation.REPLACE,
+    )
+    preview = sel.current_preview_bins
+    updated_release = sel.on_release(
+        FakeMouseEvent(inaxes=None, xdata=None, ydata=None, buttons=None)
+    )
+
+    assert updated_press is True
+    assert updated_release is True
+    assert preview is not None
+    assert sel.selection.get_bins() == preview
+    assert len(sel.selection.get_bins()) == 1
     assert sel.current_preview_bins is None
     plt.close()
 
@@ -387,6 +438,71 @@ def test_site_selector_manager_set_active_deactivates_previous_selector():
     assert manager._active[ax] is sel_b
     assert sel_a.drag_tracker.drag_start is None
     assert sel_a.current_preview_bins is None
+    plt.close()
+
+
+def test_site_selector_manager_register_keeps_existing_active_selector_by_default():
+    """Registering a second selector inactive should not replace the active one."""
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    sel_a = _make_selector(ax)
+    sel_b = _make_selector(ax)
+
+    manager = SiteSelectorManager(fig)
+    manager.register(sel_a)
+    manager.register(sel_b)
+
+    assert manager._selectors[ax] == [sel_a, sel_b]
+    assert manager._active[ax] is sel_a
+    plt.close()
+
+
+def test_site_selector_manager_set_active_same_selector_is_noop():
+    """Reactivating the current selector should not clear an in-progress gesture."""
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    sel = _make_selector(ax)
+
+    manager = SiteSelectorManager(fig)
+    manager.register(sel, active=True)
+    sel.on_press(
+        FakeMouseEvent(inaxes=ax, xdata=0.2, ydata=0.2),
+        SelectionOperation.ADD,
+    )
+    preview_before = sel.current_preview_bins
+
+    manager.set_active(sel)
+
+    assert manager._active[ax] is sel
+    assert sel.drag_tracker.drag_start is not None
+    assert sel.drag_tracker.operation is SelectionOperation.ADD
+    assert sel.current_preview_bins == preview_before
+    plt.close()
+
+
+def test_site_selector_manager_press_on_unregistered_axes_is_ignored():
+    """Presses on Axes with no active selector should not start drag ownership."""
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    manager = SiteSelectorManager(fig)
+
+    manager._on_press_event(FakeMouseEvent(inaxes=ax, xdata=0.2, ydata=0.2))
+
+    assert manager._drag_owner is None
+    assert manager._active == {}
+    plt.close()
+
+
+def test_site_selector_manager_invalid_press_does_not_create_drag_owner():
+    """Invalid presses routed to a selector should not create drag ownership."""
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    sel = _make_selector(ax)
+
+    manager = SiteSelectorManager(fig)
+    manager.register(sel, active=True)
+
+    manager._on_press_event(FakeMouseEvent(inaxes=ax, xdata=None, ydata=0.2))
+
+    assert manager._drag_owner is None
+    assert sel.drag_tracker.drag_start is None
+    assert sel.current_preview_bins is None
     plt.close()
 
 
