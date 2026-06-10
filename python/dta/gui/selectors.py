@@ -45,7 +45,7 @@ class SiteSelector:
         The polar grid object that contains geometric information.
     plot_kwargs : dict, optional
         Default Matplotlib line properties forwarded to the renderer. These
-        apply to committed selection edges. Preview edges are drawn with in orange.
+        apply to committed selection edges. Preview edges are drawn in orange.
 
     Notes
     -----
