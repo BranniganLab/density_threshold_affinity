@@ -32,7 +32,7 @@ proc get_avg_area {} {
 #   - The second list contains the counts of each unique element in the input list.
 proc lcount list {
     foreach x $list {lappend arr($x) {}}
-    set res1 {} 
+    set res1 {}
     set res2 {}
     foreach name [array names arr] {
         lappend res1 $name
