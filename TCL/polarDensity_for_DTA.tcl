@@ -30,16 +30,14 @@ proc get_avg_area {} {
 #   A list containing two lists:
 #   - The first list contains the unique elements from the input list.
 #   - The second list contains the counts of each unique element in the input list.
-proc lcount list {
-    foreach x $list {lappend arr($x) {}}
-    set res1 {}	
-    set res2 {}
-    foreach name [array names arr] {
-        lappend res1 $name
-        lappend res2 [llength $arr($name)]
+proc lcount {items} {
+    set counts {}
+
+    foreach item $items {
+        dict incr counts $item
     }
-    set res [list $res1 $res2]
-    return $res
+
+    return [list [dict keys $counts] [dict values $counts]]
 }
 
 # RtoD
@@ -531,8 +529,8 @@ proc loop_over_atoms {shell frm} {
 ;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
 proc loop_over_frames {shell start_frame end_frame ri rf flower fupper r_index} {
     global params
-    set theta_bin_high [lrepeat [expr $params(Ntheta) + 5] 0]
-    set theta_bin_low [lrepeat $params(Ntheta) 0]
+    set theta_bin_high [lrepeat [expr $params(Ntheta) + 1] 0]
+    set theta_bin_low [lrepeat [expr $params(Ntheta) + 1] 0]
     for {set frm $start_frame} {$frm < $end_frame} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
