@@ -31,13 +31,15 @@ proc get_avg_area {} {
 #   - The first list contains the unique elements from the input list.
 #   - The second list contains the counts of each unique element in the input list.
 proc lcount {items} {
-    set counts {}
-
-    foreach item $items {
-        dict incr counts $item
+    foreach x $list {lappend arr($x) {}}
+    set res1 {} 
+    set res2 {}
+    foreach name [array names arr] {
+        lappend res1 $name
+        lappend res2 [llength $arr($name)]
     }
-
-    return [list [dict keys $counts] [dict values $counts]]
+    set res [list $res1 $res2]
+    return $res
 }
 
 # RtoD
