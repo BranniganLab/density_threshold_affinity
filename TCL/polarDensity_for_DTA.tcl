@@ -531,7 +531,7 @@ proc loop_over_atoms {shell frm} {
 ;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
 proc loop_over_frames {shell start_frame end_frame ri rf flower fupper r_index} {
     global params
-    set theta_bin_high [lrepeat $params(Ntheta) 0]
+    set theta_bin_high [lrepeat [expr $params(Ntheta) + 5] 0]
     set theta_bin_low [lrepeat $params(Ntheta) 0]
     for {set frm $start_frame} {$frm < $end_frame} {incr frm $params(dt)} {
         $shell frame $frm
