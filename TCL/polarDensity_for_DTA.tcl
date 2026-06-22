@@ -358,12 +358,12 @@ proc leaflet_detector {atsel_in head tail frame_i leaflet_sorting_algorithm} {
 ;# which will silently fail if lists are not the same length.
 proc validate_equal_length_lists {lists} {
     set expected_len ""
-    foreach {name value} $lists {
-        set this_len [llength $value]
+    foreach item $lists {
+        set this_len [llength $item]
         if {$expected_len eq ""} {
             set expected_len $this_len
         } elseif {$this_len != $expected_len} {
-            error "List length mismatch: $name has length $this_len, expected $expected_len"
+            error "List length mismatch: $item has length $this_len, expected $expected_len"
         }
     }
 }
@@ -656,9 +656,9 @@ proc polarDensityBin { config_file_script } {
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
 
     if {$params(leaflet_sorting_algorithm) == 0} {
-        validate_equal_length_lists "$params(atomsels) $params(filename_stems) $params(headnames) $params(tailnames)"
+        validate_equal_length_lists [list $params(atomsels) $params(filename_stems) $params(headnames) $params(tailnames)]
     } else {
-        validate_equal_length_lists "$params(atomsels) $params(filename_stems)"
+        validate_equal_length_lists [list $params(atomsels) $params(filename_stems)]
     }
 
     source $params(helix_assignment_script)
