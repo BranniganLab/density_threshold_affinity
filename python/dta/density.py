@@ -372,7 +372,7 @@ def _package_counts(unrolled_data, grid_dims):
     nframes = grid_dims.Nframes
 
     # chop off the first few columns
-    unrolled_counts = unrolled_data[:, 3:-1]
+    unrolled_counts = unrolled_data[:, 3:]
 
     # 'sideways' because it is in [r, time, theta] format at first
     sideways_counts = np.zeros((grid_dims.Nr, nframes, grid_dims.Ntheta))
