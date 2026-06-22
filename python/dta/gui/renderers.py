@@ -9,7 +9,6 @@ outlines using Matplotlib.
 All event handling and gesture interpretation is handled by
 Matplotlib controllers in selectors.py.
 """
-from collections.abc import Iterable
 import matplotlib
 from dta.bin_logic.utils import BinEdge
 

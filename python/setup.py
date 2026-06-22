@@ -9,7 +9,12 @@ setup(
     author_email='grace.brannigan@rutgers.edu',
     packages=find_packages(),
     install_requires=['numpy>=2.0.0','pandas>=2.2.2', 'matplotlib>=3.9.1', 'scipy>=1.14.0'],
-
+    extras_require={
+        "jupyter": [
+            "ipympl",
+            "jupyterlab",
+        ],
+    },
     classifiers=[
         'Development Status :: 1 - Planning',
         'Intended Audience :: Science/Research',
