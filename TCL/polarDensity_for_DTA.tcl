@@ -486,7 +486,7 @@ proc theta_histogram {singleFrame_lower singleFrame_upper} {
     set theta_bin_out [list]
 
     foreach leaflet [list $singleFrame_lower $singleFrame_upper] {
-        set theta_bins [lrepeat [expr {$params(Ntheta) + 1}] 0.0]
+        set theta_bins [lrepeat $params(Ntheta) 0.0]
 
         foreach index $leaflet {
             lset theta_bins $index [expr {[lindex $theta_bins $index] + 1.0}]
@@ -537,10 +537,6 @@ proc loop_over_frames {shell start_frame end_frame ri rf flower fupper r_index} 
         set singleFrame_upper [lindex $singleFrame_counts 1] 
         set singleFrame_lower [lindex $singleFrame_counts 0]
         set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper]
-        puts $theta_bins
-        puts [llength $theta_bins]
-        puts [llength [lindex $theta_bins 0]]
-        puts [llength $theta_bin_high]
         if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
             error "theta_bin_high/low and theta_bins do not have the same length."
         }
