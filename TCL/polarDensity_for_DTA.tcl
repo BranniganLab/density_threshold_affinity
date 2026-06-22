@@ -483,7 +483,7 @@ proc output_bins {fl  ri rf bins} {
 proc theta_histogram {singleFrame_lower singleFrame_upper} {
     global params
 
-    set theta_bin_out ""
+    set theta_bin_out [list]
 
     foreach leaflet [list $singleFrame_lower $singleFrame_upper] {
         set theta_bins [lrepeat [expr {$params(Ntheta) + 1}] 0.0]
