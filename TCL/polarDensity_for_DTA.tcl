@@ -479,26 +479,22 @@ proc output_bins {fl  ri rf bins} {
     puts $fl "$bins" 
 }
 
-#
-proc theta_histogram {singleFrame_lower singleFrame_upper } {
-    global params
-    set theta_bin_out [list]
-    foreach ud [list $singleFrame_lower $singleFrame_upper ] {
-        #cleanup and output 
-        set theta_bin_counts [lcount $ud]
 
-        set theta_bins {}
-        for {set ti 0} { $ti<$params(Ntheta)} {incr ti 1} {
-            set tindex [lsearch [lindex $theta_bin_counts 0]  $ti]
-            if { $tindex >= 0} {
-                set frame_count [expr 1.0 * [lindex [lindex $theta_bin_counts 1] $tindex]] 
-            } else { 
-                set frame_count 0.0
-            }
-            lappend theta_bins $frame_count
+proc theta_histogram {singleFrame_lower singleFrame_upper} {
+    global params
+
+    set theta_bin_out ""
+
+    foreach leaflet [list $singleFrame_lower $singleFrame_upper] {
+        set theta_bins [lrepeat [expr {$params(Ntheta) + 1}] 0.0]
+
+        foreach index $leaflet {
+            lset theta_bins $index [expr {[lindex $theta_bins $index] + 1.0}]
         }
+
         lappend theta_bin_out $theta_bins
     }
+
     return $theta_bin_out
 }
 
