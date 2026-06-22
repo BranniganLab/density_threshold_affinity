@@ -512,7 +512,7 @@ proc loop_over_frames {shell startFrame endFrame rI rF fLower fUpper rIndex} {
         $shell set user3 $rIndex
         set bothLeafletsCounts [loop_over_atoms $shell $frm]
         foreach leaflet "0 1" outfile [list $fLower $fUpper] {
-            set leafletCounts [lindex $bothLeafletCounts $leaflet]
+            set leafletCounts [lindex $bothLeafletsCounts $leaflet]
             set histogrammedCounts [histogram $leafletCounts]
             lset totalBinCounts $leaflet [vecadd [lindex $totalBinCounts $leaflet] $histogrammedCounts]
             output_bins $outfile $rI $rF $histogrammedCounts
