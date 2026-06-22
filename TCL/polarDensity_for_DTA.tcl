@@ -467,13 +467,13 @@ proc output_bins {fl  ri rf bins} {
 #   list: the number of times each index appearred in $bins
 proc histogram {bins} {
     global params
-    # set all bins bounts to 0
-    set bin_counts [lrepeat $params(Ntheta) 0.0]
-    foreach bin_index $bins {
+    # set all bins counts to 0
+    set binCounts [lrepeat $params(Ntheta) 0.0]
+    foreach binIndex $bins {
         #increment the count for that bin index
-        lset bin_counts $bin_index [expr {[lindex $bin_counts $bin_index] + 1.0}]
+        lset binCounts $binIndex [expr {[lindex $binCounts $binIndex] + 1.0}]
     }
-    return $bin_counts
+    return $binCounts
 }
 
 
@@ -503,22 +503,22 @@ proc loop_over_atoms {shell frm} {
 }
 
 ;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
-proc loop_over_frames {shell start_frame end_frame ri rf flower fupper r_index} {
+proc loop_over_frames {shell startFrame endFrame rI rF fLower fUpper rIndex} {
     global params
-    set total_bin_counts [lrepeat 2 [lrepeat $params(Ntheta) 0]]
-    for {set frm $start_frame} {$frm < $end_frame} {incr frm $params(dt)} {
+    set totalBinCounts [lrepeat 2 [lrepeat $params(Ntheta) 0]]
+    for {set frm $startFrame} {$frm < $endFrame} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
-        $shell set user3 $r_index
-        set singleFrame_counts [loop_over_atoms $shell $frm]
-        foreach leaflet "0 1" outfile [list $flower $fupper] {
-            set disorganizedCounts [lindex $singleFrame_counts $leaflet]
-            set theta_bins [histogram $disorganizedCounts]
-            lset total_bin_counts $leaflet [vecadd [lindex $total_bin_counts $leaflet] $theta_bins]
-            output_bins $outfile $ri $rf $theta_bins
+        $shell set user3 $rIndex
+        set singleFrameCounts [loop_over_atoms $shell $frm]
+        foreach leaflet "0 1" outfile [list $fLower $fUpper] {
+            set disorganizedCounts [lindex $singleFrameCounts $leaflet]
+            set frameCounts [histogram $disorganizedCounts]
+            lset totalBinCounts $leaflet [vecadd [lindex $totalBinCounts $leaflet] $frameCounts]
+            output_bins $outfile $rI $rF $frameCounts
         }
     }
-    return $total_bin_counts
+    return $totalBinCounts
 }
 
 
