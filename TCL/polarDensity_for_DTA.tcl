@@ -458,23 +458,22 @@ proc output_bins {fl  ri rf bins} {
     puts $fl "$bins" 
 }
 
-
-proc theta_histogram {singleFrame_lower singleFrame_upper} {
+# histogram
+#
+# Turn a list of bin indices into a histogram.
+# Arguments:
+#   list: a list of bin indices that should be aggregated into a histogram
+# Outputs:
+#   list: the number of times each index appearred in $bins
+proc histogram {bins} {
     global params
-
-    set theta_bin_out [list]
-
-    foreach leaflet [list $singleFrame_lower $singleFrame_upper] {
-        set theta_bins [lrepeat $params(Ntheta) 0.0]
-
-        foreach index $leaflet {
-            lset theta_bins $index [expr {[lindex $theta_bins $index] + 1.0}]
-        }
-
-        lappend theta_bin_out $theta_bins
+    # set all bins bounts to 0
+    set bin_counts [lrepeat $params(Ntheta) 0.0]
+    foreach bin_index $bins {
+        #increment the count for that bin index
+        lset bin_counts $bin_index [expr {[lindex $bin_counts $bin_index] + 1.0}]
     }
-
-    return $theta_bin_out
+    return $bin_counts
 }
 
 
@@ -513,16 +512,12 @@ proc loop_over_frames {shell start_frame end_frame ri rf flower fupper r_index} 
         $shell update 
         $shell set user3 $r_index
         set singleFrame_counts [loop_over_atoms $shell $frm]
-        set singleFrame_upper [lindex $singleFrame_counts 1] 
-        set singleFrame_lower [lindex $singleFrame_counts 0]
-        set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper]
-        if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
-            error "theta_bin_high/low and theta_bins do not have the same length."
+        foreach leaflet "0 1" total [list $theta_bin_low $theta_bin_high] outfile [list $flower $fupper] {
+            set disorganizedCounts [lindex $singleFrame_counts $leaflet]
+            set theta_bins [histogram $disorganizedCounts]
+            set total [vecadd $total $theta_bins]
+            output_bins $outfile $ri $rf $theta_bins
         }
-        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1] ]
-        set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
-        output_bins $fupper $ri $rf [lindex $theta_bins 1] 
-        output_bins $flower $ri $rf [lindex $theta_bins 0]   
     }
     return [list  ${theta_bin_low} ${theta_bin_high}]
 }
