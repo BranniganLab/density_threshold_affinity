@@ -321,7 +321,7 @@ def _calculate_grid_dimensions(unrolled_data):
     dtheta = dthetadeg * (np.pi / 180.0)
     nframes = _calculate_nframes(unrolled_data[:, 0])
     Ntheta = int(round(360 / dthetadeg))
-    assert Ntheta == unrolled_data.shape[1] - 4, f"Something went wrong with the theta dimensions parser. dtheta={dtheta}, Ntheta={Ntheta}"
+    assert Ntheta == unrolled_data.shape[1] - 3, f"Something went wrong with the theta dimensions parser. dtheta={dtheta}, Ntheta={Ntheta}"
     Nr = len(unrolled_data[:, 0]) / nframes
     assert Nr - int(Nr) == 0, f"Something went wrong with the r dimensions parser. dr={dr}, Nr={Nr}"
     Nr = int(Nr)
@@ -372,7 +372,7 @@ def _package_counts(unrolled_data, grid_dims):
     nframes = grid_dims.Nframes
 
     # chop off the first few columns
-    unrolled_counts = unrolled_data[:, 3:-1]
+    unrolled_counts = unrolled_data[:, 3:]
 
     # 'sideways' because it is in [r, time, theta] format at first
     sideways_counts = np.zeros((grid_dims.Nr, nframes, grid_dims.Ntheta))
