@@ -321,7 +321,7 @@ def _calculate_grid_dimensions(unrolled_data):
     dtheta = dthetadeg * (np.pi / 180.0)
     nframes = _calculate_nframes(unrolled_data[:, 0])
     Ntheta = int(round(360 / dthetadeg))
-    assert Ntheta == unrolled_data.shape[1] - 4, f"Something went wrong with the theta dimensions parser. dtheta={dtheta}, Ntheta={Ntheta}"
+    assert Ntheta == unrolled_data.shape[1] - 3, f"Something went wrong with the theta dimensions parser. dtheta={dtheta}, Ntheta={Ntheta}"
     Nr = len(unrolled_data[:, 0]) / nframes
     assert Nr - int(Nr) == 0, f"Something went wrong with the r dimensions parser. dr={dr}, Nr={Nr}"
     Nr = int(Nr)
