@@ -21,27 +21,6 @@ proc get_avg_area {} {
     return $avg
 }
 
-# lcount 
-#
-# Takes a list as input and returns a list of unique elements in the input list along with their counts.
-# Arguments:
-#   list: A list of elements.
-# Outputs:
-#   A list containing two lists:
-#   - The first list contains the unique elements from the input list.
-#   - The second list contains the counts of each unique element in the input list.
-proc lcount list {
-    foreach x $list {lappend arr($x) {}}
-    set res1 {}
-    set res2 {}
-    foreach name [array names arr] {
-        lappend res1 $name
-        lappend res2 [llength $arr($name)]
-    }
-    set res [list $res1 $res2]
-    return $res
-}
-
 # RtoD
 #
 # Converts an angle from radians to degrees
