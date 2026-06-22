@@ -510,12 +510,12 @@ proc loop_over_frames {shell startFrame endFrame rI rF fLower fUpper rIndex} {
         $shell frame $frm
         $shell update 
         $shell set user3 $rIndex
-        set singleFrameCounts [loop_over_atoms $shell $frm]
+        set bothLeafletsCounts [loop_over_atoms $shell $frm]
         foreach leaflet "0 1" outfile [list $fLower $fUpper] {
-            set disorganizedCounts [lindex $singleFrameCounts $leaflet]
-            set frameCounts [histogram $disorganizedCounts]
-            lset totalBinCounts $leaflet [vecadd [lindex $totalBinCounts $leaflet] $frameCounts]
-            output_bins $outfile $rI $rF $frameCounts
+            set leafletCounts [lindex $bothLeafletCounts $leaflet]
+            set histogrammedCounts [histogram $leafletCounts]
+            lset totalBinCounts $leaflet [vecadd [lindex $totalBinCounts $leaflet] $histogrammedCounts]
+            output_bins $outfile $rI $rF $histogrammedCounts
         }
     }
     return $totalBinCounts
