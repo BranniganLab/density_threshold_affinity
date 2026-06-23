@@ -9,6 +9,7 @@ from pathlib import Path
 from collections import namedtuple
 import numpy as np
 from dta.utils import validate_path
+from dta.bin_logic import PolarBinGrid
 
 
 SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
@@ -49,9 +50,9 @@ def parse_tcl_dat_file(filepath, bulk):
         return np.loadtxt(filepath).astype(int).flatten(), None, None
     unrolled_data = np.loadtxt(filepath, skiprows=1)
     system_info = _parse_system_info(np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str))
-    grid_dims = _calculate_grid_dimensions(unrolled_data)
-    counts = _package_counts(unrolled_data, grid_dims).squeeze()
-    return counts, grid_dims, system_info
+    grid = _calculate_grid_dimensions(unrolled_data)
+    counts = _package_counts(unrolled_data, grid).squeeze()
+    return counts, grid, system_info
 
 
 def valid_Dimensions(list_of_Dimensions_objs):
