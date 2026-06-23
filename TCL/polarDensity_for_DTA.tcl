@@ -21,27 +21,6 @@ proc get_avg_area {} {
     return $avg
 }
 
-# lcount 
-#
-# Takes a list as input and returns a list of unique elements in the input list along with their counts.
-# Arguments:
-#   list: A list of elements.
-# Outputs:
-#   A list containing two lists:
-#   - The first list contains the unique elements from the input list.
-#   - The second list contains the counts of each unique element in the input list.
-proc lcount list {
-    foreach x $list {lappend arr($x) {}}
-    set res1 {}
-    set res2 {}
-    foreach name [array names arr] {
-        lappend res1 $name
-        lappend res2 [llength $arr($name)]
-    }
-    set res [list $res1 $res2]
-    return $res
-}
-
 # RtoD
 #
 # Converts an angle from radians to degrees
@@ -479,27 +458,22 @@ proc output_bins {fl  ri rf bins} {
     puts $fl "$bins" 
 }
 
+# histogram
 #
-proc theta_histogram {singleFrame_lower singleFrame_upper } {
+# Turn a list of bin indices into a histogram.
+# Arguments:
+#   list: a list of bin indices that should be aggregated into a histogram
+# Outputs:
+#   list: the number of times each index appearred in $bins
+proc histogram {bins} {
     global params
-    set theta_bin_out [list]
-    foreach ud [list $singleFrame_lower $singleFrame_upper ] {
-        #cleanup and output 
-        set theta_bin_counts [lcount $ud]
-
-        set theta_bins {}
-        for {set ti 0} { $ti<$params(Ntheta)} {incr ti 1} {
-            set tindex [lsearch [lindex $theta_bin_counts 0]  $ti]
-            if { $tindex >= 0} {
-                set frame_count [expr 1.0 * [lindex [lindex $theta_bin_counts 1] $tindex]] 
-            } else { 
-                set frame_count 0.0
-            }
-            lappend theta_bins $frame_count
-        }
-        lappend theta_bin_out $theta_bins
+    # set all bins counts to 0
+    set binCounts [lrepeat $params(Ntheta) 0.0]
+    foreach binIndex $bins {
+        #increment the count for that bin index
+        lset binCounts $binIndex [expr {[lindex $binCounts $binIndex] + 1.0}]
     }
-    return $theta_bin_out
+    return $binCounts
 }
 
 
@@ -529,27 +503,22 @@ proc loop_over_atoms {shell frm} {
 }
 
 ;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
-proc loop_over_frames {shell start_frame end_frame ri rf flower fupper r_index} {
+proc loop_over_frames {shell startFrame endFrame rI rF fLower fUpper rIndex} {
     global params
-    set theta_bin_high [lrepeat $params(Ntheta) 0]
-    set theta_bin_low [lrepeat $params(Ntheta) 0]
-    for {set frm $start_frame} {$frm < $end_frame} {incr frm $params(dt)} {
+    set totalBinCounts [lrepeat 2 [lrepeat $params(Ntheta) 0]]
+    for {set frm $startFrame} {$frm < $endFrame} {incr frm $params(dt)} {
         $shell frame $frm
         $shell update 
-        $shell set user3 $r_index
-        set singleFrame_counts [loop_over_atoms $shell $frm]
-        set singleFrame_upper [lindex $singleFrame_counts 1] 
-        set singleFrame_lower [lindex $singleFrame_counts 0]
-        set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper]
-        if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
-            error "theta_bin_high/low and theta_bins do not have the same length."
+        $shell set user3 $rIndex
+        set bothLeafletsCounts [loop_over_atoms $shell $frm]
+        foreach leaflet "0 1" outfile [list $fLower $fUpper] {
+            set leafletCounts [lindex $bothLeafletsCounts $leaflet]
+            set histogrammedCounts [histogram $leafletCounts]
+            lset totalBinCounts $leaflet [vecadd [lindex $totalBinCounts $leaflet] $histogrammedCounts]
+            output_bins $outfile $rI $rF $histogrammedCounts
         }
-        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1] ]
-        set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
-        output_bins $fupper $ri $rf [lindex $theta_bins 1] 
-        output_bins $flower $ri $rf [lindex $theta_bins 0]   
     }
-    return [list  ${theta_bin_low} ${theta_bin_high}]
+    return $totalBinCounts
 }
 
 
