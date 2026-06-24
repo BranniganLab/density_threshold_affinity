@@ -149,7 +149,7 @@ def aggregate_density_enrichment_scores(file_paths):
     """
     Collect the average counts, bin sizing, and expected density from each \
         system, calulate average density enrichment for each system, and calculate\
-        average density enrichment accross systems. Also, return the Dimensions \
+        average density enrichment accross systems. Also, return the PolarBinGrid \
         object that needs to be used for plotting the heatmaps.
 
     Parameters
@@ -162,8 +162,8 @@ def aggregate_density_enrichment_scores(file_paths):
     -------
     all_reps_avg : numpy ndarray
         The density enrichment scores, averaged together in a 2D array.
-    grid_dims_final : namedtuple
-        The Dimensions namedtuple that contains information about lattice sizes.
+    grid_final : PolarBinGrid
+        The PolarBinGrid that contains information about lattice sizes.
 
     """
     replica_enrichments_list = []
