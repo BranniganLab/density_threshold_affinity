@@ -8,6 +8,7 @@ Created on Mon Jan 27 17:20:36 2025.
 import numpy as np
 from dta.Site import Site
 from dta.SymmetricSite import SymmetricSite
+from dta.bin_logic import PolarBinGrid
 from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, aggregate_site_counts_histograms, check_bulk_counts_histogram
 
 
@@ -51,7 +52,7 @@ class SiteAcrossReplicas:
         SymmetricSites and/or Sites that comprise this SiteAcrossReplicas.
     """
 
-    def __init__(self, replica_list, base_site):
+    def __init__(self, replica_list: list, base_site: [Site | SymmetricSite], grid: PolarBinGrid):
         """
         Create a Site_Across_Replicas.
 
@@ -62,6 +63,8 @@ class SiteAcrossReplicas:
         base_site : Site or SymmetricSite
             The original Site object that should be used across replicas. Can \
             be Site or SymmetricSite.
+        grid : PolarBinGrid
+            The object containing lattice information.
 
         """
         if isinstance(base_site, Site):
@@ -69,7 +72,7 @@ class SiteAcrossReplicas:
         elif not isinstance(base_site, SymmetricSite):
             raise ValueError("base_site must be a Site or SymmetricSite")
         self.name = base_site.name
-        self._site_list = self._make_sites_across_replicas(base_site, replica_list)
+        self._site_list = self._make_sites_across_replicas(base_site, replica_list, grid)
         assert len(self.get_site_list) == len(replica_list), "Number of Sites does not match number of replicas."
         self.temperature = base_site.temperature
 
@@ -225,7 +228,7 @@ class SiteAcrossReplicas:
         predicted_accessible_area = bulk_area * (site / bulk)
         return predicted_accessible_area
 
-    def _make_sites_across_replicas(self, base_site, replica_list):
+    def _make_sites_across_replicas(self, base_site, replica_list, grid):
         """
         Create identical sites to the base_site, across multiple replicas.
 
@@ -235,6 +238,8 @@ class SiteAcrossReplicas:
             The Site object that you want to replicate symmetrically.
         replica_list : list
             The list of replicas.
+        grid : PolarBinGrid
+            The object containing lattice information.
 
         Returns
         -------
@@ -253,7 +258,7 @@ class SiteAcrossReplicas:
             elif isinstance(base_site, SymmetricSite):
                 new_single_site = Site(site_name, base_site.get_site_list[0].leaflet_id, base_site.get_site_list[0].temperature)
                 new_single_site.bin_coords = base_site.get_site_list[0].bin_coords
-                new_site = SymmetricSite(base_site.symmetry, new_single_site, base_site.ntheta_in_lattice)
+                new_site = SymmetricSite(base_site.symmetry, new_single_site, grid)
             new_site.update_counts_histogram(bulk=False, counts_data=replica_list[site_number])
             site_list.append(new_site)
         return site_list
