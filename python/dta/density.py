@@ -128,7 +128,7 @@ def load_replica_counts(root_path, replicas_list, system_name, leaflet_id, avg=F
     return replica_counts_list
 
 
-def calculate_density(avg_counts, grid_dims):
+def calculate_density(avg_counts, grid):
     """
     Calculate the average bead density in each bin.
 
@@ -136,8 +136,8 @@ def calculate_density(avg_counts, grid_dims):
     ----------
     avg_counts : ndarray
         2D array of average bead counts per bin in simulation. [r,theta] format.
-    grid_dims : namedtuple
-        The Dimensions object corresponding to this system.
+    grid : PolarBinGrid
+        The PolarBinGrid object corresponding to this system.
 
     Returns
     -------
@@ -145,11 +145,9 @@ def calculate_density(avg_counts, grid_dims):
         The average bead density in each bin.
 
     """
-    assert isinstance(grid_dims, tuple), "grid_dims must be a Dimensions namedtuple."
     assert isinstance(avg_counts, np.ndarray), "avg_counts must be an ndarray"
     assert len(avg_counts.shape) == 2, "avg_counts must be a 2D array."
-    area = _calculate_lattice_areas(grid_dims)
-    density = avg_counts / area
+    density = avg_counts / grid.bin_areas
     return density
 
 
@@ -175,30 +173,6 @@ def calculate_density_enrichment(density, expected_density):
     assert len(density.shape) == 2, "density must be a 2d array."
     assert isinstance(expected_density, (float, int)), "expected_density must be a scalar."
     return density / expected_density
-
-
-def calculate_bin_area(r_bin, dr, dtheta):
-    """
-    Calculate the area of the polar bin.
-
-    Parameters
-    ----------
-    r_bin : int
-        Which radial bin is this? Zero-indexed.
-    dr : float
-        The radial bin length in Angstroms.
-    dtheta : float
-        The azimuthal bin length in radians.
-
-    Returns
-    -------
-    area : float
-        The bin area in square Angstroms.
-
-    """
-    bin_radial_midpoint = (r_bin * dr) + (0.5 * dr)
-    area = dr * dtheta * bin_radial_midpoint
-    return area
 
 
 def aggregate_density_enrichment_scores(file_paths):
@@ -356,26 +330,3 @@ def _package_counts(unrolled_data, grid):
     counts = np.swapaxes(sideways_counts, 0, 1)
 
     return counts
-
-
-def _calculate_lattice_areas(grid):
-    """
-    Calculate the area of each bin in a polar lattice.
-
-    Parameters
-    ----------
-    grid : PolarBinGrid
-        Object containing lattice information.
-
-    Returns
-    -------
-    areas : ndarray
-        2D array of bin areas in [r, theta] format.
-
-    """
-    areas = np.zeros((grid.n_r, grid.n_theta))
-    delta_r = (grid.r_max - grid.r_min) / grid.n_r
-    delta_theta = 2 * np.pi / grid.n_theta
-    for radial_ring in range(grid.n_r):
-        areas[radial_ring, :] = calculate_bin_area(radial_ring, delta_r, delta_theta)
-    return areas
