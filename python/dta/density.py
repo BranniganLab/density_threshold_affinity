@@ -188,7 +188,7 @@ def calculate_bin_area(r_bin, dr, dtheta):
     dr : float
         The radial bin length in Angstroms.
     dtheta : float
-        The azimuthal bin length in degrees.
+        The azimuthal bin length in radians.
 
     Returns
     -------
@@ -358,14 +358,14 @@ def _package_counts(unrolled_data, grid):
     return counts
 
 
-def _calculate_lattice_areas(grid_dims):
+def _calculate_lattice_areas(grid):
     """
     Calculate the area of each bin in a polar lattice.
 
     Parameters
     ----------
-    grid_dims : namedtuple
-        Dimensions namedtuple that corresponds to your system.
+    grid : PolarBinGrid
+        Object containing lattice information.
 
     Returns
     -------
@@ -373,7 +373,9 @@ def _calculate_lattice_areas(grid_dims):
         2D array of bin areas in [r, theta] format.
 
     """
-    areas = np.zeros((grid_dims.Nr, grid_dims.Ntheta))
-    for radial_ring in range(grid_dims.Nr):
-        areas[radial_ring, :] = calculate_bin_area(radial_ring, grid_dims.dr, grid_dims.dtheta)
+    areas = np.zeros((grid.n_r, grid.n_theta))
+    delta_r = (grid.r_max - grid.r_min) / grid.n_r
+    delta_theta = 2 * np.pi / grid.n_theta
+    for radial_ring in range(grid.n_r):
+        areas[radial_ring, :] = calculate_bin_area(radial_ring, delta_r, delta_theta)
     return areas
