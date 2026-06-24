@@ -163,6 +163,15 @@ class PolarBinGrid:
         self.theta = GridDim(0, 2 * np.pi, n_theta)
         self.theta_grid, self.r_grid = np.meshgrid(self.theta.bin_edges, self.r.bin_edges)
 
+    @property
+    def bin_areas(self) -> np.ndarray:
+        """Calculate area of every bin in lattice."""
+        areas = np.zeros((self.r.n_bins, self.theta.n_bins))
+        for radial_ring in range(self.r.n_bins):
+            bin_address = BinAddress(radial_ring, 0)
+            areas[radial_ring, :] = self.calc_bin_area(bin_address)
+        return areas
+
     def map_coord_to_bin_idx(self, coord: Coordinate) -> BinAddress | None:
         """
         Determine which bin contains a given polar coordinate.
