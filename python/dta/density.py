@@ -282,14 +282,14 @@ def _package_counts(unrolled_data, grid):
         3d array of counts in [time, r, theta] format.
 
     """
-    nframes = int(round(unrolled_data.shape[0] / grid.n_r))
+    nframes = int(round(unrolled_data.shape[0] / grid.r.n_bins))
 
     # chop off the first few columns
     unrolled_counts = unrolled_data[:, 3:]
 
     # 'sideways' because it is in [r, time, theta] format at first
-    sideways_counts = np.zeros((grid.n_r, nframes, grid.n_theta))
-    for i in range(grid.n_r):
+    sideways_counts = np.zeros((grid.r.n_bins, nframes, grid.n_theta))
+    for i in range(grid.r.n_bins):
         sideways_counts[i, :, :] = unrolled_counts[(nframes * i):(nframes * (i + 1)), :]
 
     # swap axes to put it in [time, r, theta] format
