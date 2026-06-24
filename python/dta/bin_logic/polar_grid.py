@@ -104,6 +104,14 @@ class GridDim:
         edges = np.linspace(self.lower_bound, self.upper_bound, self.n_bins + 1)
         object.__setattr__(self, 'bin_edges', edges)
 
+    def __eq__(self, other: GridDim) -> bool:
+        """Compare two GridDims for equality."""
+        if not isinstance(other, GridDim):
+            raise NotImplementedError(f"Cannot compare GridDim to {type(other)}.")
+        if (self.bin_edges == other.bin_edges).all():
+            return True
+        return False
+
 
 class PolarBinGrid:
     """
@@ -165,10 +173,12 @@ class PolarBinGrid:
         self.theta_grid, self.r_grid = np.meshgrid(self.theta.bin_edges, self.r.bin_edges)
 
     def __eq__(self, other: PolarBinGrid) -> bool:
-        """Allow for equality comparison between PolarBinGrid objects."""
+        """Compare PolarBinGrid objects for equality."""
         if not isinstance(other, PolarBinGrid):
-            raise NotImplementedError(f"Cannot compare PolarBinGrid to {other.type}.")
-        return self.__dict__ == other.__dict__
+            raise NotImplementedError(f"Cannot compare PolarBinGrid to {type(other)}.")
+        if ((self.r == other.r) and (self.theta == other.theta)):
+            return True
+        return False
 
     @property
     def bin_areas(self) -> np.ndarray:
