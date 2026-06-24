@@ -288,7 +288,7 @@ def _package_counts(unrolled_data, grid):
     unrolled_counts = unrolled_data[:, 3:]
 
     # 'sideways' because it is in [r, time, theta] format at first
-    sideways_counts = np.zeros((grid.r.n_bins, nframes, grid.n_theta))
+    sideways_counts = np.zeros((grid.r.n_bins, nframes, grid.theta.n_bins))
     for i in range(grid.r.n_bins):
         sideways_counts[i, :, :] = unrolled_counts[(nframes * i):(nframes * (i + 1)), :]
 
