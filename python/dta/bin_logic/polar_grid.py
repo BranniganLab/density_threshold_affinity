@@ -45,6 +45,7 @@ Find all bins touched by a drag-selection region::
         corner2=(3.0, 0.5),
     )
 """
+from __future__ import annotations
 import itertools
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -162,6 +163,12 @@ class PolarBinGrid:
         self.r = GridDim(r_min, r_max, n_r)
         self.theta = GridDim(0, 2 * np.pi, n_theta)
         self.theta_grid, self.r_grid = np.meshgrid(self.theta.bin_edges, self.r.bin_edges)
+
+    def __eq__(self, other: PolarBinGrid) -> bool:
+        """Allow for equality comparison between PolarBinGrid objects."""
+        if not isinstance(other, PolarBinGrid):
+            raise NotImplementedError(f"Cannot compare PolarBinGrid to {other.type}.")
+        return self.__dict__ == other.__dict__
 
     @property
     def bin_areas(self) -> np.ndarray:

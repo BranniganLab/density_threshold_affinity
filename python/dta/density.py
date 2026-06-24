@@ -8,7 +8,7 @@ Created on Mon Nov 11 09:44:53 2024.
 from pathlib import Path
 from collections import namedtuple
 import numpy as np
-from dta.utils import validate_path
+from dta.utils import validate_path, confirm_objs_are_equal
 from dta.bin_logic import PolarBinGrid
 
 
@@ -53,36 +53,6 @@ def parse_tcl_dat_file(filepath, bulk):
     grid = _create_grid_from_dat_file(unrolled_data)
     counts = _package_counts(unrolled_data, grid).squeeze()
     return counts, grid, system_info
-
-
-def valid_Dimensions(list_of_Dimensions_objs):
-    """
-    Make sure that all Dimensions attributes do not vary across objects \
-        (not counting Nframes) in a list of Dimensions objects. If attributes \
-        do not vary across objects, return True. Else, return False.
-
-    Parameters
-    ----------
-    list_of_Dimensions_objs : list
-        List containing multiple Dimensions objects.
-
-    Returns
-    -------
-    Boolean
-
-    """
-    if not isinstance(list_of_Dimensions_objs, list):
-        raise TypeError(f"grid_dims must be a list, not a {type(list_of_Dimensions_objs)}.")
-    if not all(isinstance(item, Dimensions) for item in list_of_Dimensions_objs):
-        raise TypeError("grid_dims_list must contain Dimensions namedtuples.")
-    if len(list_of_Dimensions_objs) == 1:
-        return True
-    dr, Nr, dtheta, Ntheta, _ = list_of_Dimensions_objs[0]
-    for obj in list_of_Dimensions_objs:
-        for index, val in enumerate([dr, Nr, dtheta, Ntheta]):
-            if obj[index] != val:
-                return False
-    return True
 
 
 def load_replica_counts(root_path, replicas_list, system_name, leaflet_id, avg=False):
@@ -200,18 +170,17 @@ def aggregate_density_enrichment_scores(file_paths):
     replica_dims_list = []
     for rep_path in file_paths:
         rep_path = validate_path(rep_path, file=True)
-        counts, grid_dims, system_info = parse_tcl_dat_file(rep_path, bulk=False)
-        replica_dims_list.append(grid_dims)
-        density_enrichment = calculate_density_enrichment(calculate_density(counts, grid_dims), system_info.ExpBeadDensity)
+        counts, grid, system_info = parse_tcl_dat_file(rep_path, bulk=False)
+        replica_dims_list.append(grid)
+        density_enrichment = calculate_density_enrichment(calculate_density(counts, grid), system_info.ExpBeadDensity)
         replica_enrichments_list.append(density_enrichment)
 
-    if not valid_Dimensions(replica_dims_list):
-        raise ValueError("Not all Dimensions attributes match.")
+    confirm_objs_are_equal(replica_dims_list)
 
     all_reps_avg = np.nanmean(np.stack(tuple(replica_enrichments_list), axis=0), axis=0)
-    grid_dims_final = replica_dims_list[0]
+    grid_final = replica_dims_list[0]
 
-    return all_reps_avg, grid_dims_final
+    return all_reps_avg, grid_final
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%  UTIL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%% #

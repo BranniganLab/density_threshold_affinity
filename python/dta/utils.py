@@ -5,6 +5,7 @@ Created on Thu Nov 14 13:55:09 2024.
 
 @author: js2746
 """
+import inspect
 import math
 import warnings
 from pathlib import Path
@@ -276,3 +277,29 @@ def validate_path(path, file=False):
         if not path.is_file():
             raise FileNotFoundError(f"The specified file '{path}' is not recognized as a file. Please ensure the path is correct.")
     return path
+
+
+def confirm_objs_are_equal(list_of_objs: list) -> None:
+    """
+    Make sure that all attributes do not vary across objects.
+
+    Parameters
+    ----------
+    list_of_objs : list
+        List containing multiple objects to be compared.
+
+    Raises
+    ------
+    TypeError
+        If all objects are not same type.
+    ValueError
+        If all objects do not have same values.
+
+    """
+    compare_to = list_of_objs.pop()
+    obj_type = compare_to.type
+    for obj in list_of_objs:
+        if not isinstance(obj, obj_type):
+            raise TypeError(f"Expected {obj_type} but {obj} is a {obj.type}")
+        if obj != compare_to:
+            raise ValueError(f"{inspect.getmembers(obj)} does not match {inspect.getmembers(compare_to)}")
