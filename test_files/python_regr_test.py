@@ -40,9 +40,9 @@ def analyze_sample_outputs():
 
     site1 = Site(name="inner M1-M4", leaflet_id=2, temperature=320)  # step 1
     site1.bin_coords = [(5, 13), (5, 14), (5, 15), (5, 16), (5, 17), (5, 18), (5, 19), (5, 20), (5, 21), (5, 22), (5, 23), (6, 18), (6, 19), (6, 20), (6, 21), (6, 22), (6, 23)]  # step 2
-    symm_site1 = SymmetricSite(symmetry=5, base_site=site1, Ntheta=grid_dims.Ntheta)  # step 3
+    symm_site1 = SymmetricSite(symmetry=5, base_site=site1, grid=grid_dims)  # step 3
     replica_counts_list = load_replica_counts(root_path, replicas, system_name, site1.leaflet_id)
-    symm_site_across_replicas_1 = SiteAcrossReplicas(replica_counts_list, base_site=symm_site1)
+    symm_site_across_replicas_1 = SiteAcrossReplicas(replica_counts_list, base_site=symm_site1, grid=grid_dims)
 
     bulk_counts_path = bulk_system_root_path.joinpath(f"{system_name}_counts_96.out")
     bulk_counts_list, _, _ = parse_tcl_dat_file(bulk_counts_path, bulk=True)
