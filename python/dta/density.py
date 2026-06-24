@@ -145,7 +145,7 @@ def calculate_density_enrichment(density, expected_density):
     return density / expected_density
 
 
-def aggregate_density_enrichment_scores(file_paths):
+def aggregate_density_enrichment_scores(file_paths: list[str | Path]) -> tuple[np.ndarray, PolarBinGrid]:
     """
     Collect the average counts, bin sizing, and expected density from each \
         system, calulate average density enrichment for each system, and calculate\
