@@ -50,7 +50,7 @@ def parse_tcl_dat_file(filepath, bulk):
         return np.loadtxt(filepath).astype(int).flatten(), None, None
     unrolled_data = np.loadtxt(filepath, skiprows=1)
     system_info = _parse_system_info(np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str))
-    grid = _calculate_grid_dimensions(unrolled_data)
+    grid = _create_grid_from_dat_file(unrolled_data)
     counts = _package_counts(unrolled_data, grid).squeeze()
     return counts, grid, system_info
 
@@ -299,69 +299,41 @@ def _isolate_number_from_header_string(string):
     return float(right_side.split()[0])
 
 
-def _calculate_grid_dimensions(unrolled_data):
+def _create_grid_from_dat_file(dat_file_contents):
     """
     Return the length and number of bins in each dimension, as well as the \
     number of frames in the .dat file.
 
     Parameters
     ----------
-    unrolled_data : ndarray
-        The data, as it is read in directly from the .dat file output by \
-        polarDensityBin.
+    dat_file_contents : ndarray
+        The data from the .dat file output by polarDensityBin, minus its header row.
 
     Returns
     -------
-    grid_dims : namedtuple
-        Contains dr, number of r bins, dtheta, number of theta bins, and number\
-        of frames contained in file.
+    grid : PolarBinGrid
+        Contains r_min, r_max, n_r, and n_theta.
 
     """
-    dr = unrolled_data[0, 1] - unrolled_data[0, 0]
-    dthetadeg = unrolled_data[0, 2]
-    dtheta = dthetadeg * (np.pi / 180.0)
-    nframes = _calculate_nframes(unrolled_data[:, 0])
-    Ntheta = int(round(360 / dthetadeg))
-    assert Ntheta == unrolled_data.shape[1] - 3, f"Something went wrong with the theta dimensions parser. dtheta={dtheta}, Ntheta={Ntheta}"
-    Nr = len(unrolled_data[:, 0]) / nframes
-    assert Nr - int(Nr) == 0, f"Something went wrong with the r dimensions parser. dr={dr}, Nr={Nr}"
-    Nr = int(Nr)
-    grid_dims = Dimensions(dr, Nr, dtheta, Ntheta, nframes)
-    return grid_dims
+    r_min = dat_file_contents[0, 0]
+    d_r = dat_file_contents[1, 0] - r_min
+    r_max = np.max(dat_file_contents[1, :])
+    n_r = int(round((r_max - r_min) / d_r))
+    d_theta_degrees = dat_file_contents[0, 2]
+    n_theta = int(round(360 / d_theta_degrees))
+    grid = PolarBinGrid(r_min, r_max, n_r, n_theta)
+    return grid
 
 
-def _calculate_nframes(r_values):
-    """
-    Calculate how many frames are in a trajectory from the first column of the \
-    .dat file produced by the TCL script.
-
-    Parameters
-    ----------
-    r_values : ndarray
-        The beginning r values for each bin in your system.
-
-    Returns
-    -------
-    nframes : int
-        The number of frames in your trajectory.
-
-    """
-    match_value = r_values[0]
-    for index, value in enumerate(r_values):
-        if value != match_value:
-            return index
-    return len(r_values)
-
-
-def _package_counts(unrolled_data, grid_dims):
+def _package_counts(unrolled_data, grid):
     """
     Package the unrolled data into a 3d array in [time, r, theta] format.
 
     Parameters
     ----------
     unrolled_data : ndarray
-        2d array output from polarDensityBin.
-    grid_dims : namedtuple
+        2d array output from polarDensityBin, minus header row.
+    grid : PolarBinGrid
         Contains bin dimensions and number of frames.
 
     Returns
@@ -370,14 +342,14 @@ def _package_counts(unrolled_data, grid_dims):
         3d array of counts in [time, r, theta] format.
 
     """
-    nframes = grid_dims.Nframes
+    nframes = int(round(unrolled_data.shape[0] / grid.n_r))
 
     # chop off the first few columns
     unrolled_counts = unrolled_data[:, 3:]
 
     # 'sideways' because it is in [r, time, theta] format at first
-    sideways_counts = np.zeros((grid_dims.Nr, nframes, grid_dims.Ntheta))
-    for i in range(grid_dims.Nr):
+    sideways_counts = np.zeros((grid.n_r, nframes, grid.n_theta))
+    for i in range(grid.n_r):
         sideways_counts[i, :, :] = unrolled_counts[(nframes * i):(nframes * (i + 1)), :]
 
     # swap axes to put it in [time, r, theta] format
