@@ -295,4 +295,7 @@ def _package_counts(unrolled_data, grid):
     # swap axes to put it in [time, r, theta] format
     counts = np.swapaxes(sideways_counts, 0, 1)
 
+    if len(counts.squeeze().shape) != 2:
+        raise IndexError("test")
+
     return counts
