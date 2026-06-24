@@ -297,9 +297,9 @@ def confirm_objs_are_equal(list_of_objs: list) -> None:
 
     """
     compare_to = list_of_objs.pop()
-    obj_type = compare_to.type
+    obj_type = type(compare_to)
     for obj in list_of_objs:
         if not isinstance(obj, obj_type):
-            raise TypeError(f"Expected {obj_type} but {obj} is a {obj.type}")
+            raise TypeError(f"Expected {obj_type} but {obj} is a {type(obj)}")
         if obj != compare_to:
             raise ValueError(f"{inspect.getmembers(obj)} does not match {inspect.getmembers(compare_to)}")
