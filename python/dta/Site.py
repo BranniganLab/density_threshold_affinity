@@ -116,7 +116,7 @@ class Site:
         bin_coords = []
         for item in bin_addresses:
             if not isinstance(item, BinAddress):
-                item = BinAddress(item)
+                item = BinAddress(*item)
             bin_coords.append(item)
         self._bin_coords = bin_coords
 
