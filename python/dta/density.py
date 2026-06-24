@@ -11,36 +11,33 @@ import numpy as np
 from dta.utils import validate_path, confirm_objs_are_equal
 from dta.bin_logic import PolarBinGrid
 
-
 SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
-Dimensions = namedtuple('Dimensions', ['dr', 'Nr', 'dtheta', 'Ntheta', 'Nframes'])
 
 
-def parse_tcl_dat_file(filepath, bulk):
+def parse_tcl_dat_file(filepath: [str | Path], bulk: bool) -> tuple[np.ndarray, PolarBinGrid, namedtuple]:
     """
     Extract bin counts and bin dimensions from a TCL output .dat file.
 
     Parameters
     ----------
-    filepath : Path
+    filepath : Path or str
         The path to the TCL .dat or .out output file.
     bulk : boolean
-        If True, assume output is from do_get_counts. If False, assume \
+        If True, assume output is from do_get_counts. If False, assume
         output is from polarDensityBin.
 
     Returns
     -------
     counts : ndarray
-        If bulk is True, return a 1D ndarray. If bulk is False, return a 3D \
-        ndarray of integer counts. Dimension 0 is time, dimension 1 is r and \
-        dimension 2 is theta. IE the count for the 4th radial bin and 12th \
+        If bulk is True, return a 1D ndarray. If bulk is False, return a 3D
+        ndarray of integer counts. Dimension 0 is time, dimension 1 is r and
+        dimension 2 is theta. IE the count for the 4th radial bin and 12th
         theta bin on the 33rd frame of the trajectory would be counts[32, 3, 11].
-    dimensions : namedtuple or None
-        If bulk is True, return None. If bulk is False, return the bin \
-        dimensions in r and theta as well as the number of frames inside a \
-        namedtuple.
+    grid : PolarBinGrid or None
+        If bulk is True, return None. If bulk is False, return the PolarBinGrid
+        object pertaining to this system.
     system_info : namedtuple or None
-        The information taken from the header row of the .dat file specified in\
+        The information taken from the header row of the .dat file specified in
         filepath. If bulk is True, returns None.
 
     """
