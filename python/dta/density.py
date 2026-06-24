@@ -256,7 +256,7 @@ def _create_grid_from_dat_file(dat_file_contents):
 
     """
     r_min = dat_file_contents[0, 0]
-    d_r = dat_file_contents[1, 0] - r_min
+    d_r = dat_file_contents[0, 1] - r_min
     r_max = np.max(dat_file_contents[:, 1])
     n_r = int(round((r_max - r_min) / d_r))
     d_theta_degrees = dat_file_contents[0, 2]
