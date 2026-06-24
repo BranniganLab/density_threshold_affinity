@@ -7,7 +7,7 @@ Created on Thu Nov 14 13:51:00 2024.
 """
 import numpy as np
 from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG
-from dta.density import calculate_bin_area
+from dta.bin_logic import PolarBinGrid, BinAddress
 
 
 class Site:
@@ -29,7 +29,7 @@ class Site:
 
     Settable Properties
     -------------------
-    bin_coords : list of tuples
+    bin_coords : list of BinAddress
         The bins that belong to this site in (r, theta) format. e.g. \
         [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
         13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
@@ -94,13 +94,13 @@ class Site:
         return self._bin_coords
 
     @bin_coords.setter
-    def bin_coords(self, bin_coords):
+    def bin_coords(self, bin_addresses: [list[BinAddress] | tuple[BinAddress] | set[BinAddress]]):
         """
         Set bin_coords for this Site.
 
         Parameters
         ----------
-        bin_coords : list of tuples
+        bin_addresses : list, tuple, or set of BinAddress
             The bins that belong to this site in (r, theta) format. e.g. \
             [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
             13th theta bins (starting at theta=0) in the 3rd radial bin from \
@@ -111,11 +111,13 @@ class Site:
         None.
 
         """
-        assert isinstance(bin_coords, list), "bin_coords must be provided as a list"
-        assert len(bin_coords) > 0, "bin_coords must have at least one bin"
-        for bin_pair in bin_coords:
-            assert isinstance(bin_pair, tuple), "bin_coords must be provided as a list of 2-tuples"
-            assert len(bin_pair) == 2, f"bin_coords contains an invalid coordinate pair: {bin_pair}"
+        if not isinstance(bin_addresses, (list, tuple, set)):
+            raise TypeError("bin_addresses must be provided as a list, tuple, or set")
+        bin_coords = []
+        for item in bin_addresses:
+            if not isinstance(item, BinAddress):
+                item = BinAddress(item)
+            bin_coords.append(item)
         self._bin_coords = bin_coords
 
     @property
@@ -220,16 +222,14 @@ class Site:
             site_hist = np.bincount(site_counts)
             self._site_counts_histogram = site_hist
 
-    def calculate_geometric_area(self, dr, dtheta):
+    def calculate_geometric_area(self, grid: PolarBinGrid) -> float:
         """
         Calculate the geometric area of the site.
 
         Parameters
         ----------
-        dr : float
-            The bin length in the radial dimension (Angstroms).
-        dtheta : float
-            The bin length in the azimuthal dimension (degrees).
+        grid : PolarBinGrid
+            The PolarBinGrid containing lattice information.
 
         Returns
         -------
@@ -237,9 +237,9 @@ class Site:
             The geometric area of the site in square Angstroms.
 
         """
-        area = 0
-        for bin_tuple in self.bin_coords:
-            area += calculate_bin_area(bin_tuple[0], dr, dtheta)
+        area = 0.0
+        for bin_address in self.bin_coords:
+            area += grid.calc_bin_area(bin_address)
         return area
 
     def predict_accessible_area(self, bulk_area, mode=True):
