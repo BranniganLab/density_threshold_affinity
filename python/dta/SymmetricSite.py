@@ -7,6 +7,7 @@ Created on Thu Nov 14 16:53:18 2024.
 """
 import numpy as np
 from dta.Site import Site
+from dta.bin_logic import PolarBinGrid, BinAddress
 from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, aggregate_site_counts_histograms, check_bulk_counts_histogram
 
 
@@ -27,9 +28,6 @@ class SymmetricSite:
         The name of the Site. Will be inherited from base_site.
     symmetry : int
         The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
-    ntheta_in_lattice : int
-        The number of azimuthal bins in the lattice (not just how many are in \
-        the site!)
     bin_coords : list of tuples
         The bins that belong to this site in (r, theta) format. e.g. \
         [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
@@ -58,7 +56,7 @@ class SymmetricSite:
         comprise this SymmetricSite.
     """
 
-    def __init__(self, symmetry, base_site, Ntheta):
+    def __init__(self, symmetry: int, base_site: Site, grid: PolarBinGrid):
         """
         Create a SymmetricSite by creating clones of the base_site and \
         rotating them symmetrically around the origin.
@@ -69,29 +67,27 @@ class SymmetricSite:
             The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
         base_site : Site
             The original Site object that should be cloned and rotated.
+        grid : PolarBinGrid
+            The lattice information for this system.
 
         """
-        assert isinstance(symmetry, int), "symmetry must be an integer."
-        assert Ntheta % symmetry == 0, "This symmetry does not evenly divide \
-            across the number of theta bins."
-        assert isinstance(base_site, Site), "base_site must be a Site."
-        assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a SymmetricSite."
+        if not isinstance(symmetry, int):
+            raise TypeError("symmetry must be an integer.")
+        if grid.theta.n_bins % symmetry != 0:
+            raise ValueError("This polar lattice is not evenly divisible by the symmetry number provided.")
+        if not isinstance(base_site, Site):
+            raise TypeError("base_site must be a Site object.")
+        if base_site.bin_coords is None:
+            raise ValueError("The base_site needs to be fully defined before creating a SymmetricSite.")
         self.name = base_site.name
         self._symmetry = symmetry
-        self._ntheta_in_lattice = Ntheta
-        self._site_list = self._make_symmetric_sites(base_site, Ntheta)
+        self._site_list = self._make_symmetric_sites(base_site, grid.theta.n_bins)
         assert len(self.get_site_list) == symmetry, "Number of Sites does not match symmetry."
         self.temperature = base_site.temperature
 
     def __iter__(self):
         """Iterate through the site_list."""
         yield from self.get_site_list
-
-    @property
-    def ntheta_in_lattice(self):
-        """Tell me how many azimuthal bins there are in the lattice (not this \
-        site)."""
-        return self._ntheta_in_lattice
 
     @property
     def symmetry(self):
@@ -109,12 +105,12 @@ class SymmetricSite:
     @property
     def bin_coords(self):
         """
-        Generate one list of bin coordinate tuples corresponding to all the \
+        Generate one list of BinAddress[es] corresponding to all the \
         bins inside this SymmetricSite. Necessary for outline_site.
 
         Returns
         -------
-        bin_coords_list : list of tuples
+        bin_coords_list : list of BinAddress
             The bins that belong to this SymmetricSite in (r, theta) format. \
             e.g. [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, \
             12th, and 13th theta bins (starting at theta=0) in the 3rd radial \
@@ -334,5 +330,5 @@ class SymmetricSite:
             rotated_theta_bin = theta_bin + shift * site_number
             if rotated_theta_bin >= Ntheta:
                 rotated_theta_bin -= Ntheta
-            rotated_bin_coords.append((r_bin, rotated_theta_bin))
+            rotated_bin_coords.append(BinAddress(r_bin, rotated_theta_bin))
         return rotated_bin_coords
