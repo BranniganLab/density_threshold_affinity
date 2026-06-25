@@ -294,12 +294,12 @@ class SymmetricSite:
         site_list = [base_site]
         for site_number in range(1, self.symmetry):
             site_name = name + '_' + str(site_number + 1)
-            new_site = Site(site_name, self.grid, base_site.leaflet_id, base_site.temperature)
-            new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, site_number)
+            new_site = Site(site_name, base_site.grid, base_site.leaflet_id, base_site.temperature)
+            new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, base_site.grid.theta.n_bins, site_number)
             site_list.append(new_site)
         return site_list
 
-    def _rotate_bin_coords(self, bin_coords, site_number):
+    def _rotate_bin_coords(self, bin_coords, n_theta, site_number):
         """
         Rotate the provided bin_coords around the circle.
 
@@ -310,6 +310,8 @@ class SymmetricSite:
             [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
             13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
             are zero-indexed by convention.
+        n_theta : int
+            The number of angular bins in the lattice.
         site_number : int
             Which constituent site this is.
 
@@ -322,7 +324,6 @@ class SymmetricSite:
         """
         if site_number >= self.symmetry:
             raise ValueError(f"Site number {site_number} is greater than total symmetry ({self.symmetry})")
-        n_theta = self.grid.theta.n_bins
         rotated_bin_coords = []
         for each_bin in bin_coords:
             r_bin, theta_bin = each_bin
