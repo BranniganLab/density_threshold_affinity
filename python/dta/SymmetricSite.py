@@ -320,6 +320,8 @@ class SymmetricSite:
             second tuple components should all be shifted (rotated).
 
         """
+        if site_number >= self.symmetry:
+            raise ValueError(f"Site number {site_number} is greater than total symmetry ({self.symmetry})")
         n_theta = self.grid.theta.n_bins
         rotated_bin_coords = []
         for each_bin in bin_coords:
