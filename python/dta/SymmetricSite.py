@@ -7,7 +7,7 @@ Created on Thu Nov 14 16:53:18 2024.
 """
 import numpy as np
 from dta.Site import Site
-from dta.bin_logic import PolarBinGrid, BinAddress
+from dta.bin_logic import BinAddress
 from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, aggregate_site_counts_histograms, check_bulk_counts_histogram
 
 
@@ -19,13 +19,15 @@ class SymmetricSite:
 
     Attributes
     ----------
+    name: str
+        A user-generated name for this site. Inherits from base_site.
     temperature : float
-        The temperature of your system in K.
+        The temperature of your system in K. Inherits from base_site.
+    grid : PolarBinGrid
+        Contains lattice information. Inherits from base_site.
 
     Calculated Properties
     ---------------------
-    name : str
-        The name of the Site. Will be inherited from base_site.
     symmetry : int
         The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
     bin_coords : list of tuples
@@ -79,7 +81,7 @@ class SymmetricSite:
             raise ValueError("The base_site needs to be fully defined before creating a SymmetricSite.")
         self.name = base_site.name
         self._symmetry = symmetry
-        self._site_list = self._make_symmetric_sites(base_site, base_site.grid.theta.n_bins)
+        self._site_list = self._make_symmetric_sites(base_site)
         assert len(self.get_site_list) == symmetry, "Number of Sites does not match symmetry."
         self.temperature = base_site.temperature
 
@@ -270,7 +272,7 @@ class SymmetricSite:
         predicted_accessible_area = bulk_area * (site / bulk)
         return predicted_accessible_area
 
-    def _make_symmetric_sites(self, base_site, n_theta):
+    def _make_symmetric_sites(self, base_site):
         """
         Create identical sites to the base_site, rotated symmetrically around \
         the origin.
@@ -279,8 +281,6 @@ class SymmetricSite:
         ----------
         base_site : Site
             The Site object that you want to replicate symmetrically.
-        n_theta : int
-            The total number of theta bins in the lattice.
 
         Returns
         -------
@@ -293,8 +293,8 @@ class SymmetricSite:
         site_list = [base_site]
         for site_number in range(1, self.symmetry):
             site_name = name + '_' + str(site_number + 1)
-            new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
-            new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, n_theta, site_number)
+            new_site = Site(site_name, base_site.grid, base_site.leaflet_id, base_site.temperature)
+            new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, base_site.grid.theta.n_bins, site_number)
             site_list.append(new_site)
         return site_list
 

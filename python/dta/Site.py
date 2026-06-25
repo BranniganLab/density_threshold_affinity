@@ -26,6 +26,8 @@ class Site:
         If 1, outer leaflet. If 2, inner leaflet.
     temperature : float
         The temperature of your system in K.
+    grid : PolarBinGrid
+        Contains lattice information.
 
     Settable Properties
     -------------------
