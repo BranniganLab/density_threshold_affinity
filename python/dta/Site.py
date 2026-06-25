@@ -244,11 +244,6 @@ class Site:
         """
         Calculate the geometric area of the site.
 
-        Parameters
-        ----------
-        grid : PolarBinGrid
-            The PolarBinGrid containing lattice information.
-
         Returns
         -------
         float
