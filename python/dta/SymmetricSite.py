@@ -56,7 +56,7 @@ class SymmetricSite:
         comprise this SymmetricSite.
     """
 
-    def __init__(self, symmetry: int, base_site: Site, grid: PolarBinGrid):
+    def __init__(self, symmetry: int, base_site: Site):
         """
         Create a SymmetricSite by creating clones of the base_site and \
         rotating them symmetrically around the origin.
@@ -67,13 +67,11 @@ class SymmetricSite:
             The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
         base_site : Site
             The original Site object that should be cloned and rotated.
-        grid : PolarBinGrid
-            The lattice information for this system.
 
         """
         if not isinstance(symmetry, int):
             raise TypeError("symmetry must be an integer.")
-        if grid.theta.n_bins % symmetry != 0:
+        if base_site.grid.theta.n_bins % symmetry != 0:
             raise ValueError("This polar lattice is not evenly divisible by the symmetry number provided.")
         if not isinstance(base_site, Site):
             raise TypeError("base_site must be a Site object.")
@@ -81,7 +79,7 @@ class SymmetricSite:
             raise ValueError("The base_site needs to be fully defined before creating a SymmetricSite.")
         self.name = base_site.name
         self._symmetry = symmetry
-        self._site_list = self._make_symmetric_sites(base_site, grid.theta.n_bins)
+        self._site_list = self._make_symmetric_sites(base_site, base_site.grid.theta.n_bins)
         assert len(self.get_site_list) == symmetry, "Number of Sites does not match symmetry."
         self.temperature = base_site.temperature
 
@@ -272,7 +270,7 @@ class SymmetricSite:
         predicted_accessible_area = bulk_area * (site / bulk)
         return predicted_accessible_area
 
-    def _make_symmetric_sites(self, base_site, Ntheta):
+    def _make_symmetric_sites(self, base_site, n_theta):
         """
         Create identical sites to the base_site, rotated symmetrically around \
         the origin.
@@ -281,8 +279,8 @@ class SymmetricSite:
         ----------
         base_site : Site
             The Site object that you want to replicate symmetrically.
-        Ntheta : int
-            The total number of theta bins in the circle.
+        n_theta : int
+            The total number of theta bins in the lattice.
 
         Returns
         -------
@@ -296,11 +294,11 @@ class SymmetricSite:
         for site_number in range(1, self.symmetry):
             site_name = name + '_' + str(site_number + 1)
             new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
-            new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, Ntheta, site_number)
+            new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, n_theta, site_number)
             site_list.append(new_site)
         return site_list
 
-    def _rotate_bin_coords(self, bin_coords, Ntheta, site_number):
+    def _rotate_bin_coords(self, bin_coords, n_theta, site_number):
         """
         Rotate the provided bin_coords around the circle.
 
@@ -311,8 +309,8 @@ class SymmetricSite:
             [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
             13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
             are zero-indexed by convention.
-        Ntheta : int
-            The number of theta bins in the circle.
+        n_theta : int
+            The number of theta bins in the lattice.
         site_number : int
             Which constituent site this is.
 
@@ -326,9 +324,9 @@ class SymmetricSite:
         rotated_bin_coords = []
         for each_bin in bin_coords:
             r_bin, theta_bin = each_bin
-            shift = Ntheta // self.symmetry
+            shift = n_theta // self.symmetry
             rotated_theta_bin = theta_bin + shift * site_number
-            if rotated_theta_bin >= Ntheta:
-                rotated_theta_bin -= Ntheta
+            if rotated_theta_bin >= n_theta:
+                rotated_theta_bin -= n_theta
             rotated_bin_coords.append(BinAddress(r_bin, rotated_theta_bin))
         return rotated_bin_coords
