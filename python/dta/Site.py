@@ -238,7 +238,7 @@ class Site:
             site_hist = np.bincount(site_counts)
             self._site_counts_histogram = site_hist
 
-    def calculate_geometric_area(self, grid: PolarBinGrid) -> float:
+    def calculate_geometric_area(self) -> float:
         """
         Calculate the geometric area of the site.
 
@@ -255,7 +255,7 @@ class Site:
         """
         area = 0.0
         for bin_address in self.bin_coords:
-            area += grid.calc_bin_area(bin_address)
+            area += self.grid.calc_bin_area(bin_address)
         return area
 
     def predict_accessible_area(self, bulk_area, mode=True):
