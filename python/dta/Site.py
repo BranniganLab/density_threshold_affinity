@@ -55,7 +55,7 @@ class Site:
         The binding affinity of the lipid for the Site, in kcal/mol.
     """
 
-    def __init__(self, name, leaflet_id, temperature):
+    def __init__(self, name, grid, leaflet_id, temperature):
         """
         Create a Site object.
 
@@ -70,7 +70,11 @@ class Site:
             The temperature of your system in K.
         """
         self.name = name
-        assert leaflet_id in [1, 2], "leaflet_id must be 1 or 2 (1 for outer leaflet or 2 for inner leaflet)"
+        if not isinstance(grid, PolarBinGrid):
+            raise TypeError("grid must be a PolarBinGrid object.")
+        self.grid = grid
+        if leaflet_id not in [1, 2]:
+            raise ValueError("leaflet_id must be 1 or 2 (1 for outer leaflet or 2 for inner leaflet)")
         self.leaflet_id = leaflet_id
         self.temperature = temperature
         self._bin_coords = None
@@ -117,6 +121,10 @@ class Site:
         for item in bin_addresses:
             if not isinstance(item, BinAddress):
                 item = BinAddress(*item)
+            if item.r_index >= self.grid.r.n_bins:
+                raise IndexError(f"Radial bin {item.r_index} out of range.")
+            if item.theta_index >= self.grid.theta.n_bins:
+                raise IndexError(f"Angular bin {item.theta_index} out of range.")
             bin_coords.append(item)
         self._bin_coords = bin_coords
 
@@ -210,14 +218,22 @@ class Site:
         None.
 
         """
-        assert isinstance(counts_data, np.ndarray), "ndarray not supplied"
+        if not isinstance(counts_data, np.ndarray):
+            raise TypeError("ndarray not supplied")
         if bulk:
-            assert len(counts_data.shape) == 1, f"Bulk counts data is not in the right format: {counts_data}"
+            if len(counts_data.shape) != 1:
+                raise ValueError(f"Bulk counts data is not in the right format: {counts_data}")
             bulk_hist = np.bincount(counts_data)
             self._bulk_counts_histogram = bulk_hist
         else:
-            assert len(counts_data.shape) == 3, f"Counts data is not in the right format: {counts_data}"
+            if len(counts_data.shape) != 3:
+                raise ValueError(f"Counts data is not in the right format: {counts_data}")
             counts_data = counts_data.astype(int)
+            if counts_data.shape[-2:] != (self.grid.r.n_bins, self.grid.theta.n_bins):
+                raise ValueError(f"""
+                counts_data is the wrong shape for this lattice.
+                {counts_data.shape} != {(self.grid.r.n_bins, self.grid.theta.n_bins)}
+                """)
             site_counts = self._fetch_site_counts(counts_data)
             site_hist = np.bincount(site_counts)
             self._site_counts_histogram = site_hist
