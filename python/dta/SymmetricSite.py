@@ -273,7 +273,7 @@ class SymmetricSite:
         predicted_accessible_area = bulk_area * (site / bulk)
         return predicted_accessible_area
 
-    def _make_symmetric_sites(self, base_site):
+    def _make_symmetric_sites(self, base_site: Site) -> list[Site]:
         """
         Create identical sites to the base_site, rotated symmetrically around \
         the origin.
@@ -299,13 +299,13 @@ class SymmetricSite:
             site_list.append(new_site)
         return site_list
 
-    def _rotate_bin_coords(self, bin_coords, n_theta, site_number):
+    def _rotate_bin_coords(self, bin_coords: list[BinAddress], n_theta: int, site_number: int) -> list[BinAddress]:
         """
         Rotate the provided bin_coords around the circle.
 
         Parameters
         ----------
-        bin_coords : list of tuples
+        bin_coords : list of BinAddress
             The bins that belong to this site in (r, theta) format. e.g. \
             [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
             13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
