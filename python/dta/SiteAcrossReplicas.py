@@ -52,14 +52,14 @@ class SiteAcrossReplicas:
         SymmetricSites and/or Sites that comprise this SiteAcrossReplicas.
     """
 
-    def __init__(self, replica_list: list, base_site: [Site | SymmetricSite], grid: PolarBinGrid):
+    def __init__(self, replica_list: list[np.ndarray], base_site: [Site | SymmetricSite], grid: PolarBinGrid):
         """
         Create a Site_Across_Replicas.
 
         Parameters
         ----------
-        replica_list : list
-            List of all the different replicas you want to include.
+        replica_list : list of ndarrays
+            List of all the different replica counts you want to include.
         base_site : Site or SymmetricSite
             The original Site object that should be used across replicas. Can \
             be Site or SymmetricSite.
@@ -68,12 +68,14 @@ class SiteAcrossReplicas:
 
         """
         if isinstance(base_site, Site):
-            assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a Site_Across_Replicas."
+            if base_site.bin_coords is None:
+                raise ValueError("The base_site needs to be fully defined before creating a Site_Across_Replicas.")
         elif not isinstance(base_site, SymmetricSite):
             raise ValueError("base_site must be a Site or SymmetricSite")
         self.name = base_site.name
         self._site_list = self._make_sites_across_replicas(base_site, replica_list, grid)
-        assert len(self.get_site_list) == len(replica_list), "Number of Sites does not match number of replicas."
+        if len(self.get_site_list) != len(replica_list):
+            raise IndexError("Number of Sites does not match number of replicas.")
         self.temperature = base_site.temperature
 
     def __iter__(self):
@@ -228,7 +230,12 @@ class SiteAcrossReplicas:
         predicted_accessible_area = bulk_area * (site / bulk)
         return predicted_accessible_area
 
-    def _make_sites_across_replicas(self, base_site, replica_list, grid):
+    def _make_sites_across_replicas(
+        self,
+        base_site: [Site | SymmetricSite],
+        replica_list: list[np.ndarray],
+        grid: PolarBinGrid
+    ) -> list[Site | SymmetricSite]:
         """
         Create identical sites to the base_site, across multiple replicas.
 
@@ -236,18 +243,19 @@ class SiteAcrossReplicas:
         ----------
         base_site : Site
             The Site object that you want to replicate symmetrically.
-        replica_list : list
-            The list of replicas.
+        replica_list : list of ndarrays
+            The list of replica counts.
         grid : PolarBinGrid
             The object containing lattice information.
 
         Returns
         -------
-        site_list : list of Sites
-            The list of all Sites that comprise this SymmetricSite.
+        site_list : list of Sites or SymmetricSites
+            The list of all Sites/SymmetricSites that comprise this SiteAcrossReplicas.
 
         """
-        assert isinstance(replica_list, list), "replica_list must be a list"
+        if not isinstance(replica_list, list):
+            raise TypeError("replica_list must be a list")
         name = base_site.name
         site_list = []
         for site_number, _ in enumerate(replica_list):
