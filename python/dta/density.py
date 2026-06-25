@@ -173,7 +173,6 @@ def aggregate_density_enrichment_scores(file_paths: list[str | Path]) -> tuple[n
         replica_enrichments_list.append(density_enrichment)
 
     confirm_objs_are_equal(replica_dims_list)
-
     all_reps_avg = np.nanmean(np.stack(tuple(replica_enrichments_list), axis=0), axis=0)
     grid_final = replica_dims_list[0]
 

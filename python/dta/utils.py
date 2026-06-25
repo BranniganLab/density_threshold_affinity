@@ -296,9 +296,10 @@ def confirm_objs_are_equal(list_of_objs: list) -> None:
         If all objects do not have same values.
 
     """
-    compare_to = list_of_objs.pop()
+    copy = list_of_objs.copy()
+    compare_to = copy.pop()
     obj_type = type(compare_to)
-    for obj in list_of_objs:
+    for obj in copy:
         if not isinstance(obj, obj_type):
             raise TypeError(f"Expected {obj_type} but {obj} is a {type(obj)}")
         if obj != compare_to:
