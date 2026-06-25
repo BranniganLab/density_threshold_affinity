@@ -15,6 +15,7 @@ from scipy import constants
 from dta.utils import calculate_hist_mode
 from dta.Site import Site
 from dta.SymmetricSite import SymmetricSite
+from dta.bin_logic import PolarBinGrid
 
 
 @dataclass
@@ -32,34 +33,29 @@ class HeatmapSettings:
         Frequently will be "outer leaflet" and "inner leaflet".
     fig_dims : 2-tuple
         Figure height and width, in inches.
+    grid : PolarBinGrid
+        Contains lattice information.
     colormap : matplotlib cmap object
         The colormap to use. Provided after init.
     colorbar_range : 3-tuple
         The min, mid, and max values of your colorbar. Automatically calculated\
         from max_enrichment InitVar.
-    polar_grid : 2-tuple of numpy ndarrays
-        The numpy meshgrids needed to plot a heatmap using polar coordinates. \
-        Automatically calculated from grid_dims InitVar.
 
     InitVars
     --------
     max_enrichment : float
         Gets passed to post_init and turned into colorbar_range.
-    grid_dims : namedtuple
-        Contains dr, number of r bins, dtheta, number of theta bins, and number\
-        of frames contained in file.
     """
 
     row_names: list
     col_names: list
     fig_dims: tuple
+    max_enrichment: InitVar[float]
+    grid: PolarBinGrid
     colormap: mpl.colors.ListedColormap = field(init=False)
     colorbar_range: tuple = field(init=False)
-    polar_grid: tuple = field(init=False)
-    max_enrichment: InitVar[float]
-    grid_dims: InitVar[tuple]
 
-    def __post_init__(self, max_enrichment, grid_dims):
+    def __post_init__(self, max_enrichment):
         """
         Calculate colorbar_range and make sure row_names and col_names are lists.
 
@@ -67,9 +63,6 @@ class HeatmapSettings:
         ----------
         max_enrichment : float
             How high you want your colorbar to go. The minimum will scale proportionally.
-        grid_dims : namedtuple
-            Contains dr, number of r bins, dtheta, number of theta bins, and number\
-            of frames contained in file.
 
         Raises
         ------
@@ -86,7 +79,6 @@ class HeatmapSettings:
         if not isinstance(self.row_names, list):
             raise TypeError(f"{self.row_names} must be a list instead of a {type(self.row_names)}.")
         self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
-        self.polar_grid = bin_prep(grid_dims)
 
 
 def make_custom_colormap():
@@ -108,7 +100,7 @@ def make_custom_colormap():
     return my_cmap
 
 
-def outline_site(ax, site, grid_dims, linewidth=1, color='black'):
+def outline_site(ax, site, grid, linewidth=1, color='black'):
     """
     Draw an outline around a Site or around each site in a SymmetricSite.
 
@@ -118,9 +110,8 @@ def outline_site(ax, site, grid_dims, linewidth=1, color='black'):
         The Axes object you want to draw this on.
     site : Site or Symmetric_Site
         The site you want to outline.
-    grid_dims : namedtuple
-        Contains dr, number of r bins, dtheta, number of theta bins, and number\
-        of frames contained in file.
+    grid : PolarBinGrid
+        Contains lattice information.
     linewidth : float, optional
         The width of the outline. Default is 1.
     color : str, optional
@@ -134,110 +125,12 @@ def outline_site(ax, site, grid_dims, linewidth=1, color='black'):
     """
     assert isinstance(site, (Site, SymmetricSite)), "site must be a Site or SymmetricSite."
     assert site.bin_coords is not None, "Site must be fully defined first. Please add bin_coords."
-    edges = isolate_unique_site_edges(site.bin_coords, grid_dims)
-    for edge_tuple in edges:
-        r, theta = edge_tuple
+    edges = grid.list_all_exposed_edges(site.bin_coords)
+    for edge in edges:
+        theta = (edge.endpoint1[1], edge.endpoint2[1])
+        r = (edge.endpoint1[0], edge.endpoint2[0])
         ax.plot(theta, r, color=color, linewidth=linewidth, marker=None)
     return ax
-
-
-def isolate_unique_site_edges(bin_coords_list, grid_dims):
-    """
-    List all of the edges that need to be drawn in order to enclose the site.
-
-    In this lattice space, if edges are repeated it means they are internal
-    edges and should not be drawn at all.
-
-    Parameters
-    ----------
-    bin_coords_list : list or tuples
-        The bins that belong to this site in (r, theta) format. e.g.
-        [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and
-        13th theta bins in the 3rd radial bin from the origin. Bin coordinates
-        are zero-indexed by convention.
-    grid_dims : namedtuple
-        Contains dr, number of r bins, dtheta, number of theta bins, and number
-        of frames contained in file.
-
-    Returns
-    -------
-    line_list : list of tuples
-        The list of exterior bin edges needed in order to draw the site outline.
-        Each bin edge is a tuple, with each tuple value being an ndarray.
-
-    """
-    line_list = []
-    for coord_pair in bin_coords_list:
-        edges = compile_bin_edges(coord_pair, grid_dims)
-        for edge in edges:
-            assert isinstance(edge, tuple), "edge must be a tuple"
-            index = _find_edge_in_list(edge, line_list)
-            if index != -1:
-                line_list.pop(index)
-            else:
-                line_list.append(edge)
-    return line_list
-
-
-def _find_edge_in_list(edge, line_list):
-    """
-    Iterate through list and compare elements. Need to do this manually rather\
-    than with 'in' because list contents are numpy ndarrays.
-
-    Parameters
-    ----------
-    edge : tuple of ndarrays
-        The line you are looking for in line_list.
-    line_list : list of tuples of ndarrays
-        The list of all lines to be potentially drawn.
-
-    Returns
-    -------
-    int
-        The index in line_list at which edge is found.
-
-    """
-    for index, line in enumerate(line_list):
-        if np.allclose(edge, line):
-            return index
-    return -1
-
-
-def compile_bin_edges(bin_coords, grid_dims):
-    """
-    Determine the 4 lines that outline this bin.
-
-    Parameters
-    ----------
-    bin_coords : tuple
-        The tuple of bin coordinates stored in (r_bin, theta_bin) format.
-    grid_dims : namedtuple
-        Contains dr, number of r bins, dtheta, number of theta bins, and number
-        of frames contained in file.
-
-    Returns
-    -------
-    tuple of tuples
-        The four lines corresponding to the bin edges. Each tuple contains two
-        ndarrays of equal lengths.
-
-    """
-    assert isinstance(bin_coords, tuple), "bin_coords must be a tuple of bin coordinates."
-    start_theta = bin_coords[1] * grid_dims.dtheta
-    end_theta = start_theta + grid_dims.dtheta
-    inner_r = bin_coords[0] * grid_dims.dr
-    outer_r = inner_r + grid_dims.dr
-    theta_range = np.linspace(start_theta, end_theta, 100)
-    r_range = np.linspace(inner_r, outer_r, 100)
-    line1 = (np.linspace(inner_r, inner_r, 100), theta_range)
-    line2 = (np.linspace(outer_r, outer_r, 100), theta_range)
-    if np.allclose(start_theta, 2 * np.pi):
-        start_theta = 0
-    if np.allclose(end_theta, 2 * np.pi):
-        end_theta = 0
-    line3 = (r_range, np.linspace(start_theta, start_theta, 100))
-    line4 = (r_range, np.linspace(end_theta, end_theta, 100))
-    return (line1, line2, line3, line4)
 
 
 def create_heatmap_figure_and_axes(heatmap_settings):
@@ -322,27 +215,6 @@ def make_colorbar(fig, heatmap_settings):
     return fig
 
 
-def bin_prep(bin_info):
-    """
-    Configure the arrays needed for plotting polar heatmaps.
-
-    Parameters
-    ----------
-    bin_info : namedtuple
-        Contains Nr, Ntheta, dr, and dtheta information.
-
-    Returns
-    -------
-    2-tuple
-        The two numpy ndarrays needed for plotting a heatmap.
-
-    """
-    r_vals = np.linspace(0, bin_info.Nr * bin_info.dr, bin_info.Nr + 1)
-    theta_vals = np.linspace(0, 2 * np.pi, bin_info.Ntheta + 1)
-    r_vals, theta_vals = np.meshgrid(r_vals, theta_vals, indexing='ij')
-    return (r_vals, theta_vals)
-
-
 def plot_heatmap(ax, data, heatmap_settings):
     """
     Plot a heatmap on a pre-existing axes object.
@@ -365,7 +237,8 @@ def plot_heatmap(ax, data, heatmap_settings):
     vmin, vmid, vmax = heatmap_settings.colorbar_range
     norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
     ax.grid(False)
-    r_vals, theta_vals = heatmap_settings.polar_grid
+    r_vals = heatmap_settings.grid.r_grid
+    theta_vals = heatmap_settings.grid.theta_grid
     ax.pcolormesh(theta_vals, r_vals, data, cmap=heatmap_settings.colormap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
