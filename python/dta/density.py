@@ -241,8 +241,7 @@ def _isolate_number_from_header_string(string):
 
 def _create_grid_from_dat_file(dat_file_contents):
     """
-    Return the length and number of bins in each dimension, as well as the \
-    number of frames in the .dat file.
+    Calculate correct lattice dimensions and create PolarBinGrid object from file.
 
     Parameters
     ----------
