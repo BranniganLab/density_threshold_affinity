@@ -283,6 +283,8 @@ def confirm_objs_are_equal(list_of_objs: list) -> None:
     """
     Make sure that all attributes do not vary across objects.
 
+    Passes if list_of_objs only has one element.
+
     Parameters
     ----------
     list_of_objs : list
@@ -294,6 +296,8 @@ def confirm_objs_are_equal(list_of_objs: list) -> None:
         If all objects are not same type.
     ValueError
         If all objects do not have same values.
+    ValueError
+        If list_of_objs is empty.
 
     """
     if not isinstance(list_of_objs, list):
