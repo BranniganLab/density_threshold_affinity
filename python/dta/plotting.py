@@ -51,7 +51,7 @@ class HeatmapSettings:
     col_names: list
     fig_dims: tuple
     max_enrichment: InitVar[float]
-    grid: PolarBinGrid
+    grid: InitVar[PolarBinGrid]
     colormap: mpl.colors.ListedColormap = field(init=False)
     colorbar_range: tuple = field(init=False)
 
@@ -78,6 +78,8 @@ class HeatmapSettings:
             raise TypeError(f"{self.col_names} must be a list instead of a {type(self.col_names)}.")
         if not isinstance(self.row_names, list):
             raise TypeError(f"{self.row_names} must be a list instead of a {type(self.row_names)}.")
+        if not isinstance(self.grid, PolarBinGrid):
+            raise TypeError(f"grid must be a PolarBinGrid instead dof a {type(self.grid)}.")
         self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
 
 
