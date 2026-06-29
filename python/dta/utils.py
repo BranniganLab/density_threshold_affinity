@@ -300,7 +300,7 @@ def confirm_objs_are_equal(list_of_objs: list) -> None:
         raise TypeError("list_of_objs must be a list.")
     if len(list_of_objs) == 0:
         raise ValueError("list_of_objs cannot be empty.")
-    elif len(list_of_objs) == 1:
+    if len(list_of_objs) == 1:
         return
     copy = list_of_objs.copy()
     compare_to = copy.pop()
