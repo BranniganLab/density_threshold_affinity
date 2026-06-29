@@ -85,71 +85,72 @@ class SiteAcrossReplicas:
         yield from self.get_site_list
 
     @property
-    def get_site_list(self):
+    def get_site_list(self) -> list[Site | SymmetricSite]:
         """
         Tell me the site_list, but don't let me change the site_list.
 
         Returns
         -------
         list
-            List of constituent Site objects that comprise this SymmetricSite.
+            List of constituent Site objects that comprise this SiteAcrossReplicas.
 
         """
         return self._site_list
 
     @property
-    def site_counts_histogram(self):
+    def site_counts_histogram(self) -> np.ndarray:
         """
-        Tell me the current counts, in histogram form, for the SymmetricSite.
+        Tell me the current counts, in histogram form, for the SiteAcrossReplicas.
 
         Returns
         -------
         site_counts_histogram : numpy ndarray
-            One-dimensional ndarray where the histogrammed ligand bead counts \
-            are stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames \
-            having zero beads in the Site, 5 frames having one bead in the \
-            Site, 0 frames having 2, 3, or 5 beads in the site, and 1 frame \
+            One-dimensional ndarray where the histogrammed ligand bead counts
+            are stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames
+            having zero beads in the Site, 5 frames having one bead in the
+            Site, 0 frames having 2, 3, or 5 beads in the site, and 1 frame
             having 4 beads in the Site.
 
         """
         return aggregate_site_counts_histograms(self.get_site_list)
 
     @property
-    def bulk_counts_histogram(self):
+    def bulk_counts_histogram(self) -> np.ndarray:
         """
-        Tell me the current counts, in histogram form, for the SymmetricSite. \
+        Tell me the current counts, in histogram form, for the SiteAcrossReplicas.
+
         In practice, this is just the bulk_counts_histogram for the base_site.
 
         Returns
         -------
         bulk_counts_histogram : numpy ndarray
-            One-dimensional ndarray where the histogrammed ligand bead counts \
-            are stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames \
-            having zero beads in the bulk patch, 5 frames having one bead in \
-            the patch, 0 frames having 2, 3, or 5 beads in the patch, and 1 \
+            One-dimensional ndarray where the histogrammed ligand bead counts
+            are stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames
+            having zero beads in the bulk patch, 5 frames having one bead in
+            the patch, 0 frames having 2, 3, or 5 beads in the patch, and 1
             frame having 4 beads in the patch.
 
         """
         return check_bulk_counts_histogram(self.get_site_list)
 
     @property
-    def n_peak(self):
+    def n_peak(self) -> int:
         """
         Tell me what the n_peak is.
 
         Returns
         -------
         int
-            The mode of the bulk distribution in a patch of membrane that has \
+            The mode of the bulk distribution in a patch of membrane that has
             equal accessible area to the site.
 
         """
         return calculate_hist_mode(self.bulk_counts_histogram)
 
     @property
-    def dG(self):
+    def dG(self) -> float:
         """
-        Calculate the binding affinity of the lipid for this SymmetricSite, \
+        Calculate the binding affinity of the lipid for this SiteAcrossReplicas, \
         including the bulk correction factor dG_ref.
 
         Returns
@@ -164,10 +165,10 @@ class SiteAcrossReplicas:
         return dG_site - dG_ref
 
     @property
-    def dG_std(self):
+    def dG_std(self) -> float:
         """
         Calculate the standard deviation of the delta G values across the \
-        constituent Sites that comprise this SymmetricSite.
+        constituent Sites that comprise this SiteAcrossReplicas.
 
         Returns
         -------
@@ -180,17 +181,17 @@ class SiteAcrossReplicas:
             dGs.append(site.dG)
         return np.std(np.array(dGs))
 
-    def update_counts_histogram(self, bulk, counts_data):
+    def update_counts_histogram(self, bulk: bool, counts_data: np.ndarray) -> None:
         """
         Update the counts histograms for all constituent Sites.
 
         Parameters
         ----------
         bulk : boolean
-            If True, update the counts histogram for the bulk patch. If False,\
+            If True, update the counts histogram for the bulk patch. If False,
             update the counts histogram for the site.
         counts_data : ndarray
-            If bulk=True, provide 1D nddarray containing bulk counts. \
+            If bulk=True, provide 1D nddarray containing bulk counts.
             If bulk=False, provide the 3D ndarray containing binned counts.
 
         Returns
@@ -201,25 +202,27 @@ class SiteAcrossReplicas:
         for site in self.get_site_list:
             site.update_counts_histogram(bulk, counts_data)
 
-    def predict_accessible_area(self, bulk_area, mode=True):
+    def predict_accessible_area(self, bulk_area: float, mode: bool = True) -> float:
         """
-        Predict the accessible area of the site. A reasonable method is to \
-        multiply the area of the bulk patch you just analyzed by the ratio of\
-        the means (or modes) for the site distribution and the bulk \
-        distribution. This will put you in the ballpark of the bulk patch area.
+        Predict the accessible area of the site.
+
+        A reasonable method is to multiply the area of the bulk patch you just
+        analyzed by the ratio of the means (or modes) for the site distribution
+        and the bulk distribution. This will put you in the ballpark of the
+        bulk patch area.
 
         Parameters
         ----------
         bulk_area : float
             The area of the bulk patch previously analyzed in square Angstroms.
         mode : boolean
-            If True, use the site and bulk modes rather than the means. Default\
+            If True, use the site and bulk modes rather than the means. Default
             is True. If False use means instead of modes (untested feature).
 
         Returns
         -------
         predicted_accessible_area : float
-            The area of the bulk patch you should analyze next to try and more\
+            The area of the bulk patch you should analyze next to try and more
             closely match the site distribution. Units are in square Angstroms.
 
         """

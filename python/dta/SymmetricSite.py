@@ -93,7 +93,7 @@ class SymmetricSite:
         yield from self.get_site_list
 
     @property
-    def symmetry(self):
+    def symmetry(self) -> int:
         """
         Tell me the symmetry, but don't let me change the symmetry.
 
@@ -106,7 +106,7 @@ class SymmetricSite:
         return self._symmetry
 
     @property
-    def bin_coords(self):
+    def bin_coords(self) -> set[BinAddress]:
         """
         Generate one list of BinAddress[es] corresponding to all the \
         bins inside this SymmetricSite. Necessary for outline_site.
@@ -125,10 +125,10 @@ class SymmetricSite:
             site_coords = site.bin_coords
             for each_bin in site_coords:
                 bin_coords_list.append(each_bin)
-        return bin_coords_list
+        return set(bin_coords_list)
 
     @property
-    def get_site_list(self):
+    def get_site_list(self) -> list[Site]:
         """
         Tell me the site_list, but don't let me change the site_list.
 
@@ -141,7 +141,7 @@ class SymmetricSite:
         return self._site_list
 
     @property
-    def site_counts_histogram(self):
+    def site_counts_histogram(self) -> np.ndarray:
         """
         Tell me the current counts, in histogram form, for the SymmetricSite.
 
@@ -158,7 +158,7 @@ class SymmetricSite:
         return aggregate_site_counts_histograms(self.get_site_list)
 
     @property
-    def bulk_counts_histogram(self):
+    def bulk_counts_histogram(self) -> np.ndarray:
         """
         Tell me the current counts, in histogram form, for the SymmetricSite. \
         In practice, this is just the bulk_counts_histogram for the base_site.
@@ -176,7 +176,7 @@ class SymmetricSite:
         return check_bulk_counts_histogram(self.get_site_list)
 
     @property
-    def n_peak(self):
+    def n_peak(self) -> int:
         """
         Tell me what the n_peak is.
 
@@ -190,7 +190,7 @@ class SymmetricSite:
         return calculate_hist_mode(self.bulk_counts_histogram)
 
     @property
-    def dG(self):
+    def dG(self) -> float:
         """
         Calculate the binding affinity of the lipid for this SymmetricSite, \
         including the bulk correction factor dG_ref.
@@ -207,7 +207,7 @@ class SymmetricSite:
         return dG_site - dG_ref
 
     @property
-    def dG_std(self):
+    def dG_std(self) -> float:
         """
         Calculate the standard deviation of the delta G values across the \
         constituent Sites that comprise this SymmetricSite.
@@ -223,7 +223,7 @@ class SymmetricSite:
             dGs.append(site.dG)
         return np.std(np.array(dGs))
 
-    def update_counts_histogram(self, bulk, counts_data):
+    def update_counts_histogram(self, bulk: bool, counts_data: np.ndarray) -> None:
         """
         Update the counts histograms for all constituent Sites.
 
@@ -244,7 +244,7 @@ class SymmetricSite:
         for site in self.get_site_list:
             site.update_counts_histogram(bulk, counts_data)
 
-    def predict_accessible_area(self, bulk_area, mode=True):
+    def predict_accessible_area(self, bulk_area: float, mode: bool = True) -> float:
         """
         Predict the accessible area of the site. A reasonable method is to \
         multiply the area of the bulk patch you just analyzed by the ratio of\
