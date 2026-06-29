@@ -170,7 +170,7 @@ class PolarBinGrid:
         self.theta = GridDim(0, 2 * np.pi, n_theta)
         self.theta_grid, self.r_grid = np.meshgrid(self.theta.bin_edges, self.r.bin_edges)
 
-    def __eq__(self, other: PolarBinGrid) -> bool:
+    def __eq__(self, other: PolarBinGrid) -> bool | NotImplemented:
         """Compare PolarBinGrid objects for equality."""
         if not isinstance(other, PolarBinGrid):
             return NotImplemented
