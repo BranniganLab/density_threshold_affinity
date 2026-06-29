@@ -125,6 +125,8 @@ def calculate_density(avg_counts: np.ndarray, grid: PolarBinGrid) -> np.ndarray:
         raise ValueError("avg_counts must be a 2D array.")
     if not isinstance(grid, PolarBinGrid):
         raise TypeError("grid must be a PolarBinGrid.")
+    if avg_counts.shape != (grid.r.n_bins, grid.theta.n_bins):
+        raise ValueError(f"Shape mismatch. {avg_counts.shape} != {(grid.r.n_bins, grid.theta.n_bins)}.")
     density = avg_counts / grid.bin_areas
     return density
 
