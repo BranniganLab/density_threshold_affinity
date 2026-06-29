@@ -5,6 +5,7 @@ Created on Mon Nov 11 09:44:53 2024.
 
 @author: js2746
 """
+from typing import Literal
 from pathlib import Path
 from collections import namedtuple
 import numpy as np
@@ -14,7 +15,7 @@ from dta.bin_logic import PolarBinGrid
 SysInfo = namedtuple('SysInfo', ['NL', 'NB', 'BoxArea', 'ExpBeadDensity', 'DrDtheta'])
 
 
-def parse_tcl_dat_file(filepath: [str | Path], bulk: bool) -> tuple[np.ndarray, PolarBinGrid, namedtuple]:
+def parse_tcl_dat_file(filepath: str | Path, bulk: bool) -> tuple[np.ndarray, PolarBinGrid, namedtuple]:
     """
     Extract bin counts and bin dimensions from a TCL output .dat file.
 
@@ -52,7 +53,13 @@ def parse_tcl_dat_file(filepath: [str | Path], bulk: bool) -> tuple[np.ndarray, 
     return counts, grid, system_info
 
 
-def load_replica_counts(root_path, replicas_list, system_name, leaflet_id, avg=False):
+def load_replica_counts(
+    root_path: str | Path,
+    replicas_list: list[str],
+    system_name: str,
+    leaflet_id: Literal[1, 2],
+    avg: bool = False
+) -> list[np.ndarray]:
     """
     Load the counts from all replicas of a single system. Return them as a list.
 
@@ -95,7 +102,7 @@ def load_replica_counts(root_path, replicas_list, system_name, leaflet_id, avg=F
     return replica_counts_list
 
 
-def calculate_density(avg_counts, grid):
+def calculate_density(avg_counts: np.ndarray, grid: PolarBinGrid) -> np.ndarray:
     """
     Calculate the average bead density in each bin.
 
@@ -112,13 +119,17 @@ def calculate_density(avg_counts, grid):
         The average bead density in each bin.
 
     """
-    assert isinstance(avg_counts, np.ndarray), "avg_counts must be an ndarray"
-    assert len(avg_counts.shape) == 2, "avg_counts must be a 2D array."
+    if not isinstance(avg_counts, np.ndarray):
+        raise TypeError("avg_counts must be an ndarray")
+    if len(avg_counts.shape) != 2:
+        raise ValueError("avg_counts must be a 2D array.")
+    if not isinstance(grid, PolarBinGrid):
+        raise TypeError("grid must be a PolarBinGrid.")
     density = avg_counts / grid.bin_areas
     return density
 
 
-def calculate_density_enrichment(density, expected_density):
+def calculate_density_enrichment(density: np.ndarray, expected_density: float) -> np.ndarray:
     """
     Divide the average bead densities in each bin by the expected bead density \
     to calculate an enrichment score.
@@ -182,7 +193,7 @@ def aggregate_density_enrichment_scores(file_paths: list[str | Path]) -> tuple[n
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%  UTIL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
 
 
-def _parse_system_info(dat_file_header):
+def _parse_system_info(dat_file_header: list[str]) -> SysInfo:
     """
     Turn the list of strings from the .dat file header into a namedtuple with \
     useable float values.
@@ -215,7 +226,7 @@ def _parse_system_info(dat_file_header):
     return sysInfo
 
 
-def _isolate_number_from_header_string(string):
+def _isolate_number_from_header_string(string: str) -> float:
     """
     Return the number following the colon in the input string. \
     Example: 'sample header info : 185.72 sample units' should return 185.72.
@@ -238,7 +249,7 @@ def _isolate_number_from_header_string(string):
     return float(right_side.split()[0])
 
 
-def _create_grid_from_dat_file(dat_file_contents):
+def _create_grid_from_dat_file(dat_file_contents: np.ndarray) -> PolarBinGrid:
     """
     Calculate correct lattice dimensions and create PolarBinGrid object from file.
 
@@ -263,7 +274,7 @@ def _create_grid_from_dat_file(dat_file_contents):
     return grid
 
 
-def _package_counts(unrolled_data, grid):
+def _package_counts(unrolled_data: np.ndarray, grid: PolarBinGrid) -> np.ndarray:
     """
     Package the unrolled data into a 3d array in [time, r, theta] format.
 
