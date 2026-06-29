@@ -99,6 +99,8 @@ class GridDim:
 
     def __post_init__(self):
         """Calculate bin width and edges from input variables."""
+        if not isinstance(self.n_bins, int):
+            raise TypeError("Expected int but got {type(self.n_bins)} ({self.n_bins}) for n_bins")
         bin_width = (self.upper_bound - self.lower_bound) / self.n_bins
         object.__setattr__(self, 'bin_width', bin_width)
         edges = np.linspace(self.lower_bound, self.upper_bound, self.n_bins + 1)
