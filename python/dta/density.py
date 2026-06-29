@@ -281,7 +281,7 @@ def _create_grid_from_dat_file(dat_file_contents: np.ndarray) -> PolarBinGrid:
     if 360 % d_theta_degrees != 0:
         raise ValueError(f"360 is not evenly divisible by {d_theta_degrees}")
     n_theta = 360 // d_theta_degrees
-    grid = PolarBinGrid(r_min, r_max, n_r, n_theta)
+    grid = PolarBinGrid(r_min, r_max, int(n_r), int(n_theta))
     return grid
 
 
