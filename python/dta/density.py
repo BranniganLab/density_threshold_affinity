@@ -180,7 +180,7 @@ def aggregate_density_enrichment_scores(file_paths: list[str | Path]) -> tuple[n
     replica_dims_list = []
     if not isinstance(file_paths, list):
         raise TypeError("file_paths must be a list.")
-    if len(file_paths == 0):
+    if len(file_paths) == 0:
         raise ValueError("file_paths cannot be empty.")
     for rep_path in file_paths:
         rep_path = validate_path(rep_path, file=True)
