@@ -5,6 +5,7 @@ Created on Thu Nov 14 13:51:00 2024.
 
 @author: js2746
 """
+from typing import Literal
 import numpy as np
 from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG
 from dta.bin_logic import PolarBinGrid, BinAddress
@@ -57,7 +58,7 @@ class Site:
         The binding affinity of the lipid for the Site, in kcal/mol.
     """
 
-    def __init__(self, name, grid, leaflet_id, temperature):
+    def __init__(self, name: str, grid: PolarBinGrid, leaflet_id: Literal[1, 2], temperature: float):
         """
         Create a Site object.
 
@@ -66,6 +67,8 @@ class Site:
         name : str
             The name of this Site. e.g. "Binding site 1," \
             "Left anterior cleft," or something else descriptive.
+        grid : PolarBinGrid
+            Contains lattice information.
         leaflet_id : int
             If 1, outer leaflet. If 2, inner leaflet.
         temperature : float
@@ -84,7 +87,7 @@ class Site:
         self._bulk_counts_histogram = None
 
     @property
-    def bin_coords(self):
+    def bin_coords(self) -> set[BinAddress]:
         """
         Tell me what the bin_coords are. This is a getter function.
 
@@ -100,7 +103,7 @@ class Site:
         return self._bin_coords
 
     @bin_coords.setter
-    def bin_coords(self, bin_addresses: [list[BinAddress] | tuple[BinAddress] | set[BinAddress]]):
+    def bin_coords(self, bin_addresses: list[BinAddress] | tuple[BinAddress] | set[BinAddress]) -> None:
         """
         Set bin_coords for this Site.
 
@@ -128,10 +131,10 @@ class Site:
             if item.theta_index >= self.grid.theta.n_bins:
                 raise IndexError(f"Angular bin {item.theta_index} out of range.")
             bin_coords.append(item)
-        self._bin_coords = bin_coords
+        self._bin_coords = set(bin_coords)
 
     @property
-    def site_counts_histogram(self):
+    def site_counts_histogram(self) -> np.ndarray:
         """
         Tell me the current counts, in histogram form, for the Site.
 
@@ -148,7 +151,7 @@ class Site:
         return self._site_counts_histogram
 
     @property
-    def bulk_counts_histogram(self):
+    def bulk_counts_histogram(self) -> np.ndarray:
         """
         Tell me the current counts, in histogram form, for the Site.
 
@@ -165,7 +168,7 @@ class Site:
         return self._bulk_counts_histogram
 
     @property
-    def n_peak(self):
+    def n_peak(self) -> float:
         """
         Tell me what the n_peak is.
 
@@ -181,7 +184,7 @@ class Site:
         return calculate_hist_mode(self.bulk_counts_histogram)
 
     @property
-    def dG(self):
+    def dG(self) -> float:
         """
         Calculate the binding affinity of the lipid for this Site, including \
         the bulk correction factor dG_ref.
@@ -202,7 +205,7 @@ class Site:
         dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temperature)
         return dG_site - dG_ref
 
-    def update_counts_histogram(self, bulk, counts_data):
+    def update_counts_histogram(self, bulk: bool, counts_data: np.ndarray) -> None:
         """
         Assign ligand bead counts to Site attribute "counts_histogram".
 
@@ -255,7 +258,7 @@ class Site:
             area += self.grid.calc_bin_area(bin_address)
         return area
 
-    def predict_accessible_area(self, bulk_area, mode=True):
+    def predict_accessible_area(self, bulk_area: float, mode: bool = True) -> float:
         """
         Predict the accessible area of the site. A reasonable method is to \
         multiply the area of the bulk patch you just analyzed by the ratio of\
@@ -286,7 +289,7 @@ class Site:
         predicted_accessible_area = bulk_area * (site / bulk)
         return predicted_accessible_area
 
-    def _fetch_site_counts(self, binned_counts):
+    def _fetch_site_counts(self, binned_counts: np.ndarray) -> np.ndarray[int]:
         """
         Create a 2D array where each row is a different bin within the site \
         and each column is a frame in the trajectory. Then sum over all the \
