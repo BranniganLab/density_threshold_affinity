@@ -108,7 +108,7 @@ class GridDim:
         """Compare two GridDims for equality."""
         if not isinstance(other, GridDim):
             return NotImplemented
-        return np.arrays_equal(self.bin_edges, other.bin_edges)
+        return np.array_equal(self.bin_edges, other.bin_edges)
 
 
 class PolarBinGrid:
