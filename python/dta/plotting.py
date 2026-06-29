@@ -81,6 +81,8 @@ class HeatmapSettings:
             raise TypeError(f"{self.row_names} must be a list instead of a {type(self.row_names)}.")
         if not isinstance(self.grid, PolarBinGrid):
             raise TypeError(f"grid must be a PolarBinGrid instead dof a {type(self.grid)}.")
+        if max_enrichment <= 1:
+            raise ValueError("max_enrichment must be greater than 1.")
         self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
 
 
