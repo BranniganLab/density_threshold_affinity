@@ -23,12 +23,12 @@ class Site:
     name : str
         The name of this Site. e.g. "Binding site 1," "Left anterior cleft," or \
         something else descriptive.
+    grid : PolarBinGrid
+        Contains lattice information.
     leaflet_id : int
         If 1, outer leaflet. If 2, inner leaflet.
     temperature : float
         The temperature of your system in K.
-    grid : PolarBinGrid
-        Contains lattice information.
 
     Settable Properties
     -------------------
