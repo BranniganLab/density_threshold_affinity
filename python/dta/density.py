@@ -49,7 +49,7 @@ def parse_tcl_dat_file(filepath: str | Path, bulk: bool) -> tuple[np.ndarray, Po
     unrolled_data = np.loadtxt(filepath, skiprows=1)
     system_info = _parse_system_info(np.loadtxt(filepath, comments=None, max_rows=1, delimiter=',', dtype=str))
     grid = _create_grid_from_dat_file(unrolled_data)
-    counts = _package_counts(unrolled_data, grid).squeeze()
+    counts = _package_counts(unrolled_data, grid)
     return counts, grid, system_info
 
 
@@ -185,9 +185,10 @@ def aggregate_density_enrichment_scores(file_paths: list[str | Path]) -> tuple[n
     for rep_path in file_paths:
         rep_path = validate_path(rep_path, file=True)
         counts, grid, system_info = parse_tcl_dat_file(rep_path, bulk=False)
-        replica_dims_list.append(grid)
+        counts = counts.squeeze(axis=0)
         density_enrichment = calculate_density_enrichment(calculate_density(counts, grid), system_info.ExpBeadDensity)
         replica_enrichments_list.append(density_enrichment)
+        replica_dims_list.append(grid)
 
     confirm_objs_are_equal(replica_dims_list)
     all_reps_avg = np.nanmean(np.stack(tuple(replica_enrichments_list), axis=0), axis=0)
