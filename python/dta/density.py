@@ -298,10 +298,15 @@ def _package_counts(unrolled_data: np.ndarray, grid: PolarBinGrid) -> np.ndarray
         3d array of counts in [time, r, theta] format.
 
     """
-    nframes = int(round(unrolled_data.shape[0] / grid.r.n_bins))
+    n_rows = unrolled_data.shape[0]
+    if n_rows % grid.r.n_bins != 0:
+        raise ValueError(f"Expected rows to be divisible by {grid.r.n_bins} radial bins, got {n_rows}.")
+    nframes = n_rows // grid.r.n_bins
 
-    # chop off the first few columns
+    # chop off columns containing metadata
     unrolled_counts = unrolled_data[:, 3:]
+    if unrolled_counts.shape[1] != grid.theta.n_bins:
+        raise ValueError(f"Expected {grid.theta.n_bins} theta columns, got {unrolled_counts.shape[1]}.")
 
     # 'sideways' because it is in [r, time, theta] format at first
     sideways_counts = np.zeros((grid.r.n_bins, nframes, grid.theta.n_bins))
