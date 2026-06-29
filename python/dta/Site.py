@@ -126,9 +126,9 @@ class Site:
         for item in bin_addresses:
             if not isinstance(item, BinAddress):
                 item = BinAddress(*item)
-            if item.r_index >= self.grid.r.n_bins:
+            if (item.r_index >= self.grid.r.n_bins) or (item.r_index < 0):
                 raise IndexError(f"Radial bin {item.r_index} out of range.")
-            if item.theta_index >= self.grid.theta.n_bins:
+            if (item.theta_index >= self.grid.theta.n_bins) or (item.theta_index < 0):
                 raise IndexError(f"Angular bin {item.theta_index} out of range.")
             bin_coords.append(item)
         self._bin_coords = set(bin_coords)
