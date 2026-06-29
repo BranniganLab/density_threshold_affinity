@@ -73,10 +73,12 @@ class SymmetricSite:
         """
         if not isinstance(symmetry, int):
             raise TypeError("symmetry must be an integer.")
-        if base_site.grid.theta.n_bins % symmetry != 0:
-            raise ValueError("This polar lattice is not evenly divisible by the symmetry number provided.")
+        if symmetry < 1:
+            raise ValueError("symmetry must be positive.")
         if not isinstance(base_site, Site):
             raise TypeError("base_site must be a Site object.")
+        if base_site.grid.theta.n_bins % symmetry != 0:
+            raise ValueError("This polar lattice is not evenly divisible by the symmetry number provided.")
         if base_site.bin_coords is None:
             raise ValueError("The base_site needs to be fully defined before creating a SymmetricSite.")
         self.name = base_site.name
