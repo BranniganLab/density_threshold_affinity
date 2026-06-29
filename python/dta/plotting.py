@@ -15,6 +15,7 @@ from scipy import constants
 from dta.utils import calculate_hist_mode
 from dta.Site import Site
 from dta.SymmetricSite import SymmetricSite
+from dta.SiteAcrossReplicas import SiteAcrossReplicas
 from dta.bin_logic import PolarBinGrid
 
 
@@ -51,11 +52,11 @@ class HeatmapSettings:
     col_names: list
     fig_dims: tuple
     max_enrichment: InitVar[float]
-    grid: InitVar[PolarBinGrid]
+    grid: PolarBinGrid
     colormap: mpl.colors.ListedColormap = field(init=False)
     colorbar_range: tuple = field(init=False)
 
-    def __post_init__(self, max_enrichment):
+    def __post_init__(self, max_enrichment: float):
         """
         Calculate colorbar_range and make sure row_names and col_names are lists.
 
@@ -83,7 +84,7 @@ class HeatmapSettings:
         self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
 
 
-def make_custom_colormap():
+def make_custom_colormap() -> ListedColormap:
     """
     Make a custom colormap for plotting. The colormap starts at 0.35 to ensure \
     that there is a visual difference between 0 (no signal) and depleted (near-\
@@ -102,7 +103,12 @@ def make_custom_colormap():
     return my_cmap
 
 
-def outline_site(ax, site, grid, linewidth=1, color='black'):
+def outline_site(
+    ax: plt.Axes,
+    site: Site | SymmetricSite | SiteAcrossReplicas,
+    linewidth: float = 1,
+    color: str = 'black'
+) -> plt.Axes:
     """
     Draw an outline around a Site or around each site in a SymmetricSite.
 
@@ -110,10 +116,8 @@ def outline_site(ax, site, grid, linewidth=1, color='black'):
     ----------
     ax : matplotlib.pyplot Axes object
         The Axes object you want to draw this on.
-    site : Site or Symmetric_Site
+    site : Site, SymmetricSite, or SiteAcrossReplicas
         The site you want to outline.
-    grid : PolarBinGrid
-        Contains lattice information.
     linewidth : float, optional
         The width of the outline. Default is 1.
     color : str, optional
@@ -125,9 +129,14 @@ def outline_site(ax, site, grid, linewidth=1, color='black'):
         The Axes object you want to draw this on.
 
     """
-    assert isinstance(site, (Site, SymmetricSite)), "site must be a Site or SymmetricSite."
-    assert site.bin_coords is not None, "Site must be fully defined first. Please add bin_coords."
-    edges = grid.list_all_exposed_edges(site.bin_coords)
+    if not isinstance(site, (Site, SymmetricSite)):
+        if isinstance(site, SiteAcrossReplicas):
+            site = site.base_site
+        else:
+            raise TypeError("site must be a Site, SymmetricSite, or SiteAcrossReplicas.")
+    if site.bin_coords is None:
+        raise ValueError("Site must be fully defined first. Please add bin_coords.")
+    edges = site.grid.list_all_exposed_edges(site.bin_coords)
     for edge in edges:
         theta = (edge.endpoint1[1], edge.endpoint2[1])
         r = (edge.endpoint1[0], edge.endpoint2[0])
@@ -135,7 +144,7 @@ def outline_site(ax, site, grid, linewidth=1, color='black'):
     return ax
 
 
-def create_heatmap_figure_and_axes(heatmap_settings):
+def create_heatmap_figure_and_axes(heatmap_settings: HeatmapSettings) -> plt.Figure:
     """
     Create the heatmap figure and enough axes to accommodate all the lipids and\
     leaflets.
@@ -166,7 +175,7 @@ def create_heatmap_figure_and_axes(heatmap_settings):
     return fig
 
 
-def plot_helices_on_panels(fig, helices):
+def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray]):
     """
     Plot helix locations on each panel present in the figure.
 
@@ -191,7 +200,7 @@ def plot_helices_on_panels(fig, helices):
     return fig
 
 
-def make_colorbar(fig, heatmap_settings):
+def make_colorbar(fig: plt.Figure, heatmap_settings: HeatmapSettings) -> plt.Figure:
     """
     Generate the colorbar. Must be done after plot_heatmap.
 
@@ -217,7 +226,7 @@ def make_colorbar(fig, heatmap_settings):
     return fig
 
 
-def plot_heatmap(ax, data, heatmap_settings):
+def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettings) -> plt.Axes:
     """
     Plot a heatmap on a pre-existing axes object.
 
