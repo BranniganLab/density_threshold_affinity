@@ -31,9 +31,7 @@ class SymmetricSite:
     symmetry : int
         The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
     bin_coords : set of BinAddress
-        The bins that belong to this site in (r, theta) format. e.g. \
-        [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
-        13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
+        The bins that belong to this site as BinAddress objects. Bin indices
         are zero-indexed by convention.
     get_site_list : list
         The list of constituent Site objects that make up this SymmetricSite.
@@ -113,11 +111,9 @@ class SymmetricSite:
 
         Returns
         -------
-        bin_coords_list : set of BinAddress
-            The bins that belong to this SymmetricSite in (r, theta) format. \
-            e.g. [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, \
-            12th, and 13th theta bins (starting at theta=0) in the 3rd radial \
-            bin from the origin. Bin coordinates are zero-indexed by convention.
+        set of BinAddress
+            The bins that belong to this SymmetricSite as BinAddress objects.
+            Bin indices are zero-indexed by convention.
 
         """
         bin_coords_list = []
@@ -319,9 +315,9 @@ class SymmetricSite:
 
         Returns
         -------
-        rotated_bin_coords : list of tuples
-            Should match input bin_coords in length and first tuple component; \
-            second tuple components should all be shifted (rotated).
+        rotated_bin_coords : list of BinAddress
+            Should match input bin_coords in length and radial bin; theta bins
+            should all be shifted (rotated).
 
         """
         if site_number >= self.symmetry:
