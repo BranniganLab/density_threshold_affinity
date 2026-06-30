@@ -310,7 +310,11 @@ def _package_counts(unrolled_data: np.ndarray, grid: PolarBinGrid) -> np.ndarray
     # chop off columns containing metadata
     unrolled_counts = unrolled_data[:, 3:]
     if unrolled_counts.shape[1] != grid.theta.n_bins:
-        raise ValueError(f"Expected {grid.theta.n_bins} theta columns, got {unrolled_counts.shape[1]}.")
+        if (unrolled_counts.shape[1] == grid.theta.n_bins + 1) and ((unrolled_counts[:, -1] == 0).all()):
+            # backwards compatibility for off-by-one grid generation in previous dta version
+            unrolled_counts = unrolled_counts[:, :-1]
+        else:
+            raise ValueError(f"Expected {grid.theta.n_bins} theta columns, got {unrolled_counts.shape[1]}.")
 
     # 'sideways' because it is in [r, time, theta] format at first
     sideways_counts = np.zeros((grid.r.n_bins, nframes, grid.theta.n_bins))
