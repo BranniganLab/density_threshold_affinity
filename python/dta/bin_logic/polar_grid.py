@@ -45,6 +45,7 @@ Find all bins touched by a drag-selection region::
         corner2=(3.0, 0.5),
     )
 """
+from __future__ import annotations
 import itertools
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -98,10 +99,18 @@ class GridDim:
 
     def __post_init__(self):
         """Calculate bin width and edges from input variables."""
+        if not isinstance(self.n_bins, int):
+            raise TypeError(f"Expected int but got {type(self.n_bins)} ({self.n_bins}) for n_bins")
         bin_width = (self.upper_bound - self.lower_bound) / self.n_bins
         object.__setattr__(self, 'bin_width', bin_width)
         edges = np.linspace(self.lower_bound, self.upper_bound, self.n_bins + 1)
         object.__setattr__(self, 'bin_edges', edges)
+
+    def __eq__(self, other: GridDim) -> bool | NotImplemented:
+        """Compare two GridDims for equality."""
+        if not isinstance(other, GridDim):
+            return NotImplemented
+        return np.array_equal(self.bin_edges, other.bin_edges)
 
 
 class PolarBinGrid:
@@ -162,6 +171,23 @@ class PolarBinGrid:
         self.r = GridDim(r_min, r_max, n_r)
         self.theta = GridDim(0, 2 * np.pi, n_theta)
         self.theta_grid, self.r_grid = np.meshgrid(self.theta.bin_edges, self.r.bin_edges)
+
+    def __eq__(self, other: PolarBinGrid) -> bool | NotImplemented:
+        """Compare PolarBinGrid objects for equality."""
+        if not isinstance(other, PolarBinGrid):
+            return NotImplemented
+        if ((self.r == other.r) and (self.theta == other.theta)):
+            return True
+        return False
+
+    @property
+    def bin_areas(self) -> np.ndarray:
+        """Calculate area of every bin in lattice."""
+        areas = np.zeros((self.r.n_bins, self.theta.n_bins))
+        for radial_ring in range(self.r.n_bins):
+            bin_address = BinAddress(radial_ring, 0)
+            areas[radial_ring, :] = self.calc_bin_area(bin_address)
+        return areas
 
     def map_coord_to_bin_idx(self, coord: Coordinate) -> BinAddress | None:
         """
