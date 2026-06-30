@@ -55,7 +55,7 @@ class SiteAcrossReplicas:
         SymmetricSites and/or Sites that comprise this SiteAcrossReplicas.
     """
 
-    def __init__(self, replica_list: list[np.ndarray], base_site: [Site | SymmetricSite]):
+    def __init__(self, replica_list: list[np.ndarray], base_site: Site | SymmetricSite):
         """
         Create a Site_Across_Replicas.
 
