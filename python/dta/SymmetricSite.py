@@ -30,7 +30,7 @@ class SymmetricSite:
     ---------------------
     symmetry : int
         The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
-    bin_coords : list of tuples
+    bin_coords : set of BinAddress
         The bins that belong to this site in (r, theta) format. e.g. \
         [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
         13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
@@ -113,7 +113,7 @@ class SymmetricSite:
 
         Returns
         -------
-        bin_coords_list : list of BinAddress
+        bin_coords_list : set of BinAddress
             The bins that belong to this SymmetricSite in (r, theta) format. \
             e.g. [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, \
             12th, and 13th theta bins (starting at theta=0) in the 3rd radial \
