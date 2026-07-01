@@ -198,6 +198,33 @@ class DTAProjectManifest:
 
     @staticmethod
     def _record_matches(record: DTAFileRecord, filters: dict[str, Any]) -> bool:
+        """
+        Determine whether a record satisfies a set of filters.
+
+        Each key in ``filters`` must be the name of a ``DTAFileRecord`` attribute.
+        Filters applied to different attributes are combined using a logical
+        **AND**. If the value associated with a filter is a ``list``, ``tuple``,
+        or ``set``, the elements of that collection are combined using a logical
+        **OR**.
+
+        Parameters
+        ----------
+        record : DTAFileRecord
+            The record to test.
+        filters : dict[str, Any]
+            Dictionary mapping ``DTAFileRecord`` attribute names to one or more
+            acceptable values.
+
+        Returns
+        -------
+        bool
+            ``True`` if the record satisfies every filter and ``False`` otherwise.
+
+        Notes
+        -----
+        This method assumes that the filter names have already been validated by
+        :meth:`_validate_record_fields`.
+        """
         for field_name, expected in filters.items():
             actual = getattr(record, field_name)
 
