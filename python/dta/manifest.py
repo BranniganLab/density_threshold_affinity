@@ -36,9 +36,9 @@ class DTAFileRecord:
     user_str1, user_str2, user_str3 : str
         User-defined fields, each containing a string that can be used to slice
         records in the DTAProjectManifest.
-    user_int1, user_int2 : int
-        User-defined fields, each containing an int that can be used to slice
-        records in the DTAProjectManifest.
+    user_int1: int
+        User-defined field containing an int that can be used to slice records
+        in the DTAProjectManifest.
     """
 
     path: Path | str
@@ -49,7 +49,6 @@ class DTAFileRecord:
     user_str2: str | None = None
     user_str3: str | None = None
     user_int1: int | None = None
-    user_int2: int | None = None
 
     def __post_init__(self) -> None:
         """Validate path and infer leaflet and filetype."""
@@ -201,11 +200,11 @@ class DTAProjectManifest:
     def _record_matches(record: DTAFileRecord, filters: dict[str, Any]) -> bool:
         for field_name, expected in filters.items():
             actual = getattr(record, field_name)
-    
+
             if isinstance(expected, (set, list, tuple)):
                 if actual not in expected:
                     return False
             elif actual != expected:
                 return False
-    
+
         return True
