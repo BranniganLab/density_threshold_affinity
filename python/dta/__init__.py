@@ -12,7 +12,8 @@ __all__ = ["__version__",
     "SymmetricSite",
     "utils",
     "density",
-    "plotting"]
+    "plotting",
+    "manifest"]
 
 
 from .Site import *
@@ -21,3 +22,4 @@ from .SymmetricSite import *
 from .utils import *
 from .density import *
 from .plotting import *
+from .manifest import *

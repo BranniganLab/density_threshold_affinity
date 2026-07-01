@@ -276,3 +276,23 @@ def validate_path(path, file=False):
         if not path.is_file():
             raise FileNotFoundError(f"The specified file '{path}' is not recognized as a file. Please ensure the path is correct.")
     return path
+
+
+
+def infer_leaflet(path: Path) -> str:
+    """Infer the leaflet name from a filename."""
+    if not isinstance(path, Path):
+        raise TypeError(f"Expected Path but got {type(path)}: {path}")
+
+    name = path.name
+
+    if ".upp." in name:
+        return "upper"
+
+    if ".low." in name:
+        return "lower"
+
+    raise ValueError(
+        f"Could not infer leaflet from filename '{name}'. "
+        "Expected '.upp.' or '.low.' in the filename."
+    )
