@@ -49,6 +49,7 @@ class DTAFileRecord:
     user_str2: str | None = None
     user_str3: str | None = None
     user_int1: int | None = None
+    user_int2: int | None = None
 
     def __post_init__(self) -> None:
         """Validate path and infer leaflet and filetype."""
