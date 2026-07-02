@@ -53,14 +53,14 @@ def discover_files(
 
     for folder in folder_list:
         _validate_folder(folder)
-    
+
         pattern = "**/*.dat" if recursive else "*.dat"
-    
+
         for path in sorted(folder.glob(pattern)):
             try:
                 record = DTAFileRecord(path)
                 records.append(record)
-            except:
+            except Exception:
                 continue
     return records
 
