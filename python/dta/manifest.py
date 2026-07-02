@@ -76,7 +76,7 @@ class DTAProjectManifest:
     Arguments
     ---------
     records : list[DTAFileRecord], Optional
-        User may supply records on creation, and/or can use the `add` method later.
+        User may supply records on creation, and/or can use the ``add`` method later.
 
     Attributes
     ----------

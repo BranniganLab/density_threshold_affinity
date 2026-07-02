@@ -13,7 +13,8 @@ __all__ = ["__version__",
     "utils",
     "density",
     "plotting",
-    "manifest"]
+    "manifest",
+    "discovery"]
 
 
 from .Site import *
@@ -23,3 +24,4 @@ from .utils import *
 from .density import *
 from .plotting import *
 from .manifest import *
+from .discovery import *
