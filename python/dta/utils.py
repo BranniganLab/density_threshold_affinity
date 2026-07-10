@@ -5,6 +5,7 @@ Created on Thu Nov 14 13:55:09 2024.
 
 @author: js2746
 """
+import inspect
 import math
 import warnings
 from pathlib import Path
@@ -278,7 +279,6 @@ def validate_path(path, file=False):
     return path
 
 
-
 def infer_leaflet(path: Path) -> str:
     """Infer the leaflet name from a filename."""
     if not isinstance(path, Path):
@@ -296,3 +296,42 @@ def infer_leaflet(path: Path) -> str:
         f"Could not infer leaflet from filename '{name}'. "
         "Expected '.upp.' or '.low.' in the filename."
     )
+
+
+def confirm_objs_are_equal(list_of_objs: list) -> None:
+    """
+    Make sure that all attributes do not vary across objects.
+
+    Used (e.g.) to ensure that all replicas have identical grid dimensions
+
+    Passes if list_of_objs only has one element.
+
+    Parameters
+    ----------
+    list_of_objs : list
+        List containing multiple objects to be compared.
+
+    Raises
+    ------
+    TypeError
+        If all objects are not same type.
+    ValueError
+        If all objects do not have same values.
+    ValueError
+        If list_of_objs is empty.
+
+    """
+    if not isinstance(list_of_objs, list):
+        raise TypeError("list_of_objs must be a list.")
+    if len(list_of_objs) == 0:
+        raise ValueError("list_of_objs cannot be empty.")
+    if len(list_of_objs) == 1:
+        return
+    copy = list_of_objs.copy()
+    compare_to = copy.pop()
+    obj_type = type(compare_to)
+    for obj in copy:
+        if not isinstance(obj, obj_type):
+            raise TypeError(f"Expected {obj_type} but {obj} is a {type(obj)}")
+        if obj != compare_to:
+            raise ValueError(f"{inspect.getmembers(obj)} does not match {inspect.getmembers(compare_to)}")
