@@ -283,6 +283,8 @@ def confirm_objs_are_equal(list_of_objs: list) -> None:
     """
     Make sure that all attributes do not vary across objects.
 
+    Used (e.g.) to ensure that all replicas have identical grid dimensions
+
     Passes if list_of_objs only has one element.
 
     Parameters
