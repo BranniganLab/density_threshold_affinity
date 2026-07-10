@@ -7,6 +7,7 @@ Created on Thu Nov 14 16:53:18 2024.
 """
 import numpy as np
 from dta.Site import Site
+from dta.bin_logic import BinAddress
 from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, aggregate_site_counts_histograms, check_bulk_counts_histogram
 
 
@@ -18,22 +19,19 @@ class SymmetricSite:
 
     Attributes
     ----------
+    name: str
+        A user-generated name for this site. Inherits from base_site.
     temperature : float
-        The temperature of your system in K.
+        The temperature of your system in K. Inherits from base_site.
+    grid : PolarBinGrid
+        Contains lattice information. Inherits from base_site.
 
     Calculated Properties
     ---------------------
-    name : str
-        The name of the Site. Will be inherited from base_site.
     symmetry : int
         The N-fold symmetry desired. I.E. 5 would yield 5 Sites.
-    ntheta_in_lattice : int
-        The number of azimuthal bins in the lattice (not just how many are in \
-        the site!)
-    bin_coords : list of tuples
-        The bins that belong to this site in (r, theta) format. e.g. \
-        [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
-        13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
+    bin_coords : set of BinAddress
+        The bins that belong to this site as BinAddress objects. Bin indices
         are zero-indexed by convention.
     get_site_list : list
         The list of constituent Site objects that make up this SymmetricSite.
@@ -58,7 +56,7 @@ class SymmetricSite:
         comprise this SymmetricSite.
     """
 
-    def __init__(self, symmetry, base_site, Ntheta):
+    def __init__(self, symmetry: int, base_site: Site):
         """
         Create a SymmetricSite by creating clones of the base_site and \
         rotating them symmetrically around the origin.
@@ -71,30 +69,29 @@ class SymmetricSite:
             The original Site object that should be cloned and rotated.
 
         """
-        assert isinstance(symmetry, int), "symmetry must be an integer."
-        assert Ntheta % symmetry == 0, "This symmetry does not evenly divide \
-            across the number of theta bins."
-        assert isinstance(base_site, Site), "base_site must be a Site."
-        assert base_site.bin_coords is not None, "The base_site needs to be fully defined before creating a SymmetricSite."
+        if not isinstance(symmetry, int):
+            raise TypeError("symmetry must be an integer.")
+        if symmetry < 1:
+            raise ValueError("symmetry must be positive.")
+        if not isinstance(base_site, Site):
+            raise TypeError("base_site must be a Site object.")
+        if base_site.grid.theta.n_bins % symmetry != 0:
+            raise ValueError("This polar lattice is not evenly divisible by the symmetry number provided.")
+        if base_site.bin_coords is None:
+            raise ValueError("The base_site needs to be fully defined before creating a SymmetricSite.")
         self.name = base_site.name
         self._symmetry = symmetry
-        self._ntheta_in_lattice = Ntheta
-        self._site_list = self._make_symmetric_sites(base_site, Ntheta)
+        self._site_list = self._make_symmetric_sites(base_site)
         assert len(self.get_site_list) == symmetry, "Number of Sites does not match symmetry."
         self.temperature = base_site.temperature
+        self.grid = base_site.grid
 
     def __iter__(self):
         """Iterate through the site_list."""
         yield from self.get_site_list
 
     @property
-    def ntheta_in_lattice(self):
-        """Tell me how many azimuthal bins there are in the lattice (not this \
-        site)."""
-        return self._ntheta_in_lattice
-
-    @property
-    def symmetry(self):
+    def symmetry(self) -> int:
         """
         Tell me the symmetry, but don't let me change the symmetry.
 
@@ -107,18 +104,16 @@ class SymmetricSite:
         return self._symmetry
 
     @property
-    def bin_coords(self):
+    def bin_coords(self) -> set[BinAddress]:
         """
-        Generate one list of bin coordinate tuples corresponding to all the \
+        Generate one list of BinAddress[es] corresponding to all the \
         bins inside this SymmetricSite. Necessary for outline_site.
 
         Returns
         -------
-        bin_coords_list : list of tuples
-            The bins that belong to this SymmetricSite in (r, theta) format. \
-            e.g. [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, \
-            12th, and 13th theta bins (starting at theta=0) in the 3rd radial \
-            bin from the origin. Bin coordinates are zero-indexed by convention.
+        set of BinAddress
+            The bins that belong to this SymmetricSite as BinAddress objects.
+            Bin indices are zero-indexed by convention.
 
         """
         bin_coords_list = []
@@ -126,10 +121,10 @@ class SymmetricSite:
             site_coords = site.bin_coords
             for each_bin in site_coords:
                 bin_coords_list.append(each_bin)
-        return bin_coords_list
+        return set(bin_coords_list)
 
     @property
-    def get_site_list(self):
+    def get_site_list(self) -> list[Site]:
         """
         Tell me the site_list, but don't let me change the site_list.
 
@@ -142,7 +137,7 @@ class SymmetricSite:
         return self._site_list
 
     @property
-    def site_counts_histogram(self):
+    def site_counts_histogram(self) -> np.ndarray:
         """
         Tell me the current counts, in histogram form, for the SymmetricSite.
 
@@ -159,7 +154,7 @@ class SymmetricSite:
         return aggregate_site_counts_histograms(self.get_site_list)
 
     @property
-    def bulk_counts_histogram(self):
+    def bulk_counts_histogram(self) -> np.ndarray:
         """
         Tell me the current counts, in histogram form, for the SymmetricSite. \
         In practice, this is just the bulk_counts_histogram for the base_site.
@@ -177,7 +172,7 @@ class SymmetricSite:
         return check_bulk_counts_histogram(self.get_site_list)
 
     @property
-    def n_peak(self):
+    def n_peak(self) -> int:
         """
         Tell me what the n_peak is.
 
@@ -191,7 +186,7 @@ class SymmetricSite:
         return calculate_hist_mode(self.bulk_counts_histogram)
 
     @property
-    def dG(self):
+    def dG(self) -> float:
         """
         Calculate the binding affinity of the lipid for this SymmetricSite, \
         including the bulk correction factor dG_ref.
@@ -208,7 +203,7 @@ class SymmetricSite:
         return dG_site - dG_ref
 
     @property
-    def dG_std(self):
+    def dG_std(self) -> float:
         """
         Calculate the standard deviation of the delta G values across the \
         constituent Sites that comprise this SymmetricSite.
@@ -224,7 +219,7 @@ class SymmetricSite:
             dGs.append(site.dG)
         return np.std(np.array(dGs))
 
-    def update_counts_histogram(self, bulk, counts_data):
+    def update_counts_histogram(self, bulk: bool, counts_data: np.ndarray) -> None:
         """
         Update the counts histograms for all constituent Sites.
 
@@ -245,7 +240,7 @@ class SymmetricSite:
         for site in self.get_site_list:
             site.update_counts_histogram(bulk, counts_data)
 
-    def predict_accessible_area(self, bulk_area, mode=True):
+    def predict_accessible_area(self, bulk_area: float, mode: bool = True) -> float:
         """
         Predict the accessible area of the site. A reasonable method is to \
         multiply the area of the bulk patch you just analyzed by the ratio of\
@@ -276,7 +271,7 @@ class SymmetricSite:
         predicted_accessible_area = bulk_area * (site / bulk)
         return predicted_accessible_area
 
-    def _make_symmetric_sites(self, base_site, Ntheta):
+    def _make_symmetric_sites(self, base_site: Site) -> list[Site]:
         """
         Create identical sites to the base_site, rotated symmetrically around \
         the origin.
@@ -285,8 +280,6 @@ class SymmetricSite:
         ----------
         base_site : Site
             The Site object that you want to replicate symmetrically.
-        Ntheta : int
-            The total number of theta bins in the circle.
 
         Returns
         -------
@@ -299,40 +292,42 @@ class SymmetricSite:
         site_list = [base_site]
         for site_number in range(1, self.symmetry):
             site_name = name + '_' + str(site_number + 1)
-            new_site = Site(site_name, base_site.leaflet_id, base_site.temperature)
-            new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, Ntheta, site_number)
+            new_site = Site(site_name, base_site.grid, base_site.leaflet_id, base_site.temperature)
+            new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, base_site.grid.theta.n_bins, site_number)
             site_list.append(new_site)
         return site_list
 
-    def _rotate_bin_coords(self, bin_coords, Ntheta, site_number):
+    def _rotate_bin_coords(self, bin_coords: list[BinAddress], n_theta: int, site_number: int) -> list[BinAddress]:
         """
         Rotate the provided bin_coords around the circle.
 
         Parameters
         ----------
-        bin_coords : list of tuples
+        bin_coords : list of BinAddress
             The bins that belong to this site in (r, theta) format. e.g. \
             [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
             13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
             are zero-indexed by convention.
-        Ntheta : int
-            The number of theta bins in the circle.
+        n_theta : int
+            The number of angular bins in the lattice.
         site_number : int
             Which constituent site this is.
 
         Returns
         -------
-        rotated_bin_coords : list of tuples
-            Should match input bin_coords in length and first tuple component; \
-            second tuple components should all be shifted (rotated).
+        rotated_bin_coords : list of BinAddress
+            Should match input bin_coords in length and radial bin; theta bins
+            should all be shifted (rotated).
 
         """
+        if site_number >= self.symmetry:
+            raise ValueError(f"Site number {site_number} is greater than total symmetry ({self.symmetry})")
         rotated_bin_coords = []
         for each_bin in bin_coords:
             r_bin, theta_bin = each_bin
-            shift = Ntheta // self.symmetry
+            shift = n_theta // self.symmetry
             rotated_theta_bin = theta_bin + shift * site_number
-            if rotated_theta_bin >= Ntheta:
-                rotated_theta_bin -= Ntheta
-            rotated_bin_coords.append((r_bin, rotated_theta_bin))
+            if rotated_theta_bin >= n_theta:
+                rotated_theta_bin -= n_theta
+            rotated_bin_coords.append(BinAddress(r_bin, rotated_theta_bin))
         return rotated_bin_coords
