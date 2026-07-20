@@ -40,7 +40,7 @@ proc RtoD {r} {
 #   float: x position
 #   float: y position
 # Outputs:
-#   float: the angle of the point (in radians) relative to the origin
+#   float: the angle of the point in degrees relative to the origin
 proc get_theta {x y} {
     global M_PI
     set tmp  [expr {atan2($y,$x)}]
@@ -49,7 +49,7 @@ proc get_theta {x y} {
     } else {
         set theta $tmp
     }
-    return $theta
+    return [RtoD $theta]
 }
 
 # get_theta_bins
@@ -63,8 +63,7 @@ proc get_theta {x y} {
 #   list: the theta bin indices for each atom/bead
 
 proc get_theta_bins {x_list y_list Ntheta} {
-    global M_PI
-    set dtheta [expr 2.0 * $M_PI / $Ntheta]
+    set dtheta [expr 360.0 / $Ntheta]
     set theta_bin_list {}
     foreach x $x_list y $y_list {
         set theta [get_theta $x $y]
@@ -119,8 +118,7 @@ proc output_inclusion_centers {{a ""} } {
                     set x [lindex $com 0]
                     set y [lindex $com 1]
                     set r [expr sqrt($x*$x+$y*$y)]
-                    set thetaRad [get_theta $x $y]
-                    set thetaDeg [expr $thetaRad * 180.0 / $M_PI]
+                    set thetaDeg [get_theta $x $y]
                     puts -nonewline $fout "${chnm}/${occ}: $r $thetaDeg "
                 } else {
                     set warning_text "${warning_text} ${chnm}/${occ}"
