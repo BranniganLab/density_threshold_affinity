@@ -100,6 +100,7 @@ proc z_mid {init_frm nframes} {
 ;#Calculated using the midplane_selstr specified in the config to determine leaflet.
 proc output_inclusion_centers {{a ""} } {
     global params
+    global M_PI
     ;# list for the chain names
     ;# finds the center of the membranes
     set midplane_height [z_mid $params(start_frame) $params(end_frame)]
@@ -118,8 +119,9 @@ proc output_inclusion_centers {{a ""} } {
                     set x [lindex $com 0]
                     set y [lindex $com 1]
                     set r [expr sqrt($x*$x+$y*$y)]
-                    set theta [get_theta $x $y]
-                    puts -nonewline $fout "${chnm}/${occ}: $r $theta "
+                    set thetaRad [get_theta $x $y]
+                    set thetaDeg [expr $thetaRad * 180.0 / $M_PI]
+                    puts -nonewline $fout "${chnm}/${occ}: $r $thetaDeg "
                 } else {
                     set warning_text "${warning_text} ${chnm}/${occ}"
                 }
@@ -494,6 +496,7 @@ proc histogram {bins} {
 #        leaflet } { angular bins of all lipid atoms in the inner leaflet } }.
 # Side Effects:
 #    Angular bin information is saved to each atom's (bead's) "user" field.
+#    Radial bin information is saved to each atom's (bead's) "user3" field.
 # Warnings:
 #    If $atselText's atomselection contains lipids which have not been assigned
 #        to a leaflet.
