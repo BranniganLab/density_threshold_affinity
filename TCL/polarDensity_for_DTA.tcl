@@ -477,12 +477,23 @@ proc histogram {bins} {
 }
 
 
-;#The inner-most loop of the histogramming algorithm: a loop over all lipid atoms (or beads) occupying one shell in one frame. Each atom is assigned an angular bin and totals are updated.  
-proc loop_over_atoms {shell frm} {
+# assignAngularBinsByLeaflet
+#
+# The inner-most loop of the histogramming algorithm: a loop over all lipid 
+# atoms (or beads) occupying one shell in one frame. Each atom is assigned an
+# angular bin and totals are updated.
+# Arguments:
+#    atomselection: The atomselection for every bead of interest in the radial
+#        shell.
+#    int: The frame number.
+# Outputs:
+#    list of lists: { { angular bins of all lipid atoms in the outer
+#        leaflet } { angular bins of all lipid atoms in the inner leaflet } }.
+proc assignAngularBinsByLeaflet {shellSel frm} {
     global params
-    set atseltext [$shell text]
-    set inner [atomselect top "($atseltext) and user2 '-1.0'" frame $frm]
-    set outer [atomselect top "($atseltext) and user2 1.0" frame $frm]
+    set atseltext [$shellSel text]
+    set innerLeafSel [atomselect top "($atseltext) and user2 '-1.0'" frame $frm]
+    set outerLeafSel [atomselect top "($atseltext) and user2 1.0" frame $frm]
     set error_check [atomselect top "($atseltext) and not user2 1.0 '-1.0'" frame $frm]
     if {[$error_check num] != 0} {
         set indx [$error_check get index]
@@ -490,15 +501,15 @@ proc loop_over_atoms {shell frm} {
     }
     $error_check delete
     set inner_outer_bins {}
-    foreach leaf [list $inner $outer] {
+    foreach leaf [list $innerLeafSel $outerLeafSel] {
         set x_list [$leaf get x]
         set y_list [$leaf get y]
         set theta_bin_list [get_theta_bins $x_list $y_list $params(dtheta)]
         lappend inner_outer_bins $theta_bin_list
         $leaf set user $theta_bin_list
     }
-    $inner delete
-    $outer delete
+    $innerLeafSel delete
+    $outerLeafSel delete
     return $inner_outer_bins
 }
 
