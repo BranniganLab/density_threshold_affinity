@@ -540,6 +540,7 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
         foreach leaflet "0 1" outfile [list $fpathLower $fpathUpper] {
             set leafletCounts [lindex $bothLeafletsBinned $leaflet]
             set histogrammedCounts [histogram $leafletCounts]
+            puts $histogrammedCounts
             lset totalBinCounts $leaflet [vecadd [lindex $totalBinCounts $leaflet] $histogrammedCounts]
             output_bins $outfile $shellStart $shellEnd $histogrammedCounts
         }
@@ -563,6 +564,7 @@ proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
         set rf2 [expr $rf*$rf]
         set ri2 [expr $ri*$ri]
         set shellSelText "($atseltext) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"
+        puts $shellSelText
         set theta_bin [histogramAllFramesOfShell $shellSelText $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radial_bin_index]
         set theta_bin_high [lindex $theta_bin 1]
         set theta_bin_low [lindex $theta_bin 0]
