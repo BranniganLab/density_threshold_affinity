@@ -499,11 +499,9 @@ proc histogram {bins} {
 #    If $atselText's atomselection contains lipids which have not been assigned
 #        to a leaflet.
 proc assignBinsByLeaflet {atselText frm Ntheta radialIndex} {
-    puts "test"
     set innerLeafSel [atomselect top "($atselText) and user2 '-1.0'" frame $frm]
     set outerLeafSel [atomselect top "($atselText) and user2 1.0" frame $frm]
     set error_check [atomselect top "($atselText) and not user2 1.0 '-1.0'" frame $frm]
-    puts "test2"
     if {[$error_check num] != 0} {
         set indx [$error_check get index]
         puts "WARNING: lipid atom(s) $indx did not get assigned a leaflet for frame $frm"
@@ -514,6 +512,7 @@ proc assignBinsByLeaflet {atselText frm Ntheta radialIndex} {
         set x_list [$leaf get x]
         set y_list [$leaf get y]
         puts $leaf
+        puts [$leaf num]
         set theta_bin_list [get_theta_bins $x_list $y_list $Ntheta]
         lappend inner_outer_bins $theta_bin_list
         $leaf set user $theta_bin_list
@@ -543,7 +542,6 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
         foreach leaflet "0 1" outfile [list $fpathLower $fpathUpper] {
             set leafletCounts [lindex $bothLeafletsBinned $leaflet]
             set histogrammedCounts [histogram $leafletCounts]
-            puts $histogrammedCounts
             lset totalBinCounts $leaflet [vecadd [lindex $totalBinCounts $leaflet] $histogrammedCounts]
             output_bins $outfile $shellStart $shellEnd $histogrammedCounts
         }
@@ -567,7 +565,6 @@ proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
         set rf2 [expr $rf*$rf]
         set ri2 [expr $ri*$ri]
         set shellSelText "($atseltext) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"
-        puts $shellSelText
         set theta_bin [histogramAllFramesOfShell $shellSelText $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radial_bin_index]
         set theta_bin_high [lindex $theta_bin 1]
         set theta_bin_low [lindex $theta_bin 0]
