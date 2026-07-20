@@ -511,12 +511,10 @@ proc assignBinsByLeaflet {atselText frm Ntheta radialIndex} {
     foreach leaf [list $innerLeafSel $outerLeafSel] {
         set x_list [$leaf get x]
         set y_list [$leaf get y]
-        puts $leaf
-        puts [$leaf num]
         set theta_bin_list [get_theta_bins $x_list $y_list $Ntheta]
         lappend inner_outer_bins $theta_bin_list
         $leaf set user $theta_bin_list
-        $leaf set user3 [lrepeat [$leaf num] $radialIndex]
+        # $leaf set user3 [lrepeat [$leaf num] $radialIndex]
     }
     $innerLeafSel delete
     $outerLeafSel delete
