@@ -535,7 +535,7 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
     global params
     set totalBinCounts [lrepeat 2 [lrepeat $params(Ntheta) 0]]
     for {set frm $startFrame} {$frm < $endFrame} {incr frm $params(dt)} {
-        set bothLeafletsBinned [assignAngularBinsByLeaflet $shellSelText $frm $params(Ntheta) $radialIndex]
+        set bothLeafletsBinned [assignBinsByLeaflet $shellSelText $frm $params(Ntheta) $radialIndex]
         foreach leaflet "0 1" outfile [list $fpathLower $fpathUpper] {
             set leafletCounts [lindex $bothLeafletsBinned $leaflet]
             set histogrammedCounts [histogram $leafletCounts]
