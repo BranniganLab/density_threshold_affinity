@@ -16,9 +16,14 @@ proc load_and_run_test {trajpath groname xtcname config home} {
 }
 
 ;# Put your tests below
-
-;# ELIC in 95% POPC 5% Cardiolipin membrane
-set path [file normalize [file join $scriptDir "MD_files/rep1/test_vals"]]
-load_and_run_test $path ../example.gro ../example.xtc ${path}/../config_for_regr_test.tcl $scriptDir
+if {[catch {
+	;# ELIC in 95% POPC 5% Cardiolipin membrane
+	set path [file normalize [file join $scriptDir "MD_files/rep1/test_vals"]]
+	load_and_run_test $path ../example.gro ../example.xtc ${path}/../config_for_regr_test.tcl $scriptDir
+} err opts]} {
+	puts stderr "Tcl script failed inside VMD:"
+    puts stderr $err
+    puts stderr [dict get $opts -errorinfo]
+}
 
 exit

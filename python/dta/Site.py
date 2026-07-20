@@ -5,9 +5,10 @@ Created on Thu Nov 14 13:51:00 2024.
 
 @author: js2746
 """
+from typing import Literal
 import numpy as np
 from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG
-from dta.density import calculate_bin_area
+from dta.bin_logic import PolarBinGrid, BinAddress
 
 
 class Site:
@@ -22,6 +23,8 @@ class Site:
     name : str
         The name of this Site. e.g. "Binding site 1," "Left anterior cleft," or \
         something else descriptive.
+    grid : PolarBinGrid
+        Contains lattice information.
     leaflet_id : int
         If 1, outer leaflet. If 2, inner leaflet.
     temperature : float
@@ -29,7 +32,7 @@ class Site:
 
     Settable Properties
     -------------------
-    bin_coords : list of tuples
+    bin_coords : list of BinAddress
         The bins that belong to this site in (r, theta) format. e.g. \
         [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
         13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
@@ -55,7 +58,7 @@ class Site:
         The binding affinity of the lipid for the Site, in kcal/mol.
     """
 
-    def __init__(self, name, leaflet_id, temperature):
+    def __init__(self, name: str, grid: PolarBinGrid, leaflet_id: Literal[1, 2], temperature: float):
         """
         Create a Site object.
 
@@ -64,13 +67,19 @@ class Site:
         name : str
             The name of this Site. e.g. "Binding site 1," \
             "Left anterior cleft," or something else descriptive.
+        grid : PolarBinGrid
+            Contains lattice information.
         leaflet_id : int
             If 1, outer leaflet. If 2, inner leaflet.
         temperature : float
             The temperature of your system in K.
         """
         self.name = name
-        assert leaflet_id in [1, 2], "leaflet_id must be 1 or 2 (1 for outer leaflet or 2 for inner leaflet)"
+        if not isinstance(grid, PolarBinGrid):
+            raise TypeError("grid must be a PolarBinGrid object.")
+        self.grid = grid
+        if leaflet_id not in [1, 2]:
+            raise ValueError("leaflet_id must be 1 or 2 (1 for outer leaflet or 2 for inner leaflet)")
         self.leaflet_id = leaflet_id
         self.temperature = temperature
         self._bin_coords = None
@@ -78,7 +87,7 @@ class Site:
         self._bulk_counts_histogram = None
 
     @property
-    def bin_coords(self):
+    def bin_coords(self) -> set[BinAddress]:
         """
         Tell me what the bin_coords are. This is a getter function.
 
@@ -94,13 +103,13 @@ class Site:
         return self._bin_coords
 
     @bin_coords.setter
-    def bin_coords(self, bin_coords):
+    def bin_coords(self, bin_addresses: list[BinAddress] | tuple[BinAddress] | set[BinAddress]) -> None:
         """
         Set bin_coords for this Site.
 
         Parameters
         ----------
-        bin_coords : list of tuples
+        bin_addresses : list, tuple, or set of BinAddress
             The bins that belong to this site in (r, theta) format. e.g. \
             [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
             13th theta bins (starting at theta=0) in the 3rd radial bin from \
@@ -111,15 +120,21 @@ class Site:
         None.
 
         """
-        assert isinstance(bin_coords, list), "bin_coords must be provided as a list"
-        assert len(bin_coords) > 0, "bin_coords must have at least one bin"
-        for bin_pair in bin_coords:
-            assert isinstance(bin_pair, tuple), "bin_coords must be provided as a list of 2-tuples"
-            assert len(bin_pair) == 2, f"bin_coords contains an invalid coordinate pair: {bin_pair}"
-        self._bin_coords = bin_coords
+        if not isinstance(bin_addresses, (list, tuple, set)):
+            raise TypeError("bin_addresses must be provided as a list, tuple, or set")
+        bin_coords = []
+        for item in bin_addresses:
+            if not isinstance(item, BinAddress):
+                item = BinAddress(*item)
+            if (item.r_index >= self.grid.r.n_bins) or (item.r_index < 0):
+                raise IndexError(f"Radial bin {item.r_index} out of range.")
+            if (item.theta_index >= self.grid.theta.n_bins) or (item.theta_index < 0):
+                raise IndexError(f"Angular bin {item.theta_index} out of range.")
+            bin_coords.append(item)
+        self._bin_coords = set(bin_coords)
 
     @property
-    def site_counts_histogram(self):
+    def site_counts_histogram(self) -> np.ndarray:
         """
         Tell me the current counts, in histogram form, for the Site.
 
@@ -136,7 +151,7 @@ class Site:
         return self._site_counts_histogram
 
     @property
-    def bulk_counts_histogram(self):
+    def bulk_counts_histogram(self) -> np.ndarray:
         """
         Tell me the current counts, in histogram form, for the Site.
 
@@ -153,7 +168,7 @@ class Site:
         return self._bulk_counts_histogram
 
     @property
-    def n_peak(self):
+    def n_peak(self) -> float:
         """
         Tell me what the n_peak is.
 
@@ -169,7 +184,7 @@ class Site:
         return calculate_hist_mode(self.bulk_counts_histogram)
 
     @property
-    def dG(self):
+    def dG(self) -> float:
         """
         Calculate the binding affinity of the lipid for this Site, including \
         the bulk correction factor dG_ref.
@@ -190,7 +205,7 @@ class Site:
         dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temperature)
         return dG_site - dG_ref
 
-    def update_counts_histogram(self, bulk, counts_data):
+    def update_counts_histogram(self, bulk: bool, counts_data: np.ndarray) -> None:
         """
         Assign ligand bead counts to Site attribute "counts_histogram".
 
@@ -208,28 +223,29 @@ class Site:
         None.
 
         """
-        assert isinstance(counts_data, np.ndarray), "ndarray not supplied"
+        if not isinstance(counts_data, np.ndarray):
+            raise TypeError("ndarray not supplied")
         if bulk:
-            assert len(counts_data.shape) == 1, f"Bulk counts data is not in the right format: {counts_data}"
+            if len(counts_data.shape) != 1:
+                raise ValueError(f"Bulk counts data is not in the right format: {counts_data}")
             bulk_hist = np.bincount(counts_data)
             self._bulk_counts_histogram = bulk_hist
         else:
-            assert len(counts_data.shape) == 3, f"Counts data is not in the right format: {counts_data}"
+            if len(counts_data.shape) != 3:
+                raise ValueError(f"Counts data is not in the right format: {counts_data}")
             counts_data = counts_data.astype(int)
+            if counts_data.shape[-2:] != (self.grid.r.n_bins, self.grid.theta.n_bins):
+                raise ValueError(f"""
+                counts_data is the wrong shape for this lattice.
+                {counts_data.shape} != {(self.grid.r.n_bins, self.grid.theta.n_bins)}
+                """)
             site_counts = self._fetch_site_counts(counts_data)
             site_hist = np.bincount(site_counts)
             self._site_counts_histogram = site_hist
 
-    def calculate_geometric_area(self, dr, dtheta):
+    def calculate_geometric_area(self) -> float:
         """
         Calculate the geometric area of the site.
-
-        Parameters
-        ----------
-        dr : float
-            The bin length in the radial dimension (Angstroms).
-        dtheta : float
-            The bin length in the azimuthal dimension (degrees).
 
         Returns
         -------
@@ -237,12 +253,12 @@ class Site:
             The geometric area of the site in square Angstroms.
 
         """
-        area = 0
-        for bin_tuple in self.bin_coords:
-            area += calculate_bin_area(bin_tuple[0], dr, dtheta)
+        area = 0.0
+        for bin_address in self.bin_coords:
+            area += self.grid.calc_bin_area(bin_address)
         return area
 
-    def predict_accessible_area(self, bulk_area, mode=True):
+    def predict_accessible_area(self, bulk_area: float, mode: bool = True) -> float:
         """
         Predict the accessible area of the site. A reasonable method is to \
         multiply the area of the bulk patch you just analyzed by the ratio of\
@@ -273,7 +289,7 @@ class Site:
         predicted_accessible_area = bulk_area * (site / bulk)
         return predicted_accessible_area
 
-    def _fetch_site_counts(self, binned_counts):
+    def _fetch_site_counts(self, binned_counts: np.ndarray) -> np.ndarray[int]:
         """
         Create a 2D array where each row is a different bin within the site \
         and each column is a frame in the trajectory. Then sum over all the \
