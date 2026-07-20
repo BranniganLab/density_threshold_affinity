@@ -524,6 +524,7 @@ proc assignBinsByLeaflet {atselText frm Ntheta radialIndex} {
 }
 
 # histogramAllFramesOfShell
+#
 # The middle nested loop of the histogramming algorithm: a loop over all frames
 # for a given radial shell. Lipid atoms (beads) are assigned an angular bin and
 # then bin indices are histogrammed to generate a list of counts per bin per 
@@ -532,18 +533,27 @@ proc assignBinsByLeaflet {atselText frm Ntheta radialIndex} {
 # Arguments:
 #    str: The atomselection text for every atom (bead) of interest in the
 #        radial shell (both leaflets).
-#    int: The frame number from which to start the loop
+#    int: The frame number from which to start the loop.
 #    int: The frame upon which to end the loop (not inclusive).
-proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shellEnd fpathLower fpathUpper radialIndex} {
+#    float: The lower radial coordinate of the bin edge.
+#    float: The upper radial coordinate of the bin edge.
+#    channel: The output file corresponding to the Lower leaflet.
+#    channel: The output file corresponding to the Upper leaflet.
+#    int: The index of the radial shell.
+# Outputs:
+#    list of lists: { { Upper leaflet histogram } { Lower leaflet histogram } }
+# Side Effects:
+#    Prints each shell-frame histogram to file.
+proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shellEnd outfileLower outfileUpper radialIndex} {
     global params
     set totalBinCounts [lrepeat 2 [lrepeat $params(Ntheta) 0]]
     for {set frm $startFrame} {$frm < $endFrame} {incr frm $params(dt)} {
         set bothLeafletsBinned [assignBinsByLeaflet $shellSelText $frm $params(Ntheta) $radialIndex]
-        foreach leaflet "0 1" outfile [list $fpathLower $fpathUpper] {
+        foreach leaflet "0 1" outfile [list $outfileLower $outfileUpper] {
             set leafletCounts [lindex $bothLeafletsBinned $leaflet]
             set histogrammedCounts [histogram $leafletCounts]
-            lset totalBinCounts $leaflet [vecadd [lindex $totalBinCounts $leaflet] $histogrammedCounts]
             output_bins $outfile $shellStart $shellEnd $histogrammedCounts
+            lset totalBinCounts $leaflet [vecadd [lindex $totalBinCounts $leaflet] $histogrammedCounts]
         }
     }
     return $totalBinCounts
@@ -556,8 +566,8 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
 
 proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
     global params
-    set delta_frame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
-    set radial_bin_index 0
+    set deltaFrame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
+    set radialIndex 0
     for {set ri $params(Rmin)} { $ri<$params(Rmax)} { set ri [expr $ri + $params(dr)]} {
         #loop over shells
         puts "Now on shell {$ri [expr ${ri}+$params(dr)]}"
@@ -565,13 +575,12 @@ proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
         set rf2 [expr $rf*$rf]
         set ri2 [expr $ri*$ri]
         set shellSelText "($atseltext) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"
-        set theta_bin [histogramAllFramesOfShell $shellSelText $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radial_bin_index]
-        set theta_bin_high [lindex $theta_bin 1]
-        set theta_bin_low [lindex $theta_bin 0]
-        set time_avg_upper [vecscale $theta_bin_high [expr 1.0 / (1.0 * $delta_frame)]]
-        set time_avg_lower [vecscale $theta_bin_low [expr 1.0 / (1.0 * $delta_frame)]]
-        output_bins $upp_f_avg $ri $rf "$time_avg_upper" 
-        output_bins $low_f_avg $ri $rf "$time_avg_lower" 
+        set bothLeafletsTotalHistogram [histogramAllFramesOfShell $shellSelText $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radialIndex]
+        foreach leafletID "0 1" outfile [list $upp_f_avg $low_f_avg] {
+            set totalHistogram [lindex $bothLeafletsTotalHistogram $leafletID]
+            set timeAvg [vecscale $totalHistogram [expr 1.0 / (1.0 * $deltaFrame)]]
+            output_bins $outfile $ri $rf "$timeAvg"
+        }
         incr radial_bin_index
     }
 }
