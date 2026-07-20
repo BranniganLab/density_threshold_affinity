@@ -499,9 +499,11 @@ proc histogram {bins} {
 #    If $atselText's atomselection contains lipids which have not been assigned
 #        to a leaflet.
 proc assignBinsByLeaflet {atselText frm Ntheta radialIndex} {
+    puts "test"
     set innerLeafSel [atomselect top "($atselText) and user2 '-1.0'" frame $frm]
     set outerLeafSel [atomselect top "($atselText) and user2 1.0" frame $frm]
     set error_check [atomselect top "($atselText) and not user2 1.0 '-1.0'" frame $frm]
+    puts "test2"
     if {[$error_check num] != 0} {
         set indx [$error_check get index]
         puts "WARNING: lipid atom(s) $indx did not get assigned a leaflet for frame $frm"
@@ -511,6 +513,7 @@ proc assignBinsByLeaflet {atselText frm Ntheta radialIndex} {
     foreach leaf [list $innerLeafSel $outerLeafSel] {
         set x_list [$leaf get x]
         set y_list [$leaf get y]
+        puts $leaf
         set theta_bin_list [get_theta_bins $x_list $y_list $Ntheta]
         lappend inner_outer_bins $theta_bin_list
         $leaf set user $theta_bin_list
