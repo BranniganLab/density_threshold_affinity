@@ -490,8 +490,8 @@ proc histogram {bins} {
 #    int: The frame number.
 #    float: The 
 # Outputs:
-#    list of lists: { { angular bins of all lipid atoms in the outer
-#        leaflet } { angular bins of all lipid atoms in the inner leaflet } }.
+#    list of lists: { { angular bins of all lipid atoms in the lower/inner
+#        leaflet } { angular bins of all lipid atoms in the upper/outer leaflet } }.
 # Side Effects:
 #    Angular bin information is saved to each atom's (bead's) "user" field.
 #    Radial bin information is saved to each atom's (bead's) "user3" field.
@@ -541,7 +541,7 @@ proc assignBinsByLeaflet {atselText frm Ntheta radialIndex} {
 #    channel: The output file corresponding to the Upper leaflet.
 #    int: The index of the radial shell.
 # Outputs:
-#    list of lists: { { Upper leaflet histogram } { Lower leaflet histogram } }
+#    list of lists: { { Lower leaflet histogram } { Upper leaflet histogram } }
 # Side Effects:
 #    Prints each shell-frame histogram to file.
 proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shellEnd outfileLower outfileUpper radialIndex} {
@@ -576,7 +576,7 @@ proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
         set ri2 [expr $ri*$ri]
         set shellSelText "($atseltext) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"
         set bothLeafletsTotalHistogram [histogramAllFramesOfShell $shellSelText $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radialIndex]
-        foreach leafletID "0 1" outfile [list $upp_f_avg $low_f_avg] {
+        foreach leafletID "0 1" outfile [list $low_f_avg $upp_f_avg] {
             set totalHistogram [lindex $bothLeafletsTotalHistogram $leafletID]
             set timeAvg [vecscale $totalHistogram [expr 1.0 / (1.0 * $deltaFrame)]]
             output_bins $outfile $ri $rf "$timeAvg"
