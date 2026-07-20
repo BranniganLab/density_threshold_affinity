@@ -476,19 +476,23 @@ proc histogram {bins} {
     return $binCounts
 }
 
-
 # assignAngularBinsByLeaflet
 #
-# The inner-most loop of the histogramming algorithm: a loop over all lipid 
-# atoms (or beads) occupying one shell in one frame. Each atom is assigned an
-# angular bin and totals are updated.
+# The inner-most loop of the histogramming algorithm: a loop over both membrane
+# leaflets that assigns an angular (theta) bin to each lipid atom (or bead)
+# occupying one radial shell in one frame. Angular bin numbers are saved to each
+# atom's "user" field and returned in a list.
 # Arguments:
 #    atomselection: The atomselection for every bead of interest in the radial
-#        shell.
+#        shell (both leaflets).
 #    int: The frame number.
 # Outputs:
 #    list of lists: { { angular bins of all lipid atoms in the outer
 #        leaflet } { angular bins of all lipid atoms in the inner leaflet } }.
+# Side Effects:
+#    Angular bin information is saved to each atom's (bead's) "user" field.
+# Warnings:
+#    If $shellSel contains lipids which have not been assigned to a leaflet.
 proc assignAngularBinsByLeaflet {shellSel frm} {
     global params
     set atseltext [$shellSel text]
@@ -513,6 +517,7 @@ proc assignAngularBinsByLeaflet {shellSel frm} {
     return $inner_outer_bins
 }
 
+# histogramAllFramesOfShell
 ;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
 proc loop_over_frames {shell startFrame endFrame rI rF fLower fUpper rIndex} {
     global params
@@ -521,9 +526,9 @@ proc loop_over_frames {shell startFrame endFrame rI rF fLower fUpper rIndex} {
         $shell frame $frm
         $shell update 
         $shell set user3 $rIndex
-        set bothLeafletsCounts [loop_over_atoms $shell $frm]
+        set bothLeafletsBinned [assignAngularBinsByLeaflet $shell $frm]
         foreach leaflet "0 1" outfile [list $fLower $fUpper] {
-            set leafletCounts [lindex $bothLeafletsCounts $leaflet]
+            set leafletCounts [lindex $bothLeafletsBinned $leaflet]
             set histogrammedCounts [histogram $leafletCounts]
             lset totalBinCounts $leaflet [vecadd [lindex $totalBinCounts $leaflet] $histogrammedCounts]
             output_bins $outfile $rI $rF $histogrammedCounts
