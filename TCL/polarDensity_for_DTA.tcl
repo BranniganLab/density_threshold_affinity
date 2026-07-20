@@ -478,12 +478,13 @@ proc histogram {bins} {
     return $binCounts
 }
 
-# assignAngularBinsByLeaflet
+# assignBinsByLeaflet
 #
 # The inner-most loop of the histogramming algorithm: a loop over both membrane
-# leaflets that assigns an angular (theta) bin to each lipid atom (or bead)
-# occupying one radial shell in one frame. Angular bin numbers are saved to each
-# atom's "user" field and returned in a list.
+# leaflets that assigns an angular (theta) and radial (r) bin to each lipid atom
+# (or bead) occupying one radial shell in one frame. Angular bin numbers are 
+# saved to each atom's "user" field and returned in a list. Radial bin numbers
+# are saved to each atom's "user3" field, but not returned.
 # Arguments:
 #    str: The atomselection text for every atom (bead) of interest in the
 #        radial shell (both leaflets).
