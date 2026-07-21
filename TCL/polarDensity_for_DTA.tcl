@@ -344,6 +344,10 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
     } else {
         error "restrict_leaflet_sorter_to_Rmax must be 1 or 0"
     }
+    if {$frame_f > $params(end_frame)} {
+        set frame_f $parames(end_frame) 
+    }
+
     set sel_num [llength [lsort -unique [$sel_to_sort get resid] ] ]
     set sel_resid_list [lsort -unique [$sel_to_sort get resid] ]
     set totals {}
@@ -362,7 +366,6 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
         # Copy leaflet values from $frame_i to all frames between $frame_i and 
         # $frame_f. Use index numbers for this, since $sel is based off of a 
         # radial shell when $restrict_to_Rmax is on.
-
         set leaflet_list [$sel_to_sort get user2] 
         set sel_to_update [atomselect top "index [$sel_to_sort get index]"]
         for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame < $frame_f} {incr unsorted_frame} {
