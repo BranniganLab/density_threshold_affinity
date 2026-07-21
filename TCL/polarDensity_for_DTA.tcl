@@ -79,7 +79,6 @@ proc z_mid {init_frm nframes} {
 ;#Calculated using the midplane_selstr specified in the config to determine leaflet.
 proc output_inclusion_centers {{a ""} } {
     global params
-    global M_PI
     ;# list for the chain names
     ;# finds the center of the membranes
     set midplane_height [z_mid $params(start_frame) $params(end_frame)]
@@ -98,8 +97,8 @@ proc output_inclusion_centers {{a ""} } {
                     set x [lindex $com 0]
                     set y [lindex $com 1]
                     set r [expr sqrt($x*$x+$y*$y)]
-                    set thetaDeg [get_theta $x $y]
-                    puts -nonewline $fout "${chnm}/${occ}: $r $thetaDeg "
+                    set theta [get_theta $x $y]
+                    puts -nonewline $fout "${chnm}/${occ}: $r $theta "
                 } else {
                     set warning_text "${warning_text} ${chnm}/${occ}"
                 }
