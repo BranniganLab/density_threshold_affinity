@@ -68,7 +68,7 @@ proc getAvgHeight {sel startFrm endFrm {step 1}} {
     for {set frm $startFrm} {$frm <= $endFrm} {incr frm $step} {
         $sel frame $frm
         $sel update
-        lappend z_list [lindex [measure center $mid weight mass] 2]
+        lappend z_list [lindex [measure center $sel weight mass] 2]
     }
     return [vecmean $z_list]
 }
