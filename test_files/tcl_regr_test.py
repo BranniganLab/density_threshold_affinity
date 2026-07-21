@@ -12,6 +12,8 @@ from itertools import zip_longest
 from pathlib import Path
 import fnmatch
 
+import pytest
+
 
 def is_ignored(rel_path: Path, patterns: list[str]) -> bool:
     """
@@ -153,7 +155,7 @@ def assert_directories_equal(
 
     Raises
     ------
-    AssertionError
+    pytest.fail.Exception
         If files are missing, extra, or differ in content.
     """
     ignore = ignore or []
@@ -206,12 +208,20 @@ def assert_directories_equal(
             mismatch_reports.append(report)
 
     if mismatch_reports:
+        mismatch_count = len(mismatch_reports)
         summary = (
             "Directory comparison failed with "
-            f"{len(mismatch_reports)} mismatch group(s):"
+            f"{mismatch_count} mismatch group(s):"
         )
-        raise AssertionError(
-            summary + "\n\n" + "\n\n".join(mismatch_reports)
+        report = summary + "\n\n" + "\n\n".join(mismatch_reports)
+
+        # Keep the detailed diagnostics out of the exception message. Pytest
+        # otherwise repeats a multiline exception in both the failure traceback
+        # and the short test summary.
+        print(report, flush=True)
+        pytest.fail(
+            f"Directory comparison found {mismatch_count} mismatch group(s).",
+            pytrace=False,
         )
 
 
