@@ -522,7 +522,7 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
     global params
     set totalBinCounts [lrepeat $params(Ntheta) 0]
     set shellSel [atomselect top "$shellSelText and (user2 $leafletID)"]
-    set errorCheck [atomselect top "($atselText) and not (user2 1.0 '-1.0')"]
+    set errorCheck [atomselect top "($shellSelText) and not (user2 1.0 '-1.0')"]
     for {set frm $startFrame} {$frm < $endFrame} {incr frm $params(dt)} {
         $shellSel frame $frm
         $shellSel update
