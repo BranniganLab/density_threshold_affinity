@@ -666,6 +666,16 @@ proc polarDensityBin { config_file_script } {
             error "No lipid of matching atomselection text $atseltext"
         }
 
+        set nframes [molinfo top get numframes]
+        if { $params(start_frame) > $nframes } {
+            puts "Warning: specified start frame $params(start_frame) is greater than number of frames $nframes" 
+            set params(start_frame) $nframes
+        }
+        if { $params(end_frame) >= $nframes } {
+            puts "Warning: specified end frame $params(end_frame) is greater than number of frames; setting end frame to [expr $nframes - 1]" 
+            set params(end_frame) [expr $nframes - 1]
+        }
+
         if {$params(center_and_align) == 1} {
             ;# wraps and centers system at origin
             center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)"
@@ -674,17 +684,8 @@ proc polarDensityBin { config_file_script } {
         }
         ;# outputs protein positions
         output_inclusion_centers
-        ;# initialize some constants
+
         set area [get_avg_area]
-        set nframes [molinfo top get numframes]
-        if { $params(start_frame) > $nframes } {
-            puts "Warning: specified start frame $params(start_frame) is greater than number of frames $nframes" 
-            set params(start_frame) $nframes
-        }
-        if { $params(end_frame) > $nframes } {
-            puts "Warning: specified end frame $params(end_frame) is greater than number of frames; setting end frame to $nframes" 
-            set params(end_frame) $nframes
-        }
 
         puts "Atomselection:\t$atseltext"
         set low_f [open "${stem}.low.dat" w]
