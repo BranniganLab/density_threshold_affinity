@@ -21,27 +21,6 @@ proc get_avg_area {} {
     return $avg
 }
 
-# lcount 
-#
-# Takes a list as input and returns a list of unique elements in the input list along with their counts.
-# Arguments:
-#   list: A list of elements.
-# Outputs:
-#   A list containing two lists:
-#   - The first list contains the unique elements from the input list.
-#   - The second list contains the counts of each unique element in the input list.
-proc lcount list {
-    foreach x $list {lappend arr($x) {}}
-    set res1 {}
-    set res2 {}
-    foreach name [array names arr] {
-        lappend res1 $name
-        lappend res2 [llength $arr($name)]
-    }
-    set res [list $res1 $res2]
-    return $res
-}
-
 # RtoD
 #
 # Converts an angle from radians to degrees
@@ -71,25 +50,6 @@ proc get_theta {x y} {
         set theta $tmp
     }
     return [RtoD $theta]
-}
-
-# get_theta_bins
-#
-# Gets a list of theta bin indices from lists of x- and y-coordinates
-# Arguments:
-#   list: x coordinates
-#   list: y coordinates
-#   float: step size in theta
-# Outputs:
-#   list: the theta bin indices for each atom/bead
-
-proc get_theta_bins {x_list y_list dtheta} {
-    set theta_bin_list {}
-    foreach x $x_list y $y_list {
-        set theta [get_theta $x $y]
-        lappend theta_bin_list [expr int($theta/$dtheta)]
-    }
-    return $theta_bin_list 
 }
 
 # z_mid
@@ -479,107 +439,146 @@ proc output_bins {fl  ri rf bins} {
     puts $fl "$bins" 
 }
 
+# histogram
 #
-proc theta_histogram {singleFrame_lower singleFrame_upper } {
+# Turn a list of bin indices into a histogram.
+# Arguments:
+#   list: a list of bin indices that should be aggregated into a histogram.
+#   int: the total number of bins.
+# Outputs:
+#   list: the number of times each index appearred in $bins
+proc histogram {indices numBins} {
     global params
-    set theta_bin_out [list]
-    foreach ud [list $singleFrame_lower $singleFrame_upper ] {
-        #cleanup and output 
-        set theta_bin_counts [lcount $ud]
+    # set all bins counts to 0
+    set binCounts [lrepeat $numBins 0.0]
+    foreach binIndex $indices {
+        #increment the count for that bin index
+        lset binCounts $binIndex [expr {[lindex $binCounts $binIndex] + 1.0}]
+    }
+    return $binCounts
+}
 
-        set theta_bins {}
-        for {set ti 0} { $ti<$params(Ntheta)} {incr ti 1} {
-            set tindex [lsearch [lindex $theta_bin_counts 0]  $ti]
-            if { $tindex >= 0} {
-                set frame_count [expr 1.0 * [lindex [lindex $theta_bin_counts 1] $tindex]] 
-            } else { 
-                set frame_count 0.0
-            }
-            lappend theta_bins $frame_count
+# assignBins
+#
+# The inner-most 'loop' of the histogramming algorithm: a loop that assigns an
+# angular (theta) and radial (r) bin to each lipid atom (or bead) occupying one
+# radial shell in one frame. Angular bin numbers are saved to each atom's
+# "user" field and returned in a list. Radial bin numbers are saved to each 
+# atom's "user3" field, but not returned.
+# Arguments:
+#    str: The atomselection text for every atom (bead) of interest in the
+#        radial shell on a single frame.
+#    int: The number of angular bins.
+#    int: The index of the current radial shell. 
+# Outputs:
+#    list: angular bins of all lipid atoms in the shell-frame.
+# Side Effects:
+#    Angular bin information is saved to each atom's (bead's) "user" field.
+#    Radial bin information is saved to each atom's (bead's) "user3" field.
+proc assignBins {atsel numAngularBins radialIndex} {
+    set angularStepSize [expr 360.0 / $numAngularBins]
+    set x_list [$atsel get x]
+    set y_list [$atsel get y]
+    set theta_bin_list ""
+    foreach x $x_list y $y_list {
+        set theta [get_theta $x $y]
+        # modulo is necessary to guard against edge case
+        lappend theta_bin_list [expr {int($theta/$angularStepSize) % $numAngularBins}]
+    }
+    $atsel set user $theta_bin_list
+    if {[$atsel num] > 0} {
+        $atsel set user3 [lrepeat [$atsel num] $radialIndex]
+    }
+    return $theta_bin_list
+}
+
+# histogramAllFramesOfShell
+#
+# The middle nested loop of the histogramming algorithm: a loop over all frames
+# for a given radial shell. Lipid atoms (beads) are assigned an angular bin and
+# then bin indices are histogrammed to generate a list of counts per bin per 
+# leaflet. Individual frame histograms are output to file and a running total
+# histogram is returned at the end of the loop.
+# Arguments:
+#    str: The atomselection text for every atom (bead) of interest in the
+#        radial shell.
+#    int: The frame number from which to start the loop.
+#    int: The frame upon which to end the loop (not inclusive).
+#    float: The lower radial coordinate of the bin edge.
+#    float: The upper radial coordinate of the bin edge.
+#    channel: The counts output file.
+#    int: The index of the radial shell.
+#    str/float: '-1.0' for lower leaflet / 1.0 for upper leaflet. Single quotes
+#        are required for VMD to correctly parse the negative sign.
+# Outputs:
+#    list: angular bin counts for this shell, histogrammed and summed over time.
+# Side Effects:
+#    Prints each shell-frame histogram to file.
+#    Bin information is saved to user fields (via assignBins).
+# Warnings:
+#    If $shellSelText's atomselection contains lipids which have not been assigned
+#        to a leaflet.
+proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shellEnd outfile radialIndex leafletID} {
+    global params
+    set totalBinCounts [lrepeat $params(Ntheta) 0]
+    set shellSel [atomselect top "$shellSelText and (user2 $leafletID)"]
+    set errorCheck [atomselect top "($shellSelText) and not (user2 1.0 '-1.0')"]
+    for {set frm $startFrame} {$frm < $endFrame} {incr frm $params(dt)} {
+        $shellSel frame $frm
+        $shellSel update
+        $errorCheck frame $frm
+        $errorCheck update
+        if {[$errorCheck num] != 0} {
+            set indx [$errorCheck get index]
+            puts "WARNING: lipid atom(s) $indx did not get assigned a leaflet for frame $frm"
         }
-        lappend theta_bin_out $theta_bins
+        set unorderedBins [assignBins $shellSel $params(Ntheta) $radialIndex]
+        set histogrammedCounts [histogram $unorderedBins $params(Ntheta)]
+        output_bins $outfile $shellStart $shellEnd $histogrammedCounts
+        set totalBinCounts [vecadd $totalBinCounts $histogrammedCounts]
     }
-    return $theta_bin_out
+    $shellSel delete
+    $errorCheck delete
+    return $totalBinCounts
 }
 
-
-;#The inner-most loop of the histogramming algorithm: a loop over all lipid atoms (or beads) occupying one shell in one frame. Each atom is assigned an angular bin and totals are updated.  
-proc loop_over_atoms {shell frm} {
+# calculateAvgCountsByShell
+#
+# The outer loop of the 3 nested histogramming loops. 
+# Unintuitively, the outermost loop is over radial shells, then the middle loop
+# is over frames, and the inner most loop is over atoms/beads in the shell. 
+# This odd construction improves efficiency: the radial atomselections can be 
+# created using radial coordinates, and then updated for each new frame in the
+# middle loop. There is no equivalent option for an angular "within" so angular
+# histogramming occurs more traditionally via a loop over atoms/beads.
+# Arguments:
+#    str: The atomselection text for every atom (bead) of interest (both leaflets).
+#    channel: The output file corresponding to the Lower leaflet counts.
+#    channel: The output file corresponding to the Upper leaflet counts.
+#    channel: The output file corresponding to the Lower leaflet average counts.
+#    channel: The output file corresponding to the Upper leaflet average counts.
+# Side Effects:
+#    Prints time-averaged counts for each shell to the average counts files.
+#    Prints each shell-frame histogram to counts file (via histogramAllFramesOfShell).
+#    Bin information is saved to user fields (via assignBins).
+proc calculateAvgCountsByShell {atselText lowerCountsOutfile upperCountsOutfile lowerAvgOutfile upperAvgOutfile} {
     global params
-    set atseltext [$shell text]
-    set inner [atomselect top "($atseltext) and user2 '-1.0'" frame $frm]
-    set outer [atomselect top "($atseltext) and user2 1.0" frame $frm]
-    set error_check [atomselect top "($atseltext) and not user2 1.0 '-1.0'" frame $frm]
-    if {[$error_check num] != 0} {
-        set indx [$error_check get index]
-        puts "WARNING: lipid atom(s) $indx did not get assigned a leaflet for frame $frm"
-    }
-    $error_check delete
-    set inner_outer_bins {}
-    foreach leaf [list $inner $outer] {
-        set x_list [$leaf get x]
-        set y_list [$leaf get y]
-        set theta_bin_list [get_theta_bins $x_list $y_list $params(dtheta)]
-        lappend inner_outer_bins $theta_bin_list
-        $leaf set user $theta_bin_list
-    }
-    $inner delete
-    $outer delete
-    return $inner_outer_bins
-}
-
-;#The middle nested loop of the histogramming algorithm: a loop over all frames for a given radial shell. The atoms/beads occupying the shell are calculated using atomselect within and updated in each frame, without creating or destroying a new atom selection. 
-proc loop_over_frames {shell start_frame end_frame ri rf flower fupper r_index} {
-    global params
-    set theta_bin_high [lrepeat $params(Ntheta) 0]
-    set theta_bin_low [lrepeat $params(Ntheta) 0]
-    for {set frm $start_frame} {$frm < $end_frame} {incr frm $params(dt)} {
-        $shell frame $frm
-        $shell update 
-        $shell set user3 $r_index
-        set singleFrame_counts [loop_over_atoms $shell $frm]
-        set singleFrame_upper [lindex $singleFrame_counts 1] 
-        set singleFrame_lower [lindex $singleFrame_counts 0]
-        set theta_bins [theta_histogram $singleFrame_lower $singleFrame_upper]
-        if { [llength $theta_bin_high] != [llength [lindex $theta_bins 0]] } {
-            error "theta_bin_high/low and theta_bins do not have the same length."
+    set deltaFrame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
+    foreach leafletID "'-1.0' 1.0" countsOutfile [list $lowerCountsOutfile $upperCountsOutfile] avgCountsOutfile [list $lowerAvgOutfile $upperAvgOutfile] leafletStr "inner outer" {
+        set radialIndex 0
+        for {set ri $params(Rmin)} {$ri<$params(Rmax)} {set ri [expr $ri + $params(dr)]} {
+            set rf [expr $ri + $params(dr)]
+            puts "Now on $leafletStr leaflet shell {$ri $rf}"
+            set ri2 [expr $ri*$ri]
+            set rf2 [expr $rf*$rf]
+            set shellSelText "($atselText) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"
+            set totalHistogram [histogramAllFramesOfShell $shellSelText $params(start_frame) $params(end_frame) $ri $rf $countsOutfile $radialIndex $leafletID]
+            set timeAvg [vecscale $totalHistogram [expr 1.0 / (1.0 * $deltaFrame)]]
+            output_bins $avgCountsOutfile $ri $rf "$timeAvg"
+            incr radialIndex
         }
-        set theta_bin_high [vecadd $theta_bin_high [lindex $theta_bins 1] ]
-        set theta_bin_low [vecadd $theta_bin_low [lindex $theta_bins 0]]
-        output_bins $fupper $ri $rf [lindex $theta_bins 1] 
-        output_bins $flower $ri $rf [lindex $theta_bins 0]   
-    }
-    return [list  ${theta_bin_low} ${theta_bin_high}]
-}
-
-
-;#The outer loop of the 3 nested histogramming loops. 
-;#Unintuitively, the outermost loop is over radial shells, then the middle loop is over frames, and the inner most loop is over atoms/beads in the shell. 
-;#This odd construction improves efficiency: the radial atomselections can be created using "atomselect within", and then updated for each new frame in the middle loop, without a new selection being created or destroyed. There is no equivalent option for an angular "within" so angular histogramming occurs more traditionally via a loop over atoms/beads.  
-
-proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
-    global params
-    set delta_frame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
-    set radial_bin_index 0
-    for {set ri $params(Rmin)} { $ri<$params(Rmax)} { set ri [expr $ri + $params(dr)]} {
-        #loop over shells
-        puts "Now on shell {$ri [expr ${ri}+$params(dr)]}"
-        set rf [expr $ri + $params(dr)]
-        set rf2 [expr $rf*$rf]
-        set ri2 [expr $ri*$ri]
-        set shell [atomselect top "($atseltext) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"]
-        set theta_bin [loop_over_frames $shell $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radial_bin_index]
-        set theta_bin_high [lindex $theta_bin 1]
-        set theta_bin_low [lindex $theta_bin 0]
-        $shell delete	
-        set time_avg_upper [vecscale $theta_bin_high [expr 1.0 / (1.0 * $delta_frame)]]
-        set time_avg_lower [vecscale $theta_bin_low [expr 1.0 / (1.0 * $delta_frame)]]
-        output_bins $upp_f_avg $ri $rf "$time_avg_upper" 
-        output_bins $low_f_avg $ri $rf "$time_avg_lower" 
-        incr radial_bin_index
     }
 }
-
 
 proc set_parameters { config_file_script } {
     global params
@@ -710,7 +709,7 @@ proc polarDensityBin { config_file_script } {
         puts "Processing frames, starting at frame $params(start_frame) and ending at frame $params(end_frame)."
         trajectory_leaflet_assignment $atseltext $headname $tailname   
         ;#the core calculation 
-        loop_over_shells $atseltext $low_f $upp_f $low_f_avg $upp_f_avg  
+        calculateAvgCountsByShell $atseltext $low_f $upp_f $low_f_avg $upp_f_avg  
         
         close $low_f
         close $upp_f
