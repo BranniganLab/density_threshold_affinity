@@ -564,7 +564,7 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
 proc calculateAvgCountsByShell {atselText lowerCountsOutfile upperCountsOutfile lowerAvgOutfile upperAvgOutfile} {
     global params
     set deltaFrame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
-    foreach leafletID "'-1.0' 1.0" countsOutfile [list $lowerCountsOutfile $upperCountsOutfile] avgCountsFile [list $lowerAvgOutfile $upperAvgOutfile] leafletStr "inner outer" {
+    foreach leafletID "'-1.0' 1.0" countsOutfile [list $lowerCountsOutfile $upperCountsOutfile] avgCountsOutfile [list $lowerAvgOutfile $upperAvgOutfile] leafletStr "inner outer" {
         set radialIndex 0
         for {set ri $params(Rmin)} {$ri<$params(Rmax)} {set ri [expr $ri + $params(dr)]} {
             set rf [expr $ri + $params(dr)]
@@ -574,7 +574,7 @@ proc calculateAvgCountsByShell {atselText lowerCountsOutfile upperCountsOutfile 
             set shellSelText "($atselText) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"
             set totalHistogram [histogramAllFramesOfShell $shellSelText $params(start_frame) $params(end_frame) $ri $rf $countsOutfile $radialIndex $leafletID]
             set timeAvg [vecscale $totalHistogram [expr 1.0 / (1.0 * $deltaFrame)]]
-            output_bins $avgOutfile $ri $rf "$timeAvg"
+            output_bins $avgCountsOutfile $ri $rf "$timeAvg"
             incr radial_bin_index
         }
     }
