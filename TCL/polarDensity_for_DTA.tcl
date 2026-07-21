@@ -345,7 +345,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
         error "restrict_leaflet_sorter_to_Rmax must be 1 or 0"
     }
     if {$frame_f > $params(end_frame)} {
-        set frame_f $parames(end_frame) 
+        set frame_f $params(end_frame) 
     }
 
     set sel_num [llength [lsort -unique [$sel_to_sort get resid] ] ]
