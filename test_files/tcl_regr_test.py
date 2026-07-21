@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Regression test comparing the contents of two directory trees.
+
 Created on Wed Mar 25 15:59:07 2026
 
 @author: js2746
 """
 
+from itertools import zip_longest
 from pathlib import Path
-import difflib
 import fnmatch
 
 
@@ -15,39 +17,115 @@ def is_ignored(rel_path: Path, patterns: list[str]) -> bool:
     """
     Determine whether a relative file path should be ignored.
 
-    A path is considered ignored if it matches any pattern in `patterns`.
-    Matching is performed against both:
-      - the full relative path (e.g., "subdir/file.txt")
-      - the filename only (e.g., "file.txt")
-
-    Supported pattern types (via fnmatch):
-      - Exact filenames: "file.txt"
-      - Relative paths: "subdir/file.txt"
-      - Glob patterns: "*.log", "cache/*", "*/tmp/*"
+    A path is considered ignored if it matches any pattern in ``patterns``.
+    Matching is performed against both the full relative path and the filename.
 
     Parameters
     ----------
-    rel_path : Path
+    rel_path : pathlib.Path
         Path relative to the root directory being compared.
     patterns : list[str]
-        List of ignore patterns.
+        Filename, relative-path, or glob patterns to ignore.
 
     Returns
     -------
     bool
-        True if the path matches any ignore pattern, False otherwise.
+        ``True`` if the path matches an ignore pattern; otherwise ``False``.
     """
     rel_str = str(rel_path)
     name = rel_path.name
 
-    for pattern in patterns:
-        if (
-            fnmatch.fnmatch(rel_str, pattern)
-            or fnmatch.fnmatch(name, pattern)
-        ):
-            return True
+    return any(
+        fnmatch.fnmatch(rel_str, pattern)
+        or fnmatch.fnmatch(name, pattern)
+        for pattern in patterns
+    )
 
-    return False
+
+def _format_line_difference(
+    expected_line: str | None,
+    actual_line: str | None,
+    line_number: int,
+) -> list[str]:
+    """Format one differing pair of lines with field-level differences."""
+    if expected_line is None:
+        return [
+            f"  line {line_number}: unexpected line in actual file",
+            f"    actual:   {actual_line}",
+        ]
+
+    if actual_line is None:
+        return [
+            f"  line {line_number}: line missing from actual file",
+            f"    expected: {expected_line}",
+        ]
+
+    expected_fields = expected_line.split()
+    actual_fields = actual_line.split()
+
+    output = [f"  line {line_number}:"]
+
+    if len(expected_fields) == len(actual_fields):
+        differing_fields = [
+            (index, expected, actual)
+            for index, (expected, actual) in enumerate(
+                zip(expected_fields, actual_fields),
+                start=1,
+            )
+            if expected != actual
+        ]
+
+        if differing_fields:
+            for index, expected, actual in differing_fields:
+                output.append(
+                    f"    field {index}: expected {expected!r}; actual {actual!r}"
+                )
+            return output
+
+    # Field-level alignment is ambiguous when the number of fields differs,
+    # or when only whitespace differs. Show the complete lines instead.
+    output.extend(
+        [
+            f"    expected: {expected_line}",
+            f"    actual:   {actual_line}",
+        ]
+    )
+    return output
+
+
+def _format_text_file_difference(
+    expected_file: Path,
+    actual_file: Path,
+    rel_path: Path,
+) -> str | None:
+    """Return a detailed report for a text mismatch, or ``None`` if equal."""
+    expected_lines = expected_file.read_text().splitlines()
+    actual_lines = actual_file.read_text().splitlines()
+
+    if expected_lines == actual_lines:
+        return None
+
+    report = [f"TEXT MISMATCH: {rel_path}"]
+    mismatch_count = 0
+
+    for line_number, (expected_line, actual_line) in enumerate(
+        zip_longest(expected_lines, actual_lines),
+        start=1,
+    ):
+        if expected_line == actual_line:
+            continue
+
+        mismatch_count += 1
+        report.extend(
+            _format_line_difference(expected_line, actual_line, line_number)
+        )
+
+    report.insert(
+        1,
+        f"  {mismatch_count} differing line(s); "
+        f"expected {len(expected_lines)} line(s), actual {len(actual_lines)} line(s)",
+    )
+    return "\n".join(report)
 
 
 def assert_directories_equal(
@@ -56,81 +134,89 @@ def assert_directories_equal(
     *,
     binary: bool = False,
     ignore: list[str] | None = None,
-):
+) -> None:
     """
-    Assert that two directories are identical in structure and file contents.
+    Assert that two directories have identical structure and file contents.
+
+    All structural and content mismatches are collected before the assertion
+    fails. For text files, differences are reported by line and whitespace-
+    separated field so changed values are easy to identify.
 
     Parameters
     ----------
-    dir_a, dir_b : Path
-        Directories to compare.
+    dir_a, dir_b : pathlib.Path
+        Reference and test-output directories, respectively.
     binary : bool, optional
-        If True, compare files as raw bytes.
+        Compare files as raw bytes instead of text when ``True``.
     ignore : list[str], optional
-        Patterns to ignore. Supports:
-        - filenames: "log.txt"
-        - relative paths: "subdir/file.txt"
-        - glob patterns: "*.log", "*/tmp/*"
+        Filename, relative-path, or glob patterns to ignore.
+
+    Raises
+    ------
+    AssertionError
+        If files are missing, extra, or differ in content.
     """
     ignore = ignore or []
 
     files_a = {
-        p.relative_to(dir_a)
-        for p in dir_a.rglob("*")
-        if p.is_file() and not is_ignored(p.relative_to(dir_a), ignore)
+        path.relative_to(dir_a)
+        for path in dir_a.rglob("*")
+        if path.is_file()
+        and not is_ignored(path.relative_to(dir_a), ignore)
     }
-
     files_b = {
-        p.relative_to(dir_b)
-        for p in dir_b.rglob("*")
-        if p.is_file() and not is_ignored(p.relative_to(dir_b), ignore)
+        path.relative_to(dir_b)
+        for path in dir_b.rglob("*")
+        if path.is_file()
+        and not is_ignored(path.relative_to(dir_b), ignore)
     }
 
-    # --- structure check ---
-    missing = files_a - files_b
-    extra = files_b - files_a
+    missing = sorted(files_a - files_b)
+    extra = sorted(files_b - files_a)
+    common = sorted(files_a & files_b)
+    mismatch_reports: list[str] = []
 
-    if missing or extra:
-        msg = []
-        if missing:
-            msg.append(
-                f"Missing in {dir_b}:\n" + "\n".join(map(str, sorted(missing)))
-            )
-        if extra:
-            msg.append(
-                f"Extra in {dir_b}:\n" + "\n".join(map(str, sorted(extra)))
-            )
-        raise AssertionError("\n\n".join(msg))
+    if missing:
+        mismatch_reports.append(
+            f"MISSING FROM ACTUAL DIRECTORY ({dir_b}):\n  "
+            + "\n  ".join(map(str, missing))
+        )
 
-    # --- content check ---
-    for rel_path in sorted(files_a):
-        file_a = dir_a / rel_path
-        file_b = dir_b / rel_path
+    if extra:
+        mismatch_reports.append(
+            f"EXTRA IN ACTUAL DIRECTORY ({dir_b}):\n  "
+            + "\n  ".join(map(str, extra))
+        )
+
+    for rel_path in common:
+        expected_file = dir_a / rel_path
+        actual_file = dir_b / rel_path
 
         if binary:
-            if file_a.read_bytes() != file_b.read_bytes():
-                raise AssertionError(f"Binary files differ: {rel_path}")
-        else:
-            a_lines = file_a.read_text().splitlines()
-            b_lines = file_b.read_text().splitlines()
+            if expected_file.read_bytes() != actual_file.read_bytes():
+                mismatch_reports.append(f"BINARY MISMATCH: {rel_path}")
+            continue
 
-            if a_lines != b_lines:
-                diff = "\n".join(
-                    difflib.unified_diff(
-                        a_lines,
-                        b_lines,
-                        fromfile=str(file_a),
-                        tofile=str(file_b),
-                        lineterm="",
-                    )
-                )
-                raise AssertionError(
-                    f"Files differ: {rel_path}\n{diff}"
-                )
+        report = _format_text_file_difference(
+            expected_file,
+            actual_file,
+            rel_path,
+        )
+        if report is not None:
+            mismatch_reports.append(report)
+
+    if mismatch_reports:
+        summary = (
+            "Directory comparison failed with "
+            f"{len(mismatch_reports)} mismatch group(s):"
+        )
+        raise AssertionError(
+            summary + "\n\n" + "\n\n".join(mismatch_reports)
+        )
 
 
 def test_output_directory():
-    """Test if contents of reference val and test val directories match."""
+    """Test that reference and generated output directories match."""
     assert_directories_equal(
         Path("./MD_files/rep1/ref_vals"),
         Path("./MD_files/rep1/test_vals"),
