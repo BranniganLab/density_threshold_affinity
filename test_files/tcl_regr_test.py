@@ -8,6 +8,7 @@ Created on Wed Mar 25 15:59:07 2026
 @author: js2746
 """
 
+from difflib import SequenceMatcher
 from itertools import zip_longest
 from pathlib import Path
 import fnmatch
@@ -109,18 +110,27 @@ def _format_text_file_difference(
 
     report = [f"TEXT MISMATCH: {rel_path}"]
     mismatch_count = 0
+    matcher = SequenceMatcher(a=expected_lines, b=actual_lines, autojunk=False)
 
-    for line_number, (expected_line, actual_line) in enumerate(
-        zip_longest(expected_lines, actual_lines),
-        start=1,
-    ):
-        if expected_line == actual_line:
+    for tag, expected_start, expected_end, actual_start, actual_end in matcher.get_opcodes():
+        if tag == "equal":
             continue
 
-        mismatch_count += 1
-        report.extend(
-            _format_line_difference(expected_line, actual_line, line_number)
-        )
+        expected_region = expected_lines[expected_start:expected_end]
+        actual_region = actual_lines[actual_start:actual_end]
+
+        for offset, (expected_line, actual_line) in enumerate(
+            zip_longest(expected_region, actual_region)
+        ):
+            mismatch_count += 1
+            if expected_line is None:
+                line_number = actual_start + offset + 1
+            else:
+                line_number = expected_start + offset + 1
+
+            report.extend(
+                _format_line_difference(expected_line, actual_line, line_number)
+            )
 
     report.insert(
         1,
