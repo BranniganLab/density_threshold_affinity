@@ -368,7 +368,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
         # radial shell when $restrict_to_Rmax is on.
         set leaflet_list [$sel_to_sort get user2] 
         set sel_to_update [atomselect top "index [$sel_to_sort get index]"]
-        for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame < $frame_f} {incr unsorted_frame} {
+        for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame <= $frame_f} {incr unsorted_frame} {
             $sel_to_update frame $unsorted_frame
             $sel_to_update update
             $sel_to_update set user2 $leaflet_list
