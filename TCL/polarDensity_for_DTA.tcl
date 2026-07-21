@@ -563,7 +563,7 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
 #    Bin information is saved to user fields (via assignBins).
 proc calculateAvgCountsByShell {atselText lowerCountsOutfile upperCountsOutfile lowerAvgOutfile upperAvgOutfile} {
     global params
-    set delta_frame [expr {int(ceil(double($params(end_frame) - $params(start_frame) + 1.0) / $params(dt)))}]
+    set deltaFrame [expr {int(ceil(double($params(end_frame) - $params(start_frame) + 1.0) / $params(dt)))}]
     foreach leafletID "'-1.0' 1.0" countsOutfile [list $lowerCountsOutfile $upperCountsOutfile] avgCountsOutfile [list $lowerAvgOutfile $upperAvgOutfile] leafletStr "inner outer" {
         set radialIndex 0
         for {set ri $params(Rmin)} {$ri<$params(Rmax)} {set ri [expr $ri + $params(dr)]} {
