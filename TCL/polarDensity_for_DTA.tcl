@@ -670,9 +670,8 @@ proc polarDensityBin { config_file_script } {
         }
 
         set nframes [molinfo top get numframes]
-        if { $params(start_frame) > $nframes } {
-            puts "Warning: specified start frame $params(start_frame) is greater than number of frames $nframes" 
-            set params(start_frame) $nframes
+        if { $params(start_frame) >= $nframes } {
+            error "Error: specified start frame $params(start_frame) exceeds final frame [expr $nframes - 1]" 
         }
         if { $params(end_frame) >= $nframes } {
             puts "Warning: specified end frame $params(end_frame) is greater than number of frames; setting end frame to [expr $nframes - 1]" 
