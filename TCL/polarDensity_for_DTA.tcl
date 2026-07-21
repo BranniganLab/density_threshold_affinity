@@ -52,25 +52,25 @@ proc get_theta {x y} {
     return [RtoD $theta]
 }
 
-# z_mid
+# getAvgHeight
 #
-# Finds the average mid-plane
+# Finds the z coordinate of the center of mass of a selection, averaged over time.
 # Arguments:
-#   int: first frame
-#   nframes: The number of frames over which to average
+#   atomselection: The selection you want to measure the z-COM of.
+#   int: starting frame.
+#   int: ending frame (inclusive).
+#   int: time step in frames. default is 1 frame.
 # Outputs:
-#   float: The average z value of all the beads
-#
-
-proc z_mid {init_frm nframes} {
+#   float: The average z-value of all the atoms in the selection, weighted by mass.
+proc getAvgHeight {sel startFrm endFrm {step 1}} {
     global params
     set z_list {}
-    for {set frm ${init_frm}} {${frm} < ${nframes}} {incr frm} {
-        set mid [atomselect top $params(midplane_selstr) frame $frm]
+    for {set frm $startFrm} {$frm <= $endFrm} {incr frm $step} {
+        $sel frame $frm
+        $sel update
         lappend z_list [lindex [measure center $mid weight mass] 2]
-        $mid delete
     }
-    return [expr 1.0*[vecsum $z_list]/([llength $z_list]) ]
+    return [vecmean $z_list]
 }
 
 
@@ -81,7 +81,9 @@ proc output_inclusion_centers {{a ""} } {
     global params
     ;# list for the chain names
     ;# finds the center of the membranes
-    set midplane_height [z_mid $params(start_frame) [expr $params(end_frame) + 1]]
+    set inclusionSel [atomselect top $params(midplane_selstr)]
+    set midplane_height [getAvgHeight $inclusionSel $params(start_frame) $params(end_frame)]
+    $inclusionSel delete
     ;# calculates the center of mass for subunit alpha helices in both leaflets
     puts "Writing coordinates for [llength $params(chainlist)] chains and [llength $params(helixlist)] helices per chain"
     foreach eq {"<" ">"} eqtxt {"lwr" "upr"} {
