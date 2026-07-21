@@ -575,7 +575,7 @@ proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
         set time_avg_upper [vecscale $theta_bin_high [expr 1.0 / (1.0 * $delta_frame)]]
         set time_avg_lower [vecscale $theta_bin_low [expr 1.0 / (1.0 * $delta_frame)]]
         if {$radial_bin_index == 3} {
-            set time_avg_upper [vecadd $theta_bin_high 2.0]
+            set time_avg_upper [vecadd $time_avg_upper [lrepeat [llength $time_avg_upper] 2.0]]
         }
         output_bins $upp_f_avg $ri $rf "$time_avg_upper" 
         output_bins $low_f_avg $ri $rf "$time_avg_lower" 
