@@ -532,7 +532,7 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
             set indx [$errorCheck get index]
             puts "WARNING: lipid atom(s) $indx did not get assigned a leaflet for frame $frm"
         }
-        set unorderedBins [assignBinsByLeaflet $shellSel $params(Ntheta) $radialIndex]
+        set unorderedBins [assignBins $shellSel $params(Ntheta) $radialIndex]
         set histogrammedCounts [histogram $unorderedBins]
         output_bins $outfile $shellStart $shellEnd $histogrammedCounts
         set totalBinCounts [vecadd $totalBinCounts $histogrammedCounts]
