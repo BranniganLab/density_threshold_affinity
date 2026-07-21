@@ -545,6 +545,7 @@ proc assignBinsByLeaflet {atselText frm Ntheta radialIndex} {
 #    list of lists: { { Lower leaflet histogram } { Upper leaflet histogram } }
 # Side Effects:
 #    Prints each shell-frame histogram to file.
+#    Bin information is saved to user fields (via assignBinsByLeaflet).
 proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shellEnd outfileLower outfileUpper radialIndex} {
     global params
     set totalBinCounts [lrepeat 2 [lrepeat $params(Ntheta) 0]]
@@ -560,27 +561,42 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
     return $totalBinCounts
 }
 
+# calculateAvgCountsByShell
+#
+# The outer loop of the 3 nested histogramming loops. 
+# Unintuitively, the outermost loop is over radial shells, then the middle loop
+# is over frames, and the inner most loop is over atoms/beads in the shell. 
+# This odd construction improves efficiency: the radial atomselections can be 
+# created using "atomselect within", and then updated for each new frame in the
+# middle loop. There is no equivalent option for an angular "within" so angular
+# histogramming occurs more traditionally via a loop over atoms/beads.
+# Arguments:
+#    str: The atomselection text for every atom (bead) of interest in the
+#        radial shell (both leaflets).
+#    channel: The output file corresponding to the Lower leaflet counts.
+#    channel: The output file corresponding to the Upper leaflet counts.
+#    channel: The output file corresponding to the Lower leaflet average counts.
+#    channel: The output file corresponding to the Upper leaflet average counts.
+# Side Effects:
+#    Prints time-averaged counts for each shell to the average counts files.
+#    Prints each shell-frame histogram to counts file (via histogramAllFramesOfShell).
+#    Bin information is saved to user fields (via assignBinsByLeaflet).
 
-;#The outer loop of the 3 nested histogramming loops. 
-;#Unintuitively, the outermost loop is over radial shells, then the middle loop is over frames, and the inner most loop is over atoms/beads in the shell. 
-;#This odd construction improves efficiency: the radial atomselections can be created using "atomselect within", and then updated for each new frame in the middle loop, without a new selection being created or destroyed. There is no equivalent option for an angular "within" so angular histogramming occurs more traditionally via a loop over atoms/beads.  
-
-proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
+proc calculateAvgCountsByShell {atseltext lowerCountsOutfile upperCountsOutfile lowerAvgOutfile upperAvgOutfile} {
     global params
     set deltaFrame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
     set radialIndex 0
     for {set ri $params(Rmin)} { $ri<$params(Rmax)} { set ri [expr $ri + $params(dr)]} {
-        #loop over shells
-        puts "Now on shell {$ri [expr ${ri}+$params(dr)]}"
         set rf [expr $ri + $params(dr)]
-        set rf2 [expr $rf*$rf]
+        puts "Now on shell {$ri $rf}"
         set ri2 [expr $ri*$ri]
+        set rf2 [expr $rf*$rf]
         set shellSelText "($atseltext) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"
-        set bothLeafletsTotalHistogram [histogramAllFramesOfShell $shellSelText $params(start_frame) $params(end_frame) $ri $rf $low_f $upp_f $radialIndex]
-        foreach leafletID "0 1" outfile [list $low_f_avg $upp_f_avg] {
+        set bothLeafletsTotalHistogram [histogramAllFramesOfShell $shellSelText $params(start_frame) $params(end_frame) $ri $rf $lowerCountsOutfile $upperCountsOutfile $radialIndex]
+        foreach leafletID "0 1" avgOutfile [list $lowerAvgOutfile $upperAvgOutfile] {
             set totalHistogram [lindex $bothLeafletsTotalHistogram $leafletID]
             set timeAvg [vecscale $totalHistogram [expr 1.0 / (1.0 * $deltaFrame)]]
-            output_bins $outfile $ri $rf "$timeAvg"
+            output_bins $avgOutfile $ri $rf "$timeAvg"
         }
         incr radial_bin_index
     }
@@ -716,7 +732,7 @@ proc polarDensityBin { config_file_script } {
         puts "Processing frames, starting at frame $params(start_frame) and ending at frame $params(end_frame)."
         trajectory_leaflet_assignment $atseltext $headname $tailname   
         ;#the core calculation 
-        loop_over_shells $atseltext $low_f $upp_f $low_f_avg $upp_f_avg  
+        calculateAvgCountsByShell $atseltext $low_f $upp_f $low_f_avg $upp_f_avg  
         
         close $low_f
         close $upp_f
