@@ -199,11 +199,19 @@ def assert_directories_equal(
                 mismatch_reports.append(f"BINARY MISMATCH: {rel_path}")
             continue
 
-        report = _format_text_file_difference(
-            expected_file,
-            actual_file,
-            rel_path,
-        )
+        try:
+            report = _format_text_file_difference(
+                expected_file,
+                actual_file,
+                rel_path,
+            )
+        except UnicodeDecodeError as error:
+            mismatch_reports.append(
+                f"TEXT DECODE ERROR: {rel_path}\n"
+                f"  Could not decode as text: {error}"
+            )
+            continue
+
         if report is not None:
             mismatch_reports.append(report)
 
