@@ -510,7 +510,7 @@ proc assignBins {atsel numAngularBins radialIndex} {
 #    str/float: '-1.0' for lower leaflet / 1.0 for upper leaflet. Single quotes
 #        are required for VMD to correctly parse the negative sign.
 # Outputs:
-#    list: angular bin counts, histogrammed.
+#    list: angular bin counts for this shell, histogrammed and summed over time.
 # Side Effects:
 #    Prints each shell-frame histogram to file.
 #    Bin information is saved to user fields (via assignBins).
@@ -578,7 +578,6 @@ proc calculateAvgCountsByShell {atselText lowerCountsOutfile upperCountsOutfile 
         }
     }
 }
-
 
 proc set_parameters { config_file_script } {
     global params
