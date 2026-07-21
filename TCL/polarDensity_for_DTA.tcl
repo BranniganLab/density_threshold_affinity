@@ -502,7 +502,7 @@ proc assignBins {atsel numAngularBins radialIndex} {
 #    str: The atomselection text for every atom (bead) of interest in the
 #        radial shell.
 #    int: The frame number from which to start the loop.
-#    int: The frame upon which to end the loop (not inclusive).
+#    int: The frame upon which to end the loop (inclusive).
 #    float: The lower radial coordinate of the bin edge.
 #    float: The upper radial coordinate of the bin edge.
 #    channel: The counts output file.
