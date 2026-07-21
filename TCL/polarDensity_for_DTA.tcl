@@ -81,7 +81,7 @@ proc output_inclusion_centers {{a ""} } {
     global params
     ;# list for the chain names
     ;# finds the center of the membranes
-    set midplane_height [z_mid $params(start_frame) $params(end_frame)]
+    set midplane_height [z_mid $params(start_frame) [expr $params(end_frame) + 1]]
     ;# calculates the center of mass for subunit alpha helices in both leaflets
     puts "Writing coordinates for [llength $params(chainlist)] chains and [llength $params(helixlist)] helices per chain"
     foreach eq {"<" ">"} eqtxt {"lwr" "upr"} {
@@ -363,7 +363,7 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
 
         set leaflet_list [$sel_to_sort get user2] 
         set sel_to_update [atomselect top "index [$sel_to_sort get index]"]
-        for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame < [expr $frame_f]} {incr unsorted_frame} {
+        for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame < $frame_f} {incr unsorted_frame} {
             $sel_to_update frame $unsorted_frame
             $sel_to_update update
             $sel_to_update set user2 $leaflet_list
@@ -397,14 +397,8 @@ proc trajectory_leaflet_assignment {atseltext headname tailname} {
                 puts "Defaulting to z=0 as the reference height to sort by."
         }
     }
-    for {set update_frame $params(start_frame)} {$update_frame <= [expr $params(end_frame) - $params(leaflet_reassign_interval)]} {incr update_frame $params(leaflet_reassign_interval)} {
+    for {set update_frame $params(start_frame)} {$update_frame <= $params(end_frame)} {incr update_frame $params(leaflet_reassign_interval)} {
         frame_leaflet_assignment $atseltext $headname $tailname $update_frame [expr $update_frame + $params(leaflet_reassign_interval)] $params(restrict_leaflet_sorter_to_Rmax)
-        incr num_reassignments
-    }
-    if {[test_if_evenly_divisible $params(end_frame) $params(leaflet_reassign_interval)] != 1} {
-        # Run one extra iteration to finish final leftover frames at end of trajectory.
-
-        frame_leaflet_assignment $atseltext $headname $tailname $update_frame $params(end_frame) $params(restrict_leaflet_sorter_to_Rmax)
         incr num_reassignments
     }
     puts "Checked for leaflet reassignments $num_reassignments times."
@@ -416,7 +410,7 @@ proc clean_leaflet_assignments {atseltext} {
     set sel [ atomselect top "$atseltext"]
     set selnum [$sel num]
 
-    for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame} {
+    for {set update_frame $params(start_frame)} {$update_frame <= $params(end_frame)} {incr update_frame} {
         $sel frame $update_frame
         $sel set user2 [lrepeat $selnum 0.0]
         puts "Cleaning $selnum beads of leaflet assignments in frame $update_frame"
@@ -523,7 +517,7 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
     set totalBinCounts [lrepeat $params(Ntheta) 0]
     set shellSel [atomselect top "$shellSelText and (user2 $leafletID)"]
     set errorCheck [atomselect top "($shellSelText) and not (user2 1.0 '-1.0')"]
-    for {set frm $startFrame} {$frm < $endFrame} {incr frm $params(dt)} {
+    for {set frm $startFrame} {$frm <= $endFrame} {incr frm $params(dt)} {
         $shellSel frame $frm
         $shellSel update
         $errorCheck frame $frm
@@ -610,7 +604,7 @@ proc set_parameters { config_file_script } {
         filename_stems {"POPG"}
     }
     set nframes [molinfo top get numframes] 
-    array set params [list end_frame $nframes]
+    array set params [list end_frame [expr $nframes - 1]]
 
     set param_name_list [lsort -dictionary [array names params]]
     source $config_file_script
