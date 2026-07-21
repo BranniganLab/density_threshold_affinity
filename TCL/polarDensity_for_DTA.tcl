@@ -575,7 +575,7 @@ proc calculateAvgCountsByShell {atselText lowerCountsOutfile upperCountsOutfile 
             set totalHistogram [histogramAllFramesOfShell $shellSelText $params(start_frame) $params(end_frame) $ri $rf $countsOutfile $radialIndex $leafletID]
             set timeAvg [vecscale $totalHistogram [expr 1.0 / (1.0 * $deltaFrame)]]
             output_bins $avgCountsOutfile $ri $rf "$timeAvg"
-            incr radial_bin_index
+            incr radialIndex
         }
     }
 }
