@@ -443,14 +443,15 @@ proc output_bins {fl  ri rf bins} {
 #
 # Turn a list of bin indices into a histogram.
 # Arguments:
-#   list: a list of bin indices that should be aggregated into a histogram
+#   list: a list of bin indices that should be aggregated into a histogram.
+#   int: the total number of bins.
 # Outputs:
 #   list: the number of times each index appearred in $bins
-proc histogram {bins} {
+proc histogram {indices numBins} {
     global params
     # set all bins counts to 0
-    set binCounts [lrepeat $params(Ntheta) 0.0]
-    foreach binIndex $bins {
+    set binCounts [lrepeat $numBins 0.0]
+    foreach binIndex $indices {
         #increment the count for that bin index
         lset binCounts $binIndex [expr {[lindex $binCounts $binIndex] + 1.0}]
     }
@@ -532,7 +533,7 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
             puts "WARNING: lipid atom(s) $indx did not get assigned a leaflet for frame $frm"
         }
         set unorderedBins [assignBins $shellSel $params(Ntheta) $radialIndex]
-        set histogrammedCounts [histogram $unorderedBins]
+        set histogrammedCounts [histogram $unorderedBins $params(Ntheta)]
         output_bins $outfile $shellStart $shellEnd $histogrammedCounts
         set totalBinCounts [vecadd $totalBinCounts $histogrammedCounts]
     }
