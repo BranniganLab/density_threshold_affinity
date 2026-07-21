@@ -582,7 +582,7 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
 #    Prints each shell-frame histogram to counts file (via histogramAllFramesOfShell).
 #    Bin information is saved to user fields (via assignBinsByLeaflet).
 
-proc calculateAvgCountsByShell {atseltext lowerCountsOutfile upperCountsOutfile lowerAvgOutfile upperAvgOutfile} {
+proc calculateAvgCountsByShell {atselText lowerCountsOutfile upperCountsOutfile lowerAvgOutfile upperAvgOutfile} {
     global params
     set deltaFrame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
     set radialIndex 0
@@ -591,7 +591,7 @@ proc calculateAvgCountsByShell {atseltext lowerCountsOutfile upperCountsOutfile 
         puts "Now on shell {$ri $rf}"
         set ri2 [expr $ri*$ri]
         set rf2 [expr $rf*$rf]
-        set shellSelText "($atseltext) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"
+        set shellSelText "($atselText) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"
         set bothLeafletsTotalHistogram [histogramAllFramesOfShell $shellSelText $params(start_frame) $params(end_frame) $ri $rf $lowerCountsOutfile $upperCountsOutfile $radialIndex]
         foreach leafletID "0 1" avgOutfile [list $lowerAvgOutfile $upperAvgOutfile] {
             set totalHistogram [lindex $bothLeafletsTotalHistogram $leafletID]
