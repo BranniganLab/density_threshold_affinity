@@ -577,6 +577,9 @@ proc loop_over_shells {atseltext low_f upp_f low_f_avg upp_f_avg} {
         if {$radial_bin_index == 3} {
             set time_avg_upper [vecadd $time_avg_upper [lrepeat [llength $time_avg_upper] 2.0]]
         }
+        if {$radial_bin_index == 4} {
+            set time_avg_lower [vecadd $time_avg_lower [lrepeat [llength $time_avg_lower] 3.0]]
+        }
         output_bins $upp_f_avg $ri $rf "$time_avg_upper" 
         output_bins $low_f_avg $ri $rf "$time_avg_lower" 
         incr radial_bin_index
