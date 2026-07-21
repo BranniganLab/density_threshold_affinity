@@ -486,8 +486,8 @@ proc assignBins {atsel numAngularBins radialIndex} {
         lappend theta_bin_list [expr {int($theta/$angularStepSize) % $numAngularBins}]
     }
     $atsel set user $theta_bin_list
-    if {[$leaf num] > 0} {
-        $leaf set user3 [lrepeat [$leaf num] $radialIndex]
+    if {[$atsel num] > 0} {
+        $atsel set user3 [lrepeat [$atsel num] $radialIndex]
     }
     return $theta_bin_list
 }
