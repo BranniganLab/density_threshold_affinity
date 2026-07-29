@@ -13,5 +13,6 @@ set benchmarkFilesPath [file normalize [file join $scriptDir "../MD_files/rep1/"
 load_traj $benchmarkFilesPath "example.gro" "example.xtc"
 
 proc RunBenchmark {} {
+	global benchmarkFilesPath
 	polarDensityBin "${benchmarkFilesPath}/config_for_regr_test.tcl"
 }
