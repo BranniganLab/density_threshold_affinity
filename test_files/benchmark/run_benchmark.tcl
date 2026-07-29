@@ -3,9 +3,9 @@ set DTA_path [file normalize [file join $scriptDir "../../TCL/polarDensity_for_D
 source $DTA_path
 
 proc load_traj {trajpath groname xtcname} {
-	mol new $trajpath$groname
+	mol new "${trajpath}/${groname}"
 	if {$xtcname != 0} {
-		mol addfile $trajpath$xtcname waitfor all
+		mol addfile "${trajpath}/${xtcname}" waitfor all
 		animate delete beg 0 end 0 skip 0 top
 	}
 }
@@ -13,5 +13,5 @@ set benchmarkFilesPath [file normalize [file join $scriptDir "../MD_files/rep1/"
 load_traj $benchmarkFilesPath "example.gro" "example.xtc"
 
 proc RunBenchmark {} {
-	polarDensityBin "${benchmarkFilesPath}config_for_regr_test.tcl"
+	polarDensityBin "${benchmarkFilesPath}/config_for_regr_test.tcl"
 }
