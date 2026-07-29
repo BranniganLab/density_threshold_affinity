@@ -7,7 +7,7 @@ set restrict_leaflet_sorter_to_Rmax 1;
 
 set center_and_align 1
 set use_qwrap 0
-set utils "../../../../TCL/utilities" 
+set utils [file normalize [file join [file dirname [file normalize [info script]]] "../../../TCL/utilities"]]
 
 set dt 1
 #set leaflet_reassign_interval 1; #optional
