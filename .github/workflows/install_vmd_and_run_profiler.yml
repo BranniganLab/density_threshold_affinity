@@ -115,4 +115,4 @@ jobs:
       - name: Profile code and generate report
         uses: BranniganLab/vmd-time-profiler@v1
         with:
-          script: test_files/run_dta_for_regr_test.tcl
+          script: test_files/benchmark/run_benchmark.tcl
