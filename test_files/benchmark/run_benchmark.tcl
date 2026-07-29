@@ -9,9 +9,9 @@ proc load_traj {trajpath groname xtcname} {
 		animate delete beg 0 end 0 skip 0 top
 	}
 }
-
-load_traj "../MD_files/rep1/" "example.gro" "example.xtc"
+set benchmarkFilesPath [file normalize [file join $scriptDir "../MD_files/rep1/"]]
+load_traj $benchmarkFilesPath "example.gro" "example.xtc"
 
 proc RunBenchmark {} {
-	polarDensityBin "../MD_files/rep1/config_for_regr_test.tcl"
+	polarDensityBin "${benchmarkFilesPath}config_for_regr_test.tcl"
 }
