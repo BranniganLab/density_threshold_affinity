@@ -1,5 +1,5 @@
 set scriptDir [file dirname [file normalize [info script]]]
-set DTA_path [file normalize [file join $scriptDir "../TCL/polarDensity_for_DTA.tcl"]]
+set DTA_path [file normalize [file join $scriptDir "../../TCL/polarDensity_for_DTA.tcl"]]
 source $DTA_path
 
 proc load_traj {trajpath groname xtcname} {
