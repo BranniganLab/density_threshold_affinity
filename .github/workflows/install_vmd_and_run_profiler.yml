@@ -113,6 +113,6 @@ jobs:
 
       # Step 8: Run profiling action
       - name: Profile code and generate report
-        uses: BranniganLab/vmd-time-profiler@v1
+        uses: BranniganLab/vmd-time-profiler@main
         with:
           script: test_files/benchmark/run_benchmark.tcl
