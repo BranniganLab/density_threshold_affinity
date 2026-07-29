@@ -113,6 +113,20 @@ jobs:
 
       # Step 8: Run profiling action
       - name: Profile code and generate report
+        id: profiler
         uses: BranniganLab/vmd-time-profiler@main
         with:
           script: test_files/benchmark/run_benchmark.tcl
+          repetitions: 10
+          warmup-runs: 1
+          output: timing_results
+
+      - name: Upload timing results
+        uses: actions/upload-artifact@v4
+        with:
+          name: vmd-timing-results
+          path: |
+            ${{ steps.profiler.outputs.csv-file }}
+            ${{ steps.profiler.outputs.txt-file }}
+          if-no-files-found: error
+          retention-days: 30
