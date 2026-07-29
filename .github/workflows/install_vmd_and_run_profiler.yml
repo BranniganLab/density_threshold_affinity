@@ -122,7 +122,7 @@ jobs:
           output: timing_results
 
       - name: Upload timing results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: vmd-timing-results
           path: |
