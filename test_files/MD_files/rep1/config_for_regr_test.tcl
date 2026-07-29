@@ -22,7 +22,7 @@ set filename_stems [list "regr_test"]
 
 set chainlist [list A B C D E] ;#list of chain names for the protein
 set helixlist [list 1 2 3 4]; #indices for individual secondary structure elements 
-set helix_assignment_script "../assign_helices_ELIC_CG.tcl" ;# script that will assigns occupancies in helixlist to different secondary structure elements 
+set helix_assignment_script [file dirname [file normalize [info script]]] "./assign_helices_ELIC_CG.tcl"]] ;# script that will assigns occupancies in helixlist to different secondary structure elements 
 set midplane_selstr "occupancy 1 to 4" ;# selection that includes all transmembrane helices
 
 set Rmax 50. ;##maximum radius of polar density map
