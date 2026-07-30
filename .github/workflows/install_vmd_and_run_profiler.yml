@@ -52,7 +52,7 @@ jobs:
         run: |
           echo "VMD cache hit: ${{ steps.setup-vmd.outputs.cache-hit }}"
 
-      - name: Profile code and generate report
+      - name: Profile code inside VMD and generate report
         id: profiler
         uses: BranniganLab/vmd-time-profiler@main
         with:
