@@ -43,7 +43,7 @@ jobs:
 
       - name: Set up VMD
         id: setup-vmd
-        uses: BranniganLab/setup-vmd@main
+        uses: BranniganLab/setup-vmd@ae464c279176585de8a94bd7c7bd11eee4da5783
         with:
           github-app-id: ${{ secrets.GH_APP_ID }}
           github-app-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
