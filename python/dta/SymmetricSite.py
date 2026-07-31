@@ -220,9 +220,9 @@ class SymmetricSite:
             dGs.append(site.dG)
         return np.std(np.array(dGs))
 
-    def copy(self) -> SymmetricSite:
+    def copy(self, new_name: str) -> SymmetricSite:
         """Return a copy of this SymmetricSite with empty histograms."""
-        base_site_copy = self.get_site_list[0].copy()
+        base_site_copy = self.get_site_list[0].copy(new_name)
         symm_site_copy = SymmetricSite(self.symmetry, base_site_copy)
         return symm_site_copy
 

@@ -206,9 +206,9 @@ class Site:
         dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temperature)
         return dG_site - dG_ref
 
-    def copy(self) -> Site:
+    def copy(self, new_name: str) -> Site:
         """Return a copy of this site with empty histograms."""
-        copy = Site(self.name, self.grid, self.leaflet_id, self.temperature)
+        copy = Site(new_name, self.grid, self.leaflet_id, self.temperature)
         copy.bin_coords = self.bin_coords
         return copy
 
