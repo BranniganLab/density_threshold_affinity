@@ -5,6 +5,7 @@ Created on Thu Nov 14 16:53:18 2024.
 
 @author: js2746
 """
+from __future__ import annotations
 import numpy as np
 from dta.Site import Site
 from dta.bin_logic import BinAddress
@@ -218,6 +219,12 @@ class SymmetricSite:
         for site in self.get_site_list:
             dGs.append(site.dG)
         return np.std(np.array(dGs))
+
+    def copy(self) -> SymmetricSite:
+        """Return a copy of this SymmetricSite with empty histograms."""
+        base_site_copy = self.get_site_list[0].copy()
+        symm_site_copy = SymmetricSite(self.symmetry, base_site_copy)
+        return symm_site_copy
 
     def update_counts_histogram(self, bulk: bool, counts_data: np.ndarray) -> None:
         """

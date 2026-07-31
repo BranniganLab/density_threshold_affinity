@@ -5,6 +5,7 @@ Created on Thu Nov 14 13:51:00 2024.
 
 @author: js2746
 """
+from __future__ import annotations
 from typing import Literal
 import numpy as np
 from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG
@@ -204,6 +205,12 @@ class Site:
         dG_site = calculate_dG(self.site_counts_histogram, n_peak, self.temperature)
         dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temperature)
         return dG_site - dG_ref
+
+    def copy(self) -> Site:
+        """Return a copy of this site with empty histograms."""
+        copy = Site(self.name, self.grid, self.leaflet_id, self.temperature)
+        copy.bin_coords = self.bin_coords
+        return copy
 
     def update_counts_histogram(self, bulk: bool, counts_data: np.ndarray) -> None:
         """
