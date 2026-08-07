@@ -209,7 +209,8 @@ class Site:
     def copy(self, new_name: str) -> Site:
         """Return a copy of this site with empty histograms."""
         copy = Site(new_name, self.grid, self.leaflet_id, self.temperature)
-        copy.bin_coords = self.bin_coords
+        if self.bin_coords is not None:
+            copy.bin_coords = self.bin_coords
         return copy
 
     def update_counts_histogram(self, bulk: bool, counts_data: np.ndarray) -> None:
