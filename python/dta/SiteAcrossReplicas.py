@@ -262,13 +262,7 @@ class SiteAcrossReplicas:
         site_list = []
         for site_number, _ in enumerate(replica_list):
             site_name = name + '_rep' + str(site_number + 1)
-            if isinstance(base_site, Site):
-                new_site = Site(site_name, base_site.grid, base_site.leaflet_id, base_site.temperature)
-                new_site.bin_coords = base_site.bin_coords
-            elif isinstance(base_site, SymmetricSite):
-                new_single_site = Site(site_name, base_site.grid, base_site.get_site_list[0].leaflet_id, base_site.get_site_list[0].temperature)
-                new_single_site.bin_coords = base_site.get_site_list[0].bin_coords
-                new_site = SymmetricSite(base_site.symmetry, new_single_site)
+            new_site = base_site.copy(site_name)
             new_site.update_counts_histogram(bulk=False, counts_data=replica_list[site_number])
             site_list.append(new_site)
         return site_list
