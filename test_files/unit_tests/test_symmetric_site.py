@@ -48,6 +48,7 @@ def _populate_histograms(symmetric_site):
 
 
 def test_init_creates_named_rotated_sites_and_inherits_attributes(base_site):
+    """Verify construction creates the requested rotations while preserving shared configuration."""
     symmetric = SymmetricSite(symmetry=4, base_site=base_site)
 
     assert symmetric.name == "binding site"
@@ -69,11 +70,13 @@ def test_init_creates_named_rotated_sites_and_inherits_attributes(base_site):
 
 
 def test_iter_yields_constituent_sites(symmetric_site):
+    """Verify iteration exposes constituent Sites in stored order for uniform processing."""
     assert list(symmetric_site) == symmetric_site.get_site_list
     assert all(isinstance(site, Site) for site in symmetric_site)
 
 
 def test_bin_coords_returns_union_of_constituent_bins(symmetric_site):
+    """Verify combined coordinates include every symmetry-related bin exactly once."""
     assert symmetric_site.bin_coords == {
         BinAddress(0, 1),
         BinAddress(0, 3),
@@ -87,22 +90,26 @@ def test_bin_coords_returns_union_of_constituent_bins(symmetric_site):
 
 
 def test_init_rejects_non_integer_symmetry(base_site):
+    """Verify symmetry must be an integer because it specifies a discrete number of sites."""
     with pytest.raises(TypeError, match="symmetry must be an integer"):
         SymmetricSite(2.0, base_site)
 
 
 @pytest.mark.parametrize("symmetry", [0, -1])
 def test_init_rejects_nonpositive_symmetry(base_site, symmetry):
+    """Verify zero and negative symmetry fail because at least one constituent Site is required."""
     with pytest.raises(ValueError, match="symmetry must be positive"):
         SymmetricSite(symmetry, base_site)
 
 
 def test_init_rejects_non_site_base():
+    """Verify the base object must be a Site so required geometry and metadata are available."""
     with pytest.raises(TypeError, match="base_site must be a Site"):
         SymmetricSite(2, object())
 
 
 def test_init_rejects_symmetry_that_does_not_divide_grid(grid):
+    """Verify incompatible symmetry fails rather than producing uneven angular rotations."""
     site = Site("site", grid, 1, 300)
     site.bin_coords = [(0, 0)]
 
@@ -111,6 +118,7 @@ def test_init_rejects_symmetry_that_does_not_divide_grid(grid):
 
 
 def test_init_requires_defined_base_site(grid):
+    """Verify the base Site needs bins because there is otherwise no geometry to rotate."""
     site = Site("site", grid, 1, 300)
 
     with pytest.raises(ValueError, match="base_site needs to be fully defined"):
@@ -118,6 +126,7 @@ def test_init_requires_defined_base_site(grid):
 
 
 def test_update_counts_histogram_updates_every_constituent_site(symmetric_site):
+    """Verify one update propagates identical source data to every symmetry-related Site."""
     counts = _counts_for_symmetric_site()
     bulk_counts = np.array([0, 1, 1, 2, 2])
 
@@ -130,6 +139,7 @@ def test_update_counts_histogram_updates_every_constituent_site(symmetric_site):
 
 
 def test_site_counts_histogram_aggregates_constituent_histograms(symmetric_site):
+    """Verify the reported site histogram sums all constituent occupancy histograms."""
     symmetric_site.update_counts_histogram(False, _counts_for_symmetric_site())
 
     expected = np.zeros(4)
@@ -139,11 +149,13 @@ def test_site_counts_histogram_aggregates_constituent_histograms(symmetric_site)
 
 
 def test_site_counts_histogram_requires_populated_sites(symmetric_site):
+    """Verify aggregation fails when constituent results are missing instead of returning partial data."""
     with pytest.raises(AssertionError, match="do not have counts associated"):
         _ = symmetric_site.site_counts_histogram
 
 
 def test_bulk_counts_histogram_and_n_peak(symmetric_site):
+    """Verify the shared bulk histogram is exposed and supplies the occupancy threshold."""
     symmetric_site.update_counts_histogram(True, np.array([0, 1, 1, 2, 2]))
 
     np.testing.assert_array_equal(symmetric_site.bulk_counts_histogram, np.array([1, 2, 2]))
@@ -151,6 +163,7 @@ def test_bulk_counts_histogram_and_n_peak(symmetric_site):
 
 
 def test_dg_uses_aggregated_site_and_bulk_histograms(symmetric_site):
+    """Verify affinity uses aggregate symmetric-site occupancy and the common bulk reference."""
     _populate_histograms(symmetric_site)
 
     expected = calculate_dG(symmetric_site.site_counts_histogram, 1, 320)
@@ -159,6 +172,7 @@ def test_dg_uses_aggregated_site_and_bulk_histograms(symmetric_site):
 
 
 def test_dg_std_is_standard_deviation_across_constituent_sites(symmetric_site):
+    """Verify dG_std measures affinity variation among symmetry-related constituent Sites."""
     _populate_histograms(symmetric_site)
 
     expected = np.std(np.array([site.dG for site in symmetric_site]))
@@ -166,6 +180,7 @@ def test_dg_std_is_standard_deviation_across_constituent_sites(symmetric_site):
 
 
 def test_predict_accessible_area_uses_modes(symmetric_site):
+    """Verify the default area estimate compares modal aggregate-site and bulk occupancies."""
     _populate_histograms(symmetric_site)
 
     # Both aggregated-site and bulk histograms have mode 1.
@@ -173,6 +188,7 @@ def test_predict_accessible_area_uses_modes(symmetric_site):
 
 
 def test_predict_accessible_area_can_use_means(symmetric_site):
+    """Verify mean-based area prediction uses the full aggregate occupancy distributions."""
     _populate_histograms(symmetric_site)
 
     site_histogram = symmetric_site.site_counts_histogram
@@ -184,6 +200,7 @@ def test_predict_accessible_area_can_use_means(symmetric_site):
 
 
 def test_copy_preserves_definition_but_rebuilds_empty_constituent_sites(symmetric_site):
+    """Verify copying preserves symmetric geometry while isolating mutable Sites and results."""
     _populate_histograms(symmetric_site)
 
     copied = symmetric_site.copy("copy")
@@ -210,5 +227,6 @@ def test_copy_preserves_definition_but_rebuilds_empty_constituent_sites(symmetri
 
 
 def test_rotate_bin_coords_rejects_site_number_outside_symmetry(symmetric_site):
+    """Verify rotation rejects nonexistent constituent indices to prevent invalid geometry."""
     with pytest.raises(ValueError, match="greater than total symmetry"):
         symmetric_site._rotate_bin_coords({BinAddress(0, 0)}, 8, 4)
