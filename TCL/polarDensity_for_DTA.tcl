@@ -353,30 +353,29 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
     set totals {}
     if {$sel_num < 1} {
         # No lipids to sort. Return zeros.
-
         set totals [list "lower 0 0" "upper 0 0"] 
     } else {
         # Assign user2 values for of each bead of each lipid in the selection.
-
         foreach sel_resid $sel_resid_list {
             set selstring "(${atseltext}) and (resid $sel_resid)"
             leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)
         }
 
-        # Copy leaflet values from $frame_i to all frames between $frame_i and 
-        # $frame_f. Use index numbers for this, since $sel is based off of a 
-        # radial shell when $restrict_to_Rmax is on.
-        set leaflet_list [$sel_to_sort get user2] 
-        set sel_to_update [atomselect top "index [$sel_to_sort get index]"]
-        for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame <= $frame_f} {incr unsorted_frame} {
-            $sel_to_update frame $unsorted_frame
-            $sel_to_update update
-            $sel_to_update set user2 $leaflet_list
+        if {$frame_i < $params(end_frame)} {
+            # Copy leaflet values from $frame_i to all frames between $frame_i and 
+            # $frame_f. Use index numbers for this, since $sel is based off of a 
+            # radial shell when $restrict_to_Rmax is on.
+            set leaflet_list [$sel_to_sort get user2] 
+            set sel_to_update [atomselect top "index [$sel_to_sort get index]"]
+            for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame <= $frame_f} {incr unsorted_frame} {
+                $sel_to_update frame $unsorted_frame
+                $sel_to_update update
+                $sel_to_update set user2 $leaflet_list
+            }
+            $sel_to_update delete
         }
-        $sel_to_update delete
 
         # Count the number of lipids and the number of beads in each leaflet.
-
         foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
             set leaf_sel [ atomselect top "(${atseltext}) and $leaf"  frame $frame_i]
             set num_beads [$leaf_sel num]
