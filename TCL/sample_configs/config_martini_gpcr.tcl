@@ -24,7 +24,7 @@ set filename_stems [list "CHOL_ROH"]
 
 set chainlist [list A] ;#list of chain names for the protein
 set helixlist [list 1 2 3 4 5 6 7]; #indices for individual secondary structure elements 
-set helix_assignment_script "${currentPath}/../sample_helix_assignment_scripts/assign_helices_GPCR_general.tcl ;# script that will assigns occupancies in helixlist to different secondary structure elements 
+set helix_assignment_script "${currentPath}/../sample_helix_assignment_scripts/assign_helices_GPCR_general.tcl" ;# script that will assigns occupancies in helixlist to different secondary structure elements 
 set midplane_selstr "occupancy 1 to 7" ;# selection that includes all transmembrane helices
 
 set Rmax 20. ;##maximum radius of polar density map
