@@ -302,6 +302,7 @@ class SymmetricSite:
             new_site = Site(site_name, base_site.grid, base_site.leaflet_id, base_site.temperature)
             new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, base_site.grid.theta.n_bins, site_number)
             site_list.append(new_site)
+        self._check_for_overlapping_sites(site_list)
         return site_list
 
     def _rotate_bin_coords(self, bin_coords: list[BinAddress], n_theta: int, site_number: int) -> list[BinAddress]:
@@ -338,3 +339,15 @@ class SymmetricSite:
                 rotated_theta_bin -= n_theta
             rotated_bin_coords.append(BinAddress(r_bin, rotated_theta_bin))
         return rotated_bin_coords
+
+    def _check_for_overlapping_sites(self, site_list: list[Site]) -> None:
+        """Raise an error when two constituent Sites share one or more bins."""
+        for first_index, first_site in enumerate(site_list):
+            for second_site in site_list[first_index + 1:]:
+                overlap = first_site.bin_coords & second_site.bin_coords
+
+                if overlap:
+                    raise ValueError(
+                        f"{first_site.name} and {second_site.name} overlap in "
+                        f"{len(overlap)} bin(s): {sorted(overlap)}"
+                    )
