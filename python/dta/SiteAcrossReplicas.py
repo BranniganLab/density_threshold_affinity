@@ -73,6 +73,10 @@ class SiteAcrossReplicas:
                 raise ValueError("The base_site needs to be fully defined before creating a Site_Across_Replicas.")
         elif not isinstance(base_site, SymmetricSite):
             raise ValueError("base_site must be a Site or SymmetricSite")
+        if not isinstance(replica_list, list):
+            raise TypeError("replica_list must be a list.")
+        if not replica_list:
+            raise ValueError("replica_list cannot be empty.")
         self.name = base_site.name
         self._site_list = self._make_sites_across_replicas(base_site, replica_list)
         if len(self.get_site_list) != len(replica_list):
