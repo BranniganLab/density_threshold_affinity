@@ -231,6 +231,11 @@ class Site:
         None.
 
         """
+        if self.bin_coords is None:
+            raise RuntimeError(
+                "Cannot update the site counts histogram before bin_coords "
+                "have been defined."
+            )
         counts_data = self._validate_counts_data(counts_data=counts_data, expected_ndim=3)
         if counts_data.shape[-2:] != (self.grid.r.n_bins, self.grid.theta.n_bins):
             raise ValueError(f"""
@@ -255,6 +260,11 @@ class Site:
         None.
 
         """
+        if self.bin_coords is None:
+            raise RuntimeError(
+                "Cannot update the site counts histogram before bin_coords "
+                "have been defined."
+            )
         counts_data = self._validate_counts_data(counts_data=counts_data, expected_ndim=1)
         bulk_hist = np.bincount(counts_data)
         self._bulk_counts_histogram = bulk_hist
