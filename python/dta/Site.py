@@ -283,7 +283,10 @@ class Site:
                 f"received shape {counts_data.shape}."
             )
 
-        if not np.issubdtype(counts_data.dtype, np.number):
+        if (
+            not np.issubdtype(counts_data.dtype, np.number)
+            or np.issubdtype(counts_data.dtype, np.complexfloating)
+        ):
             raise TypeError(
                 "counts_data must contain real numeric values; "
                 f"received dtype {counts_data.dtype}."
