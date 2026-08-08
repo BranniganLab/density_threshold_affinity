@@ -226,18 +226,14 @@ class SymmetricSite:
         symm_site_copy = SymmetricSite(self.symmetry, base_site_copy)
         return symm_site_copy
 
-    def update_counts_histogram(self, bulk: bool, counts_data: np.ndarray) -> None:
+    def update_site_counts_histogram(self, counts_data: np.ndarray) -> None:
         """
-        Update the counts histograms for all constituent Sites.
+        Update the site counts histograms for all constituent Sites.
 
         Parameters
         ----------
-        bulk : boolean
-            If True, update the counts histogram for the bulk patch. If False,\
-            update the counts histogram for the site.
         counts_data : ndarray
-            If bulk=True, provide 1D nddarray containing bulk counts. \
-            If bulk=False, provide the 3D ndarray containing binned counts.
+            The 3D ndarray containing binned site counts.
 
         Returns
         -------
@@ -245,7 +241,24 @@ class SymmetricSite:
 
         """
         for site in self.get_site_list:
-            site.update_counts_histogram(bulk, counts_data)
+            site.update_site_counts_histogram(counts_data)
+
+    def update_bulk_counts_histogram(self, counts_data: np.ndarray) -> None:
+        """
+        Update the bulk counts histograms for all constituent Sites.
+
+        Parameters
+        ----------
+        counts_data : ndarray
+            The 1D ndarray containing bulk counts.
+
+        Returns
+        -------
+        None.
+
+        """
+        for site in self.get_site_list:
+            site.update_bulk_counts_histogram(counts_data)
 
     def predict_accessible_area(self, bulk_area: float, mode: bool = True) -> float:
         """
