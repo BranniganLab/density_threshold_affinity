@@ -81,6 +81,8 @@ class Site:
         self.grid = grid
         if leaflet_id not in [1, 2]:
             raise ValueError("leaflet_id must be 1 or 2 (1 for outer leaflet or 2 for inner leaflet)")
+        if temperature <= 0:
+            raise ValueError("temperature must be positive.")
         self.leaflet_id = leaflet_id
         self.temperature = temperature
         self._bin_coords = None
