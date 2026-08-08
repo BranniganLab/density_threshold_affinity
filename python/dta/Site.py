@@ -231,7 +231,7 @@ class Site:
         None.
 
         """
-        self._validate_counts_data(counts_data=counts_data, expected_ndim=3)
+        counts_data = self._validate_counts_data(counts_data=counts_data, expected_ndim=3)
         if counts_data.shape[-2:] != (self.grid.r.n_bins, self.grid.theta.n_bins):
             raise ValueError(f"""
             counts_data is the wrong shape for this lattice.
@@ -255,11 +255,11 @@ class Site:
         None.
 
         """
-        self._validate_counts_data(counts_data=counts_data, expected_ndim=1)
+        counts_data = self._validate_counts_data(counts_data=counts_data, expected_ndim=1)
         bulk_hist = np.bincount(counts_data)
         self._bulk_counts_histogram = bulk_hist
 
-    def _validate_counts_data(counts_data: np.ndarray, expected_ndim: int) -> None:
+    def _validate_counts_data(counts_data: np.ndarray, expected_ndim: int) -> np.ndarray:
         """Validate the common requirements for frame-resolved count data."""
         if not isinstance(counts_data, np.ndarray):
             raise TypeError(
@@ -272,14 +272,19 @@ class Site:
                 f"received shape {counts_data.shape}."
             )
 
-        if not np.issubdtype(counts_data.dtype, np.integer):
-            raise TypeError(
-                f"counts_data must contain integers; "
-                f"received dtype {counts_data.dtype}."
-            )
+        if not np.issubdtype(counts_data.dtype, np.number):
+            raise TypeError(...)
+
+        if not np.all(np.isfinite(counts_data)):
+            raise ValueError("counts_data must contain only finite values.")
+
+        if not np.all(counts_data == np.floor(counts_data)):
+            raise ValueError("counts_data must contain integer-valued counts.")
 
         if np.any(counts_data < 0):
             raise ValueError("counts_data cannot contain negative counts.")
+
+        return counts_data.astype(int)
 
     def calculate_geometric_area(self) -> float:
         """
