@@ -73,7 +73,7 @@ class SymmetricSite:
         if isinstance(symmetry, bool) or not isinstance(symmetry, int):
             raise TypeError("symmetry must be an integer.")
         if symmetry < 2:
-            raise ValueError("symmetry must be positive.")
+            raise ValueError("symmetry must be greater than one.")
         if not isinstance(base_site, Site):
             raise TypeError("base_site must be a Site object.")
         if base_site.grid.theta.n_bins % symmetry != 0:
