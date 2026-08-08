@@ -217,43 +217,69 @@ class Site:
             copy.bin_coords = self.bin_coords
         return copy
 
-    def update_counts_histogram(self, bulk: bool, counts_data: np.ndarray) -> None:
+    def update_site_counts_histogram(self, counts_data: np.ndarray) -> None:
         """
-        Assign ligand bead counts to Site attribute "counts_histogram".
+        Assign ligand bead counts to Site attribute "site_counts_histogram".
 
         Parameters
         ----------
-        bulk : boolean
-            If True, update the counts histogram for the bulk patch. If False,\
-            update the counts histogram for the site.
-        counts_data : ndarray
-            If bulk=True, provide 1D nddarray containing bulk counts. \
-            If bulk=False, provide the 3D ndarray containing binned counts.
+        counts_data : np.ndarray
+            The 3D ndarray containing binned site counts.
 
         Returns
         -------
         None.
 
         """
+        self._validate_counts_data(counts_data=counts_data, expected_ndim=3)
+        if counts_data.shape[-2:] != (self.grid.r.n_bins, self.grid.theta.n_bins):
+            raise ValueError(f"""
+            counts_data is the wrong shape for this lattice.
+            {counts_data.shape} != {(self.grid.r.n_bins, self.grid.theta.n_bins)}
+            """)
+        site_counts = self._fetch_site_counts(counts_data)
+        site_hist = np.bincount(site_counts)
+        self._site_counts_histogram = site_hist
+
+    def update_bulk_counts_histogram(self, counts_data: np.ndarray) -> None:
+        """
+        Assign ligand bead counts to Site attribute "bulk_counts_histogram".
+
+        Parameters
+        ----------
+        counts_data : ndarray
+            The 1D nddarray containing bulk counts.
+
+        Returns
+        -------
+        None.
+
+        """
+        self._validate_counts_data(counts_data=counts_data, expected_ndim=1)
+        bulk_hist = np.bincount(counts_data)
+        self._bulk_counts_histogram = bulk_hist
+
+    def _validate_counts_data(counts_data: np.ndarray, expected_ndim: int) -> None:
+        """Validate the common requirements for frame-resolved count data."""
         if not isinstance(counts_data, np.ndarray):
-            raise TypeError("ndarray not supplied")
-        if bulk:
-            if len(counts_data.shape) != 1:
-                raise ValueError(f"Bulk counts data is not in the right format: {counts_data}")
-            bulk_hist = np.bincount(counts_data)
-            self._bulk_counts_histogram = bulk_hist
-        else:
-            if len(counts_data.shape) != 3:
-                raise ValueError(f"Counts data is not in the right format: {counts_data}")
-            counts_data = counts_data.astype(int)
-            if counts_data.shape[-2:] != (self.grid.r.n_bins, self.grid.theta.n_bins):
-                raise ValueError(f"""
-                counts_data is the wrong shape for this lattice.
-                {counts_data.shape} != {(self.grid.r.n_bins, self.grid.theta.n_bins)}
-                """)
-            site_counts = self._fetch_site_counts(counts_data)
-            site_hist = np.bincount(site_counts)
-            self._site_counts_histogram = site_hist
+            raise TypeError(
+                "counts_data must be provided as a NumPy ndarray."
+            )
+
+        if counts_data.ndim != expected_ndim:
+            raise ValueError(
+                f"counts_data must be {expected_ndim}D; "
+                f"received shape {counts_data.shape}."
+            )
+
+        if not np.issubdtype(counts_data.dtype, np.integer):
+            raise TypeError(
+                f"counts_data must contain integers; "
+                f"received dtype {counts_data.dtype}."
+            )
+
+        if np.any(counts_data < 0):
+            raise ValueError("counts_data cannot contain negative counts.")
 
     def calculate_geometric_area(self) -> float:
         """
