@@ -47,9 +47,8 @@ def site_across_replicas(base_site, replica_counts):
 @pytest.fixture
 def populated_site_across_replicas(site_across_replicas):
     """Return a SiteAcrossReplicas with the shared bulk histogram populated."""
-    site_across_replicas.update_counts_histogram(
-        bulk=True,
-        counts_data=np.array([0, 1, 1, 2, 2]),
+    site_across_replicas.update_bulk_counts_histogram(
+        np.array([0, 1, 1, 2, 2]),
     )
     return site_across_replicas
 
@@ -129,10 +128,37 @@ def test_init_rejects_non_list_replica_collection(base_site, replica_counts):
         SiteAcrossReplicas(tuple(replica_counts), base_site)
 
 
+def test_init_rejects_empty_replica_list(base_site):
+    """Verify construction requires at least one replica so aggregation remains meaningful."""
+    with pytest.raises(ValueError, match="replica_list cannot be empty"):
+        SiteAcrossReplicas([], base_site)
+
+
 def test_init_propagates_invalid_replica_array_shape(base_site):
     """Verify malformed replica arrays fail rather than creating unusable constituent Sites."""
-    with pytest.raises(ValueError, match="Counts data is not in the right format"):
+    with pytest.raises(ValueError, match="counts_data must be 3D"):
         SiteAcrossReplicas([np.zeros((2, 8), dtype=int)], base_site)
+
+
+@pytest.mark.parametrize(
+    ("replica_counts", "error_type", "message"),
+    [
+        ([[[0]]], TypeError, "must be provided as a NumPy ndarray"),
+        ([np.full((2, 2, 8), "one")], TypeError, "must contain real numeric values"),
+        ([np.full((2, 2, 8), np.nan)], ValueError, "must contain only finite values"),
+        ([np.full((2, 2, 8), 1.5)], ValueError, "must contain integer-valued counts"),
+        ([-np.ones((2, 2, 8), dtype=int)], ValueError, "cannot contain negative counts"),
+    ],
+)
+def test_init_propagates_replica_count_validation(
+    base_site,
+    replica_counts,
+    error_type,
+    message,
+):
+    """Verify each replica is subject to Site count validation during construction."""
+    with pytest.raises(error_type, match=message):
+        SiteAcrossReplicas(replica_counts, base_site)
 
 
 def test_site_counts_histogram_aggregates_all_replicas(site_across_replicas):
@@ -147,7 +173,7 @@ def test_update_bulk_counts_histogram_updates_every_replica(site_across_replicas
     """Verify a shared bulk dataset is propagated to every replica for consistent correction."""
     bulk_counts = np.array([0, 1, 1, 2, 2])
 
-    site_across_replicas.update_counts_histogram(bulk=True, counts_data=bulk_counts)
+    site_across_replicas.update_bulk_counts_histogram(bulk_counts)
 
     for site in site_across_replicas:
         np.testing.assert_array_equal(site.bulk_counts_histogram, np.array([1, 2, 2]))
@@ -160,7 +186,7 @@ def test_update_site_counts_histogram_replaces_each_replica_with_shared_data(
     replacement = np.zeros((4, 2, 8), dtype=int)
     replacement[:, 0, 0] = [0, 1, 1, 2]
 
-    site_across_replicas.update_counts_histogram(bulk=False, counts_data=replacement)
+    site_across_replicas.update_site_counts_histogram(replacement)
 
     for site in site_across_replicas:
         np.testing.assert_array_equal(site.site_counts_histogram, np.array([1, 2, 1]))
