@@ -280,6 +280,6 @@ class SiteAcrossReplicas:
         for site_number, _ in enumerate(replica_list):
             site_name = name + '_rep' + str(site_number + 1)
             new_site = base_site.copy(site_name)
-            new_site.update_counts_histogram(bulk=False, counts_data=replica_list[site_number])
+            new_site.update_site_counts_histogram(counts_data=replica_list[site_number])
             site_list.append(new_site)
         return site_list
