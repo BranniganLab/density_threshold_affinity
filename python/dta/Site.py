@@ -123,6 +123,8 @@ class Site:
         """
         if not isinstance(bin_addresses, (list, tuple, set)):
             raise TypeError("bin_addresses must be provided as a list, tuple, or set")
+        if not bin_addresses:
+            raise ValueError("bin_addresses cannot be empty.")
         bin_coords = []
         for item in bin_addresses:
             if not isinstance(item, BinAddress):
