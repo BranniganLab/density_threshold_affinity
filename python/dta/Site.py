@@ -269,6 +269,7 @@ class Site:
         bulk_hist = np.bincount(counts_data)
         self._bulk_counts_histogram = bulk_hist
 
+    @staticmethod
     def _validate_counts_data(counts_data: np.ndarray, expected_ndim: int) -> np.ndarray:
         """Validate the common requirements for frame-resolved count data."""
         if not isinstance(counts_data, np.ndarray):
