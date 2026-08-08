@@ -284,7 +284,10 @@ class Site:
             )
 
         if not np.issubdtype(counts_data.dtype, np.number):
-            raise TypeError(...)
+            raise TypeError(
+                "counts_data must contain real numeric values; "
+                f"received dtype {counts_data.dtype}."
+            )
 
         if not np.all(np.isfinite(counts_data)):
             raise ValueError("counts_data must contain only finite values.")
