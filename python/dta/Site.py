@@ -282,6 +282,8 @@ class Site:
                 f"counts_data must be {expected_ndim}D; "
                 f"received shape {counts_data.shape}."
             )
+        if counts_data.shape[0] == 0:
+            raise ValueError("counts_data must include at least one frame.")
 
         if (
             not np.issubdtype(counts_data.dtype, np.number)
