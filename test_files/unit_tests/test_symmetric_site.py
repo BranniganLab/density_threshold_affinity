@@ -222,7 +222,7 @@ def test_copy_preserves_definition_but_rebuilds_empty_constituent_sites(symmetri
     assert copied.temperature == symmetric_site.temperature
     assert copied.bin_coords == symmetric_site.bin_coords
 
-    for original_site, copied_site in zip(symmetric_site, copied):
+    for original_site, copied_site in zip(symmetric_site, copied, strict=True):
         assert copied_site is not original_site
         assert copied_site.bin_coords == original_site.bin_coords
         assert copied_site.bin_coords is not original_site.bin_coords
