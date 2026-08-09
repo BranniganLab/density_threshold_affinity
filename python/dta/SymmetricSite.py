@@ -307,13 +307,15 @@ class SymmetricSite:
             The list of all Sites that comprise this SymmetricSite.
 
         """
-        name = base_site.name
-        base_site.name = name + '_1'
-        site_list = [base_site]
-        for site_number in range(1, self.symmetry):
-            site_name = name + '_' + str(site_number + 1)
-            new_site = Site(site_name, base_site.grid, base_site.leaflet_id, base_site.temperature)
-            new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, base_site.grid.theta.n_bins, site_number)
+        site_list = []
+        for site_number in range(self.symmetry):
+            site_name = f"{base_site.name}_{site_number + 1}"
+            new_site = base_site.copy(site_name)
+            new_site.bin_coords = self._rotate_bin_coords(
+                base_site.bin_coords,
+                base_site.grid.theta.n_bins,
+                site_number,
+            )
             site_list.append(new_site)
         self._check_for_overlapping_sites(site_list)
         return site_list
