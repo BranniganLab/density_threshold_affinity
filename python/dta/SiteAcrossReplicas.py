@@ -277,9 +277,9 @@ class SiteAcrossReplicas:
             raise TypeError("replica_list must be a list")
         name = base_site.name
         site_list = []
-        for site_number, _ in enumerate(replica_list):
+        for site_number, replica_counts in enumerate(replica_list):
             site_name = name + '_rep' + str(site_number + 1)
             new_site = base_site.copy(site_name)
-            new_site.update_site_counts_histogram(counts_data=replica_list[site_number])
+            new_site.update_site_counts_histogram(counts_data=replica_counts)
             site_list.append(new_site)
         return site_list
