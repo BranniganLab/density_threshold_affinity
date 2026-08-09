@@ -99,7 +99,7 @@ def test_init_rejects_non_integer_symmetry(base_site, symmetry):
 @pytest.mark.parametrize("symmetry", [1, 0, -1])
 def test_init_rejects_symmetry_below_two(base_site, symmetry):
     """Verify symmetry below two fails because a onefold site should use Site directly."""
-    with pytest.raises(ValueError, match="symmetry must be positive"):
+    with pytest.raises(ValueError, match="symmetry must be greater than one."):
         SymmetricSite(symmetry, base_site)
 
 
