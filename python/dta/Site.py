@@ -272,8 +272,50 @@ class Site:
         self._bulk_counts_histogram = bulk_hist
 
     @staticmethod
-    def _validate_counts_data(counts_data: np.ndarray, expected_ndim: int) -> np.ndarray:
-        """Validate the common requirements for frame-resolved count data."""
+    def _validate_counts_data(
+        counts_data: np.ndarray,
+        expected_ndim: int,
+    ) -> np.ndarray:
+        """
+        Validate and normalize frame-resolved molecular count data.
+
+        Confirm that ``counts_data`` is a NumPy array with the dimensionality
+        required by the calling histogram-update method. The array must have a
+        real numeric dtype and contain only finite, integer-valued,
+        non-negative values. Integer-valued floating-point arrays, such as
+        ``[0.0, 1.0, 2.0]``, are accepted because some input parsers represent
+        discrete counts as floats. Fractional values are rejected rather than
+        silently truncated.
+
+        After validation, return a new array containing the same values cast
+        to NumPy's default integer dtype. The returned array is suitable for
+        indexing operations and for use with ``numpy.bincount``; the input
+        array is not modified.
+
+        Parameters
+        ----------
+        counts_data : numpy.ndarray
+            Frame-resolved count data to validate. Bulk counts are expected to
+            be one-dimensional, while spatially binned site counts are
+            expected to be three-dimensional.
+        expected_ndim : int
+            Number of dimensions required by the calling method.
+
+        Returns
+        -------
+        numpy.ndarray
+            A newly allocated integer array with the same shape and count
+            values as ``counts_data``.
+
+        Raises
+        ------
+        TypeError
+            If ``counts_data`` is not a NumPy array or does not have a real
+            numeric dtype.
+        ValueError
+            If the array has the wrong number of dimensions or contains NaN,
+            infinity, fractional values, or negative counts.
+        """
         if not isinstance(counts_data, np.ndarray):
             raise TypeError(
                 "counts_data must be provided as a NumPy ndarray."
@@ -284,8 +326,6 @@ class Site:
                 f"counts_data must be {expected_ndim}D; "
                 f"received shape {counts_data.shape}."
             )
-        if counts_data.shape[0] == 0:
-            raise ValueError("counts_data must include at least one frame.")
 
         if (
             not np.issubdtype(counts_data.dtype, np.number)
@@ -297,15 +337,29 @@ class Site:
             )
 
         if not np.all(np.isfinite(counts_data)):
-            raise ValueError("counts_data must contain only finite values.")
+            raise ValueError(
+                "counts_data must contain only finite values."
+            )
 
         if not np.all(counts_data == np.floor(counts_data)):
-            raise ValueError("counts_data must contain integer-valued counts.")
+            raise ValueError(
+                "counts_data must contain integer-valued counts."
+            )
 
         if np.any(counts_data < 0):
-            raise ValueError("counts_data cannot contain negative counts.")
+            raise ValueError(
+                "counts_data cannot contain negative counts."
+            )
 
-        return counts_data.astype(int)
+        max_supported_count = np.iinfo(np.intp).max
+
+        if np.any(counts_data > max_supported_count):
+            raise ValueError(
+                "counts_data contains values too large for this platform; "
+                f"the maximum supported count is {max_supported_count}."
+            )
+
+        return counts_data.astype(np.intp)
 
     def calculate_geometric_area(self) -> float:
         """
