@@ -82,15 +82,15 @@ class SymmetricSite:
             raise ValueError("The base_site needs to be fully defined before creating a SymmetricSite.")
         self.name = base_site.name
         self._symmetry = symmetry
-        self._site_list = self._make_symmetric_sites(base_site)
+        self._sites = tuple(self._make_symmetric_sites(base_site))
         if len(self.get_site_list) != symmetry:
             raise RuntimeError("Number of Sites does not match symmetry.")
         self.temperature = base_site.temperature
         self.grid = base_site.grid
 
     def __iter__(self):
-        """Iterate through the site_list."""
-        yield from self.get_site_list
+        """Iterate through the Sites that comprise this SymmetricSite."""
+        yield from self.sites
 
     @property
     def symmetry(self) -> int:
@@ -106,14 +106,14 @@ class SymmetricSite:
         return self._symmetry
 
     @property
-    def bin_coords(self) -> set[BinAddress]:
+    def bin_coords(self) -> frozenset[BinAddress]:
         """
         Generate one list of BinAddress[es] corresponding to all the \
         bins inside this SymmetricSite. Necessary for outline_site.
 
         Returns
         -------
-        set of BinAddress
+        frozenset of BinAddress
             The bins that belong to this SymmetricSite as BinAddress objects.
             Bin indices are zero-indexed by convention.
 
@@ -123,20 +123,20 @@ class SymmetricSite:
             site_coords = site.bin_coords
             for each_bin in site_coords:
                 bin_coords_list.append(each_bin)
-        return set(bin_coords_list)
+        return frozenset(bin_coords_list)
 
     @property
-    def get_site_list(self) -> list[Site]:
+    def sites(self) -> tuple[Site]:
         """
-        Tell me the site_list, but don't let me change the site_list.
+        Return the constituent Sites in symmetry order.
 
         Returns
         -------
-        list
-            List of constituent Site objects that comprise this SymmetricSite.
+        tuple
+            Immutable tuple of constituent Site objects that comprise this SymmetricSite.
 
         """
-        return self._site_list
+        return self._sites
 
     @property
     def site_counts_histogram(self) -> np.ndarray:
