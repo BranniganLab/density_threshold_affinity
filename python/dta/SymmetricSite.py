@@ -223,7 +223,13 @@ class SymmetricSite:
         return np.std(np.array(dGs))
 
     def copy(self, new_name: str) -> SymmetricSite:
-        """Return a copy of this SymmetricSite with empty histograms."""
+        """
+        Return a copy of this SymmetricSite with empty histograms.
+
+        The copy regenerates every constituent Site from the first constituent
+        Site. Changes made to individual constituent Sites after construction
+        are not preserved.
+        """
         base_site_copy = self.sites[0].copy(new_name)
         symm_site_copy = SymmetricSite(self.symmetry, base_site_copy)
         return symm_site_copy

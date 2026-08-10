@@ -227,7 +227,7 @@ class Site:
         if self.bulk_counts_histogram is None:
             raise RuntimeError("You need to update the bulk counts histogram before calculating dG.")
         n_peak = self.n_peak
-        if self.n_peak is None:
+        if n_peak is None:
             raise RuntimeError("n_peak is missing.")
         dG_site = calculate_dG(self.site_counts_histogram, n_peak, self.temperature)
         dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temperature)
