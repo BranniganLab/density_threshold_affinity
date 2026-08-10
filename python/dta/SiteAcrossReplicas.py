@@ -273,8 +273,6 @@ class SiteAcrossReplicas:
             The list of all Sites/SymmetricSites that comprise this SiteAcrossReplicas.
 
         """
-        if not isinstance(replica_list, list):
-            raise TypeError("replica_list must be a list")
         name = base_site.name
         site_list = []
         for site_number, replica_counts in enumerate(replica_list):
