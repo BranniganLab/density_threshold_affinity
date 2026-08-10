@@ -83,7 +83,8 @@ class SymmetricSite:
         self.name = base_site.name
         self._symmetry = symmetry
         self._site_list = self._make_symmetric_sites(base_site)
-        assert len(self.get_site_list) == symmetry, "Number of Sites does not match symmetry."
+        if len(self.get_site_list) != symmetry:
+            raise RuntimeError("Number of Sites does not match symmetry.")
         self.temperature = base_site.temperature
         self.grid = base_site.grid
 
