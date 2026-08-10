@@ -251,7 +251,7 @@ def test_dg_requires_site_histogram(site):
     """Verify dG cannot be evaluated without site occupancy statistics."""
     site.update_bulk_counts_histogram(np.array([0, 1, 1, 2]))
 
-    with pytest.raises(AssertionError, match="update the site counts"):
+    with pytest.raises(RuntimeError, match="update the site counts"):
         _ = site.dG
 
 
@@ -259,7 +259,7 @@ def test_dg_requires_bulk_histogram(site):
     """Verify dG cannot be evaluated without the bulk reference correction."""
     site.update_site_counts_histogram(np.zeros((3, 2, 8), dtype=int))
 
-    with pytest.raises(AssertionError, match=r"update the bulk counts"):
+    with pytest.raises(RuntimeError, match=r"update the bulk counts"):
         _ = site.dG
 
 
