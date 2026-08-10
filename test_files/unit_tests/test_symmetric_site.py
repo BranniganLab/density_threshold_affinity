@@ -80,7 +80,7 @@ def test_symmetric_sites_collection_is_immutable(symmetric_site):
     assert isinstance(symmetric_site.sites, tuple)
 
     with pytest.raises(AttributeError):
-        symmetric_site.sites.append(site)
+        symmetric_site.sites.append(symmetric_site.sites[0])
 
 
 def test_bin_coords_returns_union_of_constituent_bins(symmetric_site):
