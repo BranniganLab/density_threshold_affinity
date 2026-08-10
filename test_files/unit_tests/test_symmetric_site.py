@@ -71,7 +71,7 @@ def test_init_creates_named_rotated_sites_and_inherits_attributes(base_site):
 
 def test_iter_yields_constituent_sites(symmetric_site):
     """Verify iteration exposes constituent Sites in stored order for uniform processing."""
-    assert list(symmetric_site) == symmetric_site.sites
+    assert tuple(symmetric_site) == symmetric_site.sites
     assert all(isinstance(site, Site) for site in symmetric_site)
 
 
