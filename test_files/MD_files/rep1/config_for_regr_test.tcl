@@ -12,7 +12,7 @@ set utils "../../../../TCL/utilities"
 set dt 1
 #set leaflet_reassign_interval 1; #optional
 #set start_frame 0 ; #optional
-set end_frame 9  ; #optional 
+set end_frame 10  ; #optional 
 
 set backbone_selstr "name BB" ;#selection string used to define the protein backbone
 set protein_selstr "name BB SC1 to SC4" ;#selection string used to define the entire protein
