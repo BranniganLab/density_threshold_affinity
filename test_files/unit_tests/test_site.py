@@ -69,7 +69,7 @@ def test_bin_coords_accepts_supported_containers_and_converts_tuples(grid, conta
 
 def test_bin_coords_rejects_invalid_container(site):
     """Verify unsupported containers fail clearly instead of being misinterpreted as bin addresses."""
-    with pytest.raises(TypeError, match="list, tuple, or set"):
+    with pytest.raises(TypeError, match="list, tuple, set, or frozenset"):
         site.bin_coords = np.array([[0, 0]])
 
 
