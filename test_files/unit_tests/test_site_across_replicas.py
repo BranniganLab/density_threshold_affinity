@@ -240,7 +240,7 @@ def test_predict_accessible_area_can_use_histogram_means(
 ):
     """Verify mean-based prediction uses the full pooled replica occupancy distribution."""
     # The pooled site mean is 1.4, while the bulk mean is 1.2.
-    expected = 100.0 * (7.0 / 6.0) / 1.2
+    expected = 100.0 * 1.4 / (7.0 / 6.0)
     assert populated_site_across_replicas.predict_accessible_area(
         100.0,
         mode=False,
