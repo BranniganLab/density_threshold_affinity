@@ -13,9 +13,10 @@ from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, ag
 
 class SiteAcrossReplicas:
     """
-    An aggregation of a single binding site across multiple replicas. User \
-    defines the base_site SymmetricSite and/or Site object first (including \
-    setting the bin_coords!) and then provides it to the Site_Across_Replicas \
+    An aggregation of a single binding site across multiple replicas. 
+
+    User defines the base_site SymmetricSite and/or Site object first (including
+    setting the bin_coords!) and then provides it to the Site_Across_Replicas
     constructor.
 
     Attributes
@@ -31,27 +32,27 @@ class SiteAcrossReplicas:
     ---------------------
     name : str
         The name of the Site. Will be inherited from base_site.
-    get_site_list : list
-        The list of constituent Site or SymmetricSite objects that make up \
+    sites : tuple
+        Tuple of constituent Site or SymmetricSite objects that make up
         this Site_Across_Replicas.
     site_counts_histogram : numpy ndarray
-        One-dimensional ndarray where the histogrammed ligand bead counts are \
-        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having \
-        zero beads in the Site, 5 frames having one bead in the Site, 0 frames \
-        having 2, 3, or 5 beads in the site, and 1 frame having 4 beads in the \
+        One-dimensional ndarray where the histogrammed ligand bead counts are
+        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having
+        zero beads in the Site, 5 frames having one bead in the Site, 0 frames
+        having 2, 3, or 5 beads in the site, and 1 frame having 4 beads in the
         Site.
     bulk_counts_histogram : numpy ndarray
-        One-dimensional ndarray where the histogrammed ligand bead counts are \
-        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having \
-        zero beads in the bulk patch, 5 frames having one bead in the patch, 0 \
-        frames having 2, 3, or 5 beads in the patch, and 1 frame having 4 beads\
+        One-dimensional ndarray where the histogrammed ligand bead counts are
+        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having
+        zero beads in the bulk patch, 5 frames having one bead in the patch, 0
+        frames having 2, 3, or 5 beads in the patch, and 1 frame having 4 beads
         in the patch.
     n_peak : int
         The mode of the bulk histogram. Indicates the cut-off for P_unocc.
     dG : float
         The binding affinity of the lipid for the Site, in kcal/mol.
     dG_std : float
-        The standard deviation of the mean binding affinity for the \
+        The standard deviation of the mean binding affinity for the
         SymmetricSites and/or Sites that comprise this SiteAcrossReplicas.
     """
 
@@ -78,28 +79,28 @@ class SiteAcrossReplicas:
         if not replica_list:
             raise ValueError("replica_list cannot be empty.")
         self.name = base_site.name
-        self._site_list = self._make_sites_across_replicas(base_site, replica_list)
-        if len(self.get_site_list) != len(replica_list):
+        self._sites = tuple(self._make_sites_across_replicas(base_site, replica_list))
+        if len(self.sites) != len(replica_list):
             raise IndexError("Number of Sites does not match number of replicas.")
         self.temperature = base_site.temperature
         self.grid = base_site.grid
 
     def __iter__(self):
-        """Iterate through the site_list."""
-        yield from self.get_site_list
+        """Iterate through the Sites and/or SymmetricSites that comprise this SiteAcrossReplicas."""
+        yield from self.sites
 
     @property
-    def get_site_list(self) -> list[Site | SymmetricSite]:
+    def sites(self) -> tuple[Site | SymmetricSite, ...]:
         """
-        Tell me the site_list, but don't let me change the site_list.
+        Return the constituent sites in replica order.
 
         Returns
         -------
-        list
-            List of constituent Site objects that comprise this SiteAcrossReplicas.
+        tuple
+            Immutable tuple of constituent Site or SymmetricSite objects that comprise this SiteAcrossReplicas.
 
         """
-        return self._site_list
+        return self._sites
 
     @property
     def site_counts_histogram(self) -> np.ndarray:
@@ -116,7 +117,7 @@ class SiteAcrossReplicas:
             having 4 beads in the Site.
 
         """
-        return aggregate_site_counts_histograms(self.get_site_list)
+        return aggregate_site_counts_histograms(self.sites)
 
     @property
     def bulk_counts_histogram(self) -> np.ndarray:
@@ -135,7 +136,7 @@ class SiteAcrossReplicas:
             frame having 4 beads in the patch.
 
         """
-        return check_bulk_counts_histogram(self.get_site_list)
+        return check_bulk_counts_histogram(self.sites)
 
     @property
     def n_peak(self) -> int:
@@ -181,7 +182,7 @@ class SiteAcrossReplicas:
 
         """
         dGs = []
-        for site in self.get_site_list:
+        for site in self.sites:
             dGs.append(site.dG)
         return np.std(np.array(dGs))
 
@@ -199,7 +200,7 @@ class SiteAcrossReplicas:
         None.
 
         """
-        for site in self.get_site_list:
+        for site in self.sites:
             site.update_site_counts_histogram(counts_data)
 
     def update_bulk_counts_histogram(self, counts_data: np.ndarray) -> None:
@@ -216,7 +217,7 @@ class SiteAcrossReplicas:
         None.
 
         """
-        for site in self.get_site_list:
+        for site in self.sites:
             site.update_bulk_counts_histogram(counts_data)
 
     def predict_accessible_area(self, bulk_area: float, mode: bool = True) -> float:
