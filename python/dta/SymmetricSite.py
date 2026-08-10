@@ -70,7 +70,7 @@ class SymmetricSite:
             The original Site object that should be cloned and rotated.
 
         """
-        if isinstance(symmetry, bool) or not isinstance(symmetry, int):
+        if isinstance(symmetry, bool) or not isinstance(symmetry, (int, np.integer)):
             raise TypeError("symmetry must be an integer.")
         if symmetry < 2:
             raise ValueError("symmetry must be greater than one.")
