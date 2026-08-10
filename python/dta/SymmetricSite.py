@@ -14,9 +14,10 @@ from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, ag
 
 class SymmetricSite:
     """
-    An aggregation of multiple binding sites on/in a protein/inclusion. User \
-    defines the base_site Site object first (including setting the bin_coords!)\
-    and then provides it to the SymmetricSite constructor.
+    An aggregation of multiple binding sites on/in a protein/inclusion.
+ 
+    User defines the base_site Site object first (including setting the 
+    bin_coords!) and then provides it to the SymmetricSite constructor.
 
     Attributes
     ----------
@@ -34,26 +35,26 @@ class SymmetricSite:
     bin_coords : set of BinAddress
         The bins that belong to this site as BinAddress objects. Bin indices
         are zero-indexed by convention.
-    get_site_list : list
-        The list of constituent Site objects that make up this SymmetricSite.
+    sites : tuple
+        Tuple of constituent Site objects that make up this SymmetricSite.
     site_counts_histogram : numpy ndarray
-        One-dimensional ndarray where the histogrammed ligand bead counts are \
-        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having \
-        zero beads in the Site, 5 frames having one bead in the Site, 0 frames \
-        having 2, 3, or 5 beads in the site, and 1 frame having 4 beads in the \
+        One-dimensional ndarray where the histogrammed ligand bead counts are
+        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having
+        zero beads in the Site, 5 frames having one bead in the Site, 0 frames
+        having 2, 3, or 5 beads in the site, and 1 frame having 4 beads in the
         Site.
     bulk_counts_histogram : numpy ndarray
-        One-dimensional ndarray where the histogrammed ligand bead counts are \
-        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having \
-        zero beads in the bulk patch, 5 frames having one bead in the patch, 0 \
-        frames having 2, 3, or 5 beads in the patch, and 1 frame having 4 beads\
+        One-dimensional ndarray where the histogrammed ligand bead counts are
+        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having
+        zero beads in the bulk patch, 5 frames having one bead in the patch, 0
+        frames having 2, 3, or 5 beads in the patch, and 1 frame having 4 beads
         in the patch.
     n_peak : int
         The mode of the bulk histogram. Indicates the cut-off for P_unocc.
     dG : float
         The binding affinity of the lipid for the Site, in kcal/mol.
     dG_std : float
-        The standard deviation of the mean binding affinity for the Sites that\
+        The standard deviation of the mean binding affinity for the Sites that
         comprise this SymmetricSite.
     """
 
@@ -83,7 +84,7 @@ class SymmetricSite:
         self.name = base_site.name
         self._symmetry = symmetry
         self._sites = tuple(self._make_symmetric_sites(base_site))
-        if len(self.get_site_list) != symmetry:
+        if len(self.sites) != symmetry:
             raise RuntimeError("Number of Sites does not match symmetry.")
         self.temperature = base_site.temperature
         self.grid = base_site.grid
@@ -119,7 +120,7 @@ class SymmetricSite:
 
         """
         bin_coords_list = []
-        for site in self.get_site_list:
+        for site in self.sites:
             site_coords = site.bin_coords
             for each_bin in site_coords:
                 bin_coords_list.append(each_bin)
@@ -153,7 +154,7 @@ class SymmetricSite:
             having 4 beads in the Site.
 
         """
-        return aggregate_site_counts_histograms(self.get_site_list)
+        return aggregate_site_counts_histograms(self.sites)
 
     @property
     def bulk_counts_histogram(self) -> np.ndarray:
@@ -171,7 +172,7 @@ class SymmetricSite:
             frame having 4 beads in the patch.
 
         """
-        return check_bulk_counts_histogram(self.get_site_list)
+        return check_bulk_counts_histogram(self.sites)
 
     @property
     def n_peak(self) -> int:
@@ -217,13 +218,13 @@ class SymmetricSite:
 
         """
         dGs = []
-        for site in self.get_site_list:
+        for site in self.sites:
             dGs.append(site.dG)
         return np.std(np.array(dGs))
 
     def copy(self, new_name: str) -> SymmetricSite:
         """Return a copy of this SymmetricSite with empty histograms."""
-        base_site_copy = self.get_site_list[0].copy(new_name)
+        base_site_copy = self.sites[0].copy(new_name)
         symm_site_copy = SymmetricSite(self.symmetry, base_site_copy)
         return symm_site_copy
 
@@ -241,7 +242,7 @@ class SymmetricSite:
         None.
 
         """
-        for site in self.get_site_list:
+        for site in self.sites:
             site.update_site_counts_histogram(counts_data)
 
     def update_bulk_counts_histogram(self, counts_data: np.ndarray) -> None:
@@ -258,7 +259,7 @@ class SymmetricSite:
         None.
 
         """
-        for site in self.get_site_list:
+        for site in self.sites:
             site.update_bulk_counts_histogram(counts_data)
 
     def predict_accessible_area(self, bulk_area: float, mode: bool = True) -> float:
