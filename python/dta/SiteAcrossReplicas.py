@@ -186,23 +186,6 @@ class SiteAcrossReplicas:
             dGs.append(site.dG)
         return np.std(np.array(dGs))
 
-    def update_site_counts_histogram(self, counts_data: np.ndarray) -> None:
-        """
-        Update the site counts histograms for all constituent Sites.
-
-        Parameters
-        ----------
-        counts_data : ndarray
-            The 3D ndarray containing binned site counts.
-
-        Returns
-        -------
-        None.
-
-        """
-        for site in self.sites:
-            site.update_site_counts_histogram(counts_data)
-
     def update_bulk_counts_histogram(self, counts_data: np.ndarray) -> None:
         """
         Update the bulk counts histograms for all constituent Sites.
