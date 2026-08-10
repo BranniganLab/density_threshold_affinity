@@ -71,7 +71,7 @@ def test_init_creates_named_rotated_sites_and_inherits_attributes(base_site):
 
 def test_iter_yields_constituent_sites(symmetric_site):
     """Verify iteration exposes constituent Sites in stored order for uniform processing."""
-    assert list(symmetric_site) == symmetric_site.get_site_list
+    assert list(symmetric_site) == symmetric_site.sites
     assert all(isinstance(site, Site) for site in symmetric_site)
 
 
@@ -229,8 +229,8 @@ def test_copy_preserves_definition_but_rebuilds_empty_constituent_sites(symmetri
         assert copied_site.site_counts_histogram is None
         assert copied_site.bulk_counts_histogram is None
 
-    copied.get_site_list[0].bin_coords = {BinAddress(0, 0)}
-    assert symmetric_site.get_site_list[0].bin_coords == {
+    copied.sites[0].bin_coords = {BinAddress(0, 0)}
+    assert symmetric_site.sites[0].bin_coords == {
         BinAddress(0, 7),
         BinAddress(1, 0),
     }
