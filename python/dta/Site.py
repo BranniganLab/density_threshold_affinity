@@ -264,7 +264,7 @@ class Site:
         """
         if self.bin_coords is None:
             raise RuntimeError(
-                "Cannot update the site counts histogram before bin_coords "
+                "Cannot update the bulk counts histogram before bin_coords "
                 "have been defined."
             )
         counts_data = self._validate_counts_data(counts_data=counts_data, expected_ndim=1)
