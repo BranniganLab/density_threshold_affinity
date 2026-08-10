@@ -76,7 +76,7 @@ def test_init_loads_each_replica_into_its_corresponding_site(
     site_across_replicas,
 ):
     """Verify replica-specific count arrays produce distinct constituent histograms."""
-    first, second = site_across_replicas.get_site_list
+    first, second = site_across_replicas.sites
 
     np.testing.assert_array_equal(first.site_counts_histogram, np.array([1, 2, 2]))
     np.testing.assert_array_equal(second.site_counts_histogram, np.array([1, 1, 2, 1]))
@@ -84,7 +84,7 @@ def test_init_loads_each_replica_into_its_corresponding_site(
 
 def test_iter_yields_constituent_sites_in_replica_order(site_across_replicas):
     """Verify iteration retains replica order so results remain associated with input replicas."""
-    assert list(site_across_replicas) == site_across_replicas.get_site_list
+    assert list(site_across_replicas) == site_across_replicas.sites
     assert all(isinstance(site, Site) for site in site_across_replicas)
 
 
@@ -97,7 +97,7 @@ def test_init_supports_symmetric_site_definitions(grid, replica_counts):
     across_replicas = SiteAcrossReplicas(replica_counts, symmetric_site)
 
     assert across_replicas.name == "symmetric binding site"
-    assert len(across_replicas.get_site_list) == 2
+    assert len(across_replicas.sites) == 2
     assert all(isinstance(site, SymmetricSite) for site in across_replicas)
     assert all(site.symmetry == 4 for site in across_replicas)
     assert [site.name for site in across_replicas] == [
