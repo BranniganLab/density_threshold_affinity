@@ -179,8 +179,21 @@ def test_bin_coords_cannot_be_mutated_through_getter(site):
 
 def test_replacing_bin_coords_invalidates_histograms(site):
     """Histograms must be cleared when the Site definition changes."""
+    site_counts = np.zeros(
+        (
+            3,
+            site.grid.r.n_bins,
+            site.grid.theta.n_bins,
+        ),
+        dtype=int,
+    )
+    bulk_counts = np.array([0, 1, 1], dtype=int)
+
     site.update_site_counts_histogram(site_counts)
     site.update_bulk_counts_histogram(bulk_counts)
+
+    assert site.site_counts_histogram is not None
+    assert site.bulk_counts_histogram is not None
 
     site.bin_coords = {BinAddress(0, 2)}
 
@@ -190,13 +203,32 @@ def test_replacing_bin_coords_invalidates_histograms(site):
 
 def test_equivalent_bin_assignment_preserves_histograms(site):
     """Reassigning an equivalent definition should not invalidate results."""
+    site_counts = np.zeros(
+        (
+            3,
+            site.grid.r.n_bins,
+            site.grid.theta.n_bins,
+        ),
+        dtype=int,
+    )
+    bulk_counts = np.array([0, 1, 1], dtype=int)
+
     site.update_site_counts_histogram(site_counts)
     site.update_bulk_counts_histogram(bulk_counts)
 
+    original_site_histogram = site.site_counts_histogram.copy()
+    original_bulk_histogram = site.bulk_counts_histogram.copy()
+
     site.bin_coords = set(site.bin_coords)
 
-    assert site.site_counts_histogram is not None
-    assert site.bulk_counts_histogram is not None
+    np.testing.assert_array_equal(
+        site.site_counts_histogram,
+        original_site_histogram,
+    )
+    np.testing.assert_array_equal(
+        site.bulk_counts_histogram,
+        original_bulk_histogram,
+    )
 
 
 @pytest.mark.parametrize(
