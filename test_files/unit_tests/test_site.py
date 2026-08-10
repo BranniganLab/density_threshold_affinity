@@ -171,6 +171,34 @@ def test_update_site_counts_histogram_rejects_wrong_grid_shape(site):
         site.update_site_counts_histogram(np.zeros((3, 3, 8), dtype=int))
 
 
+def test_bin_coords_cannot_be_mutated_through_getter(site):
+    """The returned bin collection must not permit in-place mutation."""
+    with pytest.raises(AttributeError):
+        site.bin_coords.add(BinAddress(0, 2))
+
+
+def test_replacing_bin_coords_invalidates_histograms(site):
+    """Histograms must be cleared when the Site definition changes."""
+    site.update_site_counts_histogram(site_counts)
+    site.update_bulk_counts_histogram(bulk_counts)
+
+    site.bin_coords = {BinAddress(0, 2)}
+
+    assert site.site_counts_histogram is None
+    assert site.bulk_counts_histogram is None
+
+
+def test_equivalent_bin_assignment_preserves_histograms(site):
+    """Reassigning an equivalent definition should not invalidate results."""
+    site.update_site_counts_histogram(site_counts)
+    site.update_bulk_counts_histogram(bulk_counts)
+
+    site.bin_coords = set(site.bin_coords)
+
+    assert site.site_counts_histogram is not None
+    assert site.bulk_counts_histogram is not None
+
+
 @pytest.mark.parametrize(
     ("update_method_name", "counts"),
     [

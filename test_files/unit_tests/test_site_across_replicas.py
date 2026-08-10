@@ -88,6 +88,14 @@ def test_iter_yields_constituent_sites_in_replica_order(site_across_replicas):
     assert all(isinstance(site, Site) for site in site_across_replicas)
 
 
+def test_replica_site_order_cannot_be_modified(site_across_replicas):
+    """Replica ordering must remain fixed after construction."""
+    assert isinstance(site_across_replicas.sites, tuple)
+
+    with pytest.raises(TypeError):
+        site_across_replicas.sites[0] = other_site
+
+
 def test_init_supports_symmetric_site_definitions(grid, replica_counts):
     """Verify a SymmetricSite can be copied per replica without losing its rotations."""
     base_site = Site("symmetric binding site", grid, leaflet_id=2, temperature=320)

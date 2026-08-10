@@ -75,6 +75,14 @@ def test_iter_yields_constituent_sites(symmetric_site):
     assert all(isinstance(site, Site) for site in symmetric_site)
 
 
+def test_symmetric_sites_collection_is_immutable(symmetric_site):
+    """Constituent Sites cannot be added, removed, or reordered."""
+    assert isinstance(symmetric_site.sites, tuple)
+
+    with pytest.raises(AttributeError):
+        symmetric_site.sites.append(site)
+
+
 def test_bin_coords_returns_union_of_constituent_bins(symmetric_site):
     """Verify combined coordinates include every symmetry-related bin exactly once."""
     assert symmetric_site.bin_coords == {
