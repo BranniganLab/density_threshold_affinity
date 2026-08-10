@@ -337,6 +337,8 @@ def evenly_divided_quotient(dividend: float, divisor: float) -> int:
     int
         The dividend divided evenly by the divisor.
     """
+    if divisor == 0:
+        raise ValueError("divisor cannot be 0.")
     quotient = dividend / divisor
     nearest_integer = round(quotient)
 
