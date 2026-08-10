@@ -318,9 +318,26 @@ def confirm_objs_are_equal(list_of_objs: list) -> None:
             raise ValueError(f"{inspect.getmembers(obj)} does not match {inspect.getmembers(compare_to)}")
 
 
-def evenly_divided_quotient(value, divisor):
-    """Determine if divisor can divide value evenly, then return integer quotient."""
-    quotient = value / divisor
+def evenly_divided_quotient(dividend: float, divisor: float) -> int:
+    """
+    Determine if divisor can divide dividend evenly; error if not.
+
+    Parameters
+    ----------
+    dividend : float
+    divisor : float
+
+    Raises
+    ------
+    ValueError
+        If the dividend is not evenly divisible by the divisor.
+
+    Returns
+    -------
+    int
+        The dividend divided evenly by the divisor.
+    """
+    quotient = dividend / divisor
     nearest_integer = round(quotient)
 
     if not math.isclose(
@@ -329,6 +346,6 @@ def evenly_divided_quotient(value, divisor):
         rel_tol=1e-9,
         abs_tol=1e-12,
     ):
-        raise ValueError(f"{value} is not evenly divisible by {divisor}")
+        raise ValueError(f"{dividend} is not evenly divisible by {divisor}")
 
     return nearest_integer
