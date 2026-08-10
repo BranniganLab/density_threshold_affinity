@@ -33,9 +33,9 @@ class Site:
 
     Settable Properties
     -------------------
-    bin_coords : list of BinAddress
+    bin_coords : frozenset of BinAddress
         The bins that belong to this site in (r, theta) format. e.g. \
-        [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
+        {(2, 10), (2, 11), (2, 12)} would correspond to the 11th, 12th, and \
         13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
         are zero-indexed by convention.
 
@@ -92,13 +92,16 @@ class Site:
         self._bulk_counts_histogram = None
 
     @property
-    def bin_coords(self) -> set[BinAddress]:
+    def bin_coords(self) -> frozenset[BinAddress]:
         """
-        Tell me what the bin_coords are. This is a getter function.
+        Return the bins defining this Site.
+
+        The returned collection is immutable. Assign a new collection to
+        ``bin_coords`` to change the Site definition.
 
         Returns
         -------
-        list of tuples
+        frozenset of BinAddress
             The bins that belong to this site in (r, theta) format. e.g. \
             [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
             13th theta bins (starting at theta=0) in the 3rd radial bin from \
@@ -108,16 +111,24 @@ class Site:
         return self._bin_coords
 
     @bin_coords.setter
-    def bin_coords(self, bin_addresses: list[BinAddress] | tuple[BinAddress] | set[BinAddress]) -> None:
+    def bin_coords(
+        self,
+        bin_addresses: (
+            list[BinAddress]
+            | tuple[BinAddress, ...]
+            | set[BinAddress]
+            | frozenset[BinAddress]
+        )
+    ) -> None:
         """
-        Set bin_coords for this Site.
+        Validate and replace the bins defining this Site.
 
         Parameters
         ----------
-        bin_addresses : list, tuple, or set of BinAddress
-            The bins that belong to this site in (r, theta) format. e.g. \
-            [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
-            13th theta bins (starting at theta=0) in the 3rd radial bin from \
+        bin_addresses : list, tuple, set, or frozenset of BinAddress
+            The bins that belong to this site in (r, theta) format. e.g.
+            [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and
+            13th theta bins (starting at theta=0) in the 3rd radial bin from
             the origin. Bin coordinates are zero-indexed by convention.
 
         Returns
@@ -125,20 +136,29 @@ class Site:
         None.
 
         """
-        if not isinstance(bin_addresses, (list, tuple, set)):
-            raise TypeError("bin_addresses must be provided as a list, tuple, or set")
+        if not isinstance(bin_addresses, (list, tuple, set, frozenset)):
+            raise TypeError("bin_addresses must be provided as a list, tuple, set, or frozenset")
         if not bin_addresses:
             raise ValueError("bin_addresses cannot be empty.")
-        bin_coords = []
+        validated = set()
         for item in bin_addresses:
-            if not isinstance(item, BinAddress):
-                item = BinAddress(*item)
-            if (item.r_index >= self.grid.r.n_bins) or (item.r_index < 0):
-                raise IndexError(f"Radial bin {item.r_index} out of range.")
-            if (item.theta_index >= self.grid.theta.n_bins) or (item.theta_index < 0):
-                raise IndexError(f"Angular bin {item.theta_index} out of range.")
-            bin_coords.append(item)
-        self._bin_coords = set(bin_coords)
+            address = item if isinstance(item, BinAddress) else BinAddress(*item)
+            if not 0 <= address.r_index < self.grid.r.n_bins:
+                raise IndexError(
+                    f"Radial bin {address.r_index} out of range."
+                )
+            if not 0 <= address.theta_index < self.grid.theta.n_bins:
+                raise IndexError(
+                    f"Angular bin {address.theta_index} out of range."
+                )
+            validated.add(address)
+
+        new_bin_coords = frozenset(validated)
+
+        if new_bin_coords != self._bin_coords:
+            self._bin_coords = new_bin_coords
+            self._site_counts_histogram = None
+            self._bulk_counts_histogram = None
 
     @property
     def site_counts_histogram(self) -> np.ndarray:
