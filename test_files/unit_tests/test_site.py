@@ -114,6 +114,58 @@ def test_n_peak_requires_bulk_histogram(site):
 
 
 @pytest.mark.parametrize(
+    "temperature",
+    [np.nan, np.inf, -np.inf],
+)
+def test_init_rejects_nonfinite_temperature(grid, temperature):
+    """
+    Verify Site rejects nonfinite temperatures because binding-affinity
+    calculations require a finite temperature.
+    """
+    with pytest.raises(
+        ValueError,
+        match="temperature must be finite",
+    ):
+        Site(
+            name="site",
+            grid=grid,
+            leaflet_id=1,
+            temperature=temperature,
+        )
+
+
+def test_update_bulk_counts_histogram_rejects_empty_array(site):
+    """
+    Verify bulk count data contain at least one frame so the resulting
+    histogram represents an observed distribution.
+    """
+    counts_data = np.array([], dtype=int)
+
+    with pytest.raises(
+        ValueError,
+        match="counts_data must include at least one frame",
+    ):
+        site.update_bulk_counts_histogram(counts_data)
+
+
+def test_update_bulk_counts_histogram_rejects_values_above_intp_max(site):
+    """
+    Verify unsigned counts outside the np.intp range are rejected before
+    conversion so they cannot wrap to negative values.
+    """
+    counts_data = np.array(
+        [np.iinfo(np.intp).max + 1],
+        dtype=np.uint64,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="too large for this platform",
+    ):
+        site.update_bulk_counts_histogram(counts_data)
+
+
+@pytest.mark.parametrize(
     "update_method_name",
     ["update_site_counts_histogram", "update_bulk_counts_histogram"],
 )
