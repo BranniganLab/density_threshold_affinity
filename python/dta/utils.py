@@ -322,6 +322,9 @@ def evenly_divided_quotient(dividend: float, divisor: float) -> int:
     """
     Determine if divisor can divide dividend evenly; error if not.
 
+    Near-integer quotients are accepted and rounded to int if within 1e-12 of
+    an integer.
+
     Parameters
     ----------
     dividend : float
@@ -330,7 +333,7 @@ def evenly_divided_quotient(dividend: float, divisor: float) -> int:
     Raises
     ------
     ValueError
-        If the dividend is not evenly divisible by the divisor.
+        If the dividend is greater than 1e-12 away from an integer value.
 
     Returns
     -------
