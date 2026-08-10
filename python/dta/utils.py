@@ -345,7 +345,7 @@ def evenly_divided_quotient(dividend: float, divisor: float) -> int:
     if not math.isclose(
         quotient,
         nearest_integer,
-        rel_tol=1e-9,
+        rel_tol=0.0,
         abs_tol=1e-12,
     ):
         raise ValueError(f"{dividend} is not evenly divisible by {divisor}")
