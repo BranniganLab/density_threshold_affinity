@@ -81,7 +81,7 @@ class SiteAcrossReplicas:
         self.name = base_site.name
         self._sites = tuple(self._make_sites_across_replicas(base_site, replica_list))
         if len(self.sites) != len(replica_list):
-            raise IndexError("Number of Sites does not match number of replicas.")
+            raise RuntimeError("Number of Sites does not match number of replicas.")
         self.temperature = base_site.temperature
         self.grid = base_site.grid
 

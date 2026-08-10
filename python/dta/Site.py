@@ -92,7 +92,7 @@ class Site:
         self._bulk_counts_histogram = None
 
     @property
-    def bin_coords(self) -> frozenset[BinAddress]:
+    def bin_coords(self) -> frozenset[BinAddress] | None:
         """
         Return the bins defining this Site.
 
