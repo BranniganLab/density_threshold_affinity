@@ -84,7 +84,7 @@ def test_init_loads_each_replica_into_its_corresponding_site(
 
 def test_iter_yields_constituent_sites_in_replica_order(site_across_replicas):
     """Verify iteration retains replica order so results remain associated with input replicas."""
-    assert list(site_across_replicas) == site_across_replicas.sites
+    assert tuple(site_across_replicas) == site_across_replicas.sites
     assert all(isinstance(site, Site) for site in site_across_replicas)
 
 
