@@ -93,7 +93,7 @@ def test_replica_site_order_cannot_be_modified(site_across_replicas):
     assert isinstance(site_across_replicas.sites, tuple)
 
     with pytest.raises(TypeError):
-        site_across_replicas.sites[0] = other_site
+        site_across_replicas.sites[0] = site_across_replicas.sites[1]
 
 
 def test_init_supports_symmetric_site_definitions(grid, replica_counts):
