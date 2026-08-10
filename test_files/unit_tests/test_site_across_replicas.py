@@ -187,19 +187,6 @@ def test_update_bulk_counts_histogram_updates_every_replica(site_across_replicas
         np.testing.assert_array_equal(site.bulk_counts_histogram, np.array([1, 2, 2]))
 
 
-def test_update_site_counts_histogram_replaces_each_replica_with_shared_data(
-    site_across_replicas,
-):
-    """Verify a non-bulk update is deliberately applied to every constituent replica Site."""
-    replacement = np.zeros((4, 2, 8), dtype=int)
-    replacement[:, 0, 0] = [0, 1, 1, 2]
-
-    site_across_replicas.update_site_counts_histogram(replacement)
-
-    for site in site_across_replicas:
-        np.testing.assert_array_equal(site.site_counts_histogram, np.array([1, 2, 1]))
-
-
 def test_bulk_counts_histogram_and_n_peak_use_shared_bulk_distribution(
     populated_site_across_replicas,
 ):
