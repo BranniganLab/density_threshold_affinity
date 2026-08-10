@@ -316,3 +316,19 @@ def confirm_objs_are_equal(list_of_objs: list) -> None:
             raise TypeError(f"Expected {obj_type} but {obj} is a {type(obj)}")
         if obj != compare_to:
             raise ValueError(f"{inspect.getmembers(obj)} does not match {inspect.getmembers(compare_to)}")
+
+
+def evenly_divided_quotient(value, divisor):
+    """Determine if divisor can divide value evenly, then return integer quotient."""
+    quotient = value / divisor
+    nearest_integer = round(quotient)
+
+    if not math.isclose(
+        quotient,
+        nearest_integer,
+        rel_tol=1e-9,
+        abs_tol=1e-12,
+    ):
+        raise ValueError(f"{value} is not evenly divisible by {divisor}")
+
+    return nearest_integer
