@@ -48,7 +48,7 @@ def site_across_replicas(base_site, replica_counts):
 def populated_site_across_replicas(site_across_replicas):
     """Return a SiteAcrossReplicas with the shared bulk histogram populated."""
     site_across_replicas.update_bulk_counts_histogram(
-        np.array([0, 1, 1, 2, 2]),
+        np.array([0, 1, 1, 1, 2, 2]),
     )
     return site_across_replicas
 
@@ -193,7 +193,7 @@ def test_bulk_counts_histogram_and_n_peak_use_shared_bulk_distribution(
     """Verify the common bulk histogram is exposed and supplies the occupancy threshold."""
     np.testing.assert_array_equal(
         populated_site_across_replicas.bulk_counts_histogram,
-        np.array([1, 2, 2]),
+        np.array([1, 3, 2]),
     )
     assert populated_site_across_replicas.n_peak == 1
 
