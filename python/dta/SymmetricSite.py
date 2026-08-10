@@ -126,7 +126,7 @@ class SymmetricSite:
         return frozenset(bin_coords_list)
 
     @property
-    def sites(self) -> tuple[Site]:
+    def sites(self) -> tuple[Site, ...]:
         """
         Return the constituent Sites in symmetry order.
 
