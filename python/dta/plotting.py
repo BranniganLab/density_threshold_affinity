@@ -200,7 +200,7 @@ def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_col
         raise TypeError(f"{helices} must be a list instead of a {type(helices)}.")
     if len(helices) != np.ravel(fig.axes).shape[0]:
         raise RuntimeError("Need to provide as many sets of helices as there are axes.")
-    for ax, helix_set in zip(np.ravel(fig.axes), helices):
+    for ax, helix_set in zip(np.ravel(fig.axes), helices, strict=True):
         ax = plot_helices(helix_set, False, ax, 50, helix_colors)
     return fig
 
