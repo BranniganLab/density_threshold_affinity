@@ -177,7 +177,7 @@ def create_heatmap_figure_and_axes(heatmap_settings: HeatmapSettings) -> plt.Fig
     return fig
 
 
-def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray]):
+def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_colors: list[str] | None = None):
     """
     Plot helix locations on each panel present in the figure.
 
@@ -187,6 +187,8 @@ def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray]):
         The Figure containing your heatmap panels.
     helices : list of numpy ndarrays
         List containing one set of helix coordinates per panel.
+    helix_colors : list of str or None
+        Optional list containing matplotlib-recognized colors. Default is None.
 
     Returns
     -------
@@ -196,9 +198,10 @@ def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray]):
     """
     if not isinstance(helices, list):
         raise TypeError(f"{helices} must be a list instead of a {type(helices)}.")
-    assert len(helices) == np.ravel(fig.axes).shape[0]
+    if len(helices) != np.ravel(fig.axes).shape[0]:
+        raise RuntimeError("Need to provide as many sets of helices as there are axes.")
     for ax, helix_set in zip(np.ravel(fig.axes), helices):
-        ax = plot_helices(helix_set, False, ax, 50)
+        ax = plot_helices(helix_set, False, ax, 50, helix_colors)
     return fig
 
 
@@ -452,7 +455,7 @@ def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
     return ax
 
 
-def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings):
+def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings, helix_colors=None):
     """
     Make a figure and axes objects. Plot heatmaps of density enrichment for each\
     system on each axes object. Return the figure and axes.
@@ -467,6 +470,8 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings)
         ndarray per heatmap.
     heatmap_settings : HeatmapSettings object
         Contains all of the auxiliary information needed to plot heatmaps.
+    helix_colors : list or None
+        Optional list of matplotlib-recognized colors. Default is None.
 
     Returns
     -------
@@ -488,7 +493,7 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings)
     if len(enrichments_list) != axes.shape[0]:
         raise IndexError(f"Number of enrichments_list items ({len(enrichments_list)}) does not match number of figure panels ({axes.shape[0]}).")
 
-    fig = plot_helices_on_panels(fig, helices)
+    fig = plot_helices_on_panels(fig, helices, helix_colors)
     for index, ax in enumerate(axes):
         ax = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
     fig = make_colorbar(fig, heatmap_settings)
