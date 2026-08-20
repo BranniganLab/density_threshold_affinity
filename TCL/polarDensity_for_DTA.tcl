@@ -52,25 +52,25 @@ proc get_theta {x y} {
     return [RtoD $theta]
 }
 
-# z_mid
+# getAvgHeight
 #
-# Finds the average mid-plane
+# Finds the z coordinate of the center of mass of a selection, averaged over time.
 # Arguments:
-#   int: first frame
-#   nframes: The number of frames over which to average
+#   atomselection: The selection you want to measure the z-COM of.
+#   int: starting frame.
+#   int: ending frame (inclusive).
+#   int: time step in frames. default is 1 frame.
 # Outputs:
-#   float: The average z value of all the beads
-#
-
-proc z_mid {init_frm nframes} {
+#   float: The average z-value of all the atoms in the selection, weighted by mass.
+proc getAvgHeight {sel startFrm endFrm {step 1}} {
     global params
     set z_list {}
-    for {set frm ${init_frm}} {${frm} < ${nframes}} {incr frm} {
-        set mid [atomselect top $params(midplane_selstr) frame $frm]
-        lappend z_list [lindex [measure center $mid weight mass] 2]
-        $mid delete
+    for {set frm $startFrm} {$frm <= $endFrm} {incr frm $step} {
+        $sel frame $frm
+        $sel update
+        lappend z_list [lindex [measure center $sel weight mass] 2]
     }
-    return [expr 1.0*[vecsum $z_list]/([llength $z_list]) ]
+    return [vecmean $z_list]
 }
 
 
@@ -81,7 +81,9 @@ proc output_inclusion_centers {{a ""} } {
     global params
     ;# list for the chain names
     ;# finds the center of the membranes
-    set midplane_height [z_mid $params(start_frame) $params(end_frame)]
+    set inclusionSel [atomselect top $params(midplane_selstr)]
+    set midplane_height [getAvgHeight $inclusionSel $params(start_frame) $params(end_frame)]
+    $inclusionSel delete
     ;# calculates the center of mass for subunit alpha helices in both leaflets
     puts "Writing coordinates for [llength $params(chainlist)] chains and [llength $params(helixlist)] helices per chain"
     foreach eq {"<" ">"} eqtxt {"lwr" "upr"} {
@@ -342,36 +344,38 @@ proc frame_leaflet_assignment {atseltext headname tailname frame_i frame_f {rest
     } else {
         error "restrict_leaflet_sorter_to_Rmax must be 1 or 0"
     }
+    if {$frame_f > $params(end_frame)} {
+        set frame_f $params(end_frame) 
+    }
+
     set sel_num [llength [lsort -unique [$sel_to_sort get resid] ] ]
     set sel_resid_list [lsort -unique [$sel_to_sort get resid] ]
     set totals {}
     if {$sel_num < 1} {
         # No lipids to sort. Return zeros.
-
         set totals [list "lower 0 0" "upper 0 0"] 
     } else {
         # Assign user2 values for of each bead of each lipid in the selection.
-
         foreach sel_resid $sel_resid_list {
             set selstring "(${atseltext}) and (resid $sel_resid)"
             leaflet_detector $selstring $headname $tailname $frame_i $params(leaflet_sorting_algorithm)
         }
 
-        # Copy leaflet values from $frame_i to all frames between $frame_i and 
-        # $frame_f. Use index numbers for this, since $sel is based off of a 
-        # radial shell when $restrict_to_Rmax is on.
-
-        set leaflet_list [$sel_to_sort get user2] 
-        set sel_to_update [atomselect top "index [$sel_to_sort get index]"]
-        for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame < [expr $frame_f]} {incr unsorted_frame} {
-            $sel_to_update frame $unsorted_frame
-            $sel_to_update update
-            $sel_to_update set user2 $leaflet_list
+        if {$frame_i < $params(end_frame)} {
+            # Copy leaflet values from $frame_i to all frames between $frame_i and 
+            # $frame_f. Use index numbers for this, since $sel is based off of a 
+            # radial shell when $restrict_to_Rmax is on.
+            set leaflet_list [$sel_to_sort get user2] 
+            set sel_to_update [atomselect top "index [$sel_to_sort get index]"]
+            for {set unsorted_frame [expr $frame_i + 1]} {$unsorted_frame <= $frame_f} {incr unsorted_frame} {
+                $sel_to_update frame $unsorted_frame
+                $sel_to_update update
+                $sel_to_update set user2 $leaflet_list
+            }
+            $sel_to_update delete
         }
-        $sel_to_update delete
 
         # Count the number of lipids and the number of beads in each leaflet.
-
         foreach leaf [list  "(user2<0)" "(user2>0)"] txtstr [list "lower" "upper"] {
             set leaf_sel [ atomselect top "(${atseltext}) and $leaf"  frame $frame_i]
             set num_beads [$leaf_sel num]
@@ -397,14 +401,8 @@ proc trajectory_leaflet_assignment {atseltext headname tailname} {
                 puts "Defaulting to z=0 as the reference height to sort by."
         }
     }
-    for {set update_frame $params(start_frame)} {$update_frame <= [expr $params(end_frame) - $params(leaflet_reassign_interval)]} {incr update_frame $params(leaflet_reassign_interval)} {
+    for {set update_frame $params(start_frame)} {$update_frame <= $params(end_frame)} {incr update_frame $params(leaflet_reassign_interval)} {
         frame_leaflet_assignment $atseltext $headname $tailname $update_frame [expr $update_frame + $params(leaflet_reassign_interval)] $params(restrict_leaflet_sorter_to_Rmax)
-        incr num_reassignments
-    }
-    if {[test_if_evenly_divisible $params(end_frame) $params(leaflet_reassign_interval)] != 1} {
-        # Run one extra iteration to finish final leftover frames at end of trajectory.
-
-        frame_leaflet_assignment $atseltext $headname $tailname $update_frame $params(end_frame) $params(restrict_leaflet_sorter_to_Rmax)
         incr num_reassignments
     }
     puts "Checked for leaflet reassignments $num_reassignments times."
@@ -416,7 +414,7 @@ proc clean_leaflet_assignments {atseltext} {
     set sel [ atomselect top "$atseltext"]
     set selnum [$sel num]
 
-    for {set update_frame $params(start_frame)} {$update_frame < $params(end_frame)} {incr update_frame} {
+    for {set update_frame $params(start_frame)} {$update_frame <= $params(end_frame)} {incr update_frame} {
         $sel frame $update_frame
         $sel set user2 [lrepeat $selnum 0.0]
         puts "Cleaning $selnum beads of leaflet assignments in frame $update_frame"
@@ -503,7 +501,7 @@ proc assignBins {atsel numAngularBins radialIndex} {
 #    str: The atomselection text for every atom (bead) of interest in the
 #        radial shell.
 #    int: The frame number from which to start the loop.
-#    int: The frame upon which to end the loop (not inclusive).
+#    int: The frame upon which to end the loop (inclusive).
 #    float: The lower radial coordinate of the bin edge.
 #    float: The upper radial coordinate of the bin edge.
 #    channel: The counts output file.
@@ -523,7 +521,7 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
     set totalBinCounts [lrepeat $params(Ntheta) 0]
     set shellSel [atomselect top "$shellSelText and (user2 $leafletID)"]
     set errorCheck [atomselect top "($shellSelText) and not (user2 1.0 '-1.0')"]
-    for {set frm $startFrame} {$frm < $endFrame} {incr frm $params(dt)} {
+    for {set frm $startFrame} {$frm <= $endFrame} {incr frm $params(dt)} {
         $shellSel frame $frm
         $shellSel update
         $errorCheck frame $frm
@@ -563,7 +561,7 @@ proc histogramAllFramesOfShell {shellSelText startFrame endFrame shellStart shel
 #    Bin information is saved to user fields (via assignBins).
 proc calculateAvgCountsByShell {atselText lowerCountsOutfile upperCountsOutfile lowerAvgOutfile upperAvgOutfile} {
     global params
-    set deltaFrame [expr ($params(end_frame) - $params(start_frame)) / $params(dt)]
+    set numSamples [expr {int(ceil(double($params(end_frame) - $params(start_frame) + 1.0) / $params(dt)))}]
     foreach leafletID "'-1.0' 1.0" countsOutfile [list $lowerCountsOutfile $upperCountsOutfile] avgCountsOutfile [list $lowerAvgOutfile $upperAvgOutfile] leafletStr "inner outer" {
         set radialIndex 0
         for {set ri $params(Rmin)} {$ri<$params(Rmax)} {set ri [expr $ri + $params(dr)]} {
@@ -573,7 +571,7 @@ proc calculateAvgCountsByShell {atselText lowerCountsOutfile upperCountsOutfile 
             set rf2 [expr $rf*$rf]
             set shellSelText "($atselText) and ((x*x + y*y < $rf2) and  (x*x + y*y > $ri2))"
             set totalHistogram [histogramAllFramesOfShell $shellSelText $params(start_frame) $params(end_frame) $ri $rf $countsOutfile $radialIndex $leafletID]
-            set timeAvg [vecscale $totalHistogram [expr 1.0 / (1.0 * $deltaFrame)]]
+            set timeAvg [vecscale $totalHistogram [expr 1.0 / (1.0 * $numSamples)]]
             output_bins $avgCountsOutfile $ri $rf "$timeAvg"
             incr radialIndex
         }
@@ -610,7 +608,7 @@ proc set_parameters { config_file_script } {
         filename_stems {"POPG"}
     }
     set nframes [molinfo top get numframes] 
-    array set params [list end_frame $nframes]
+    array set params [list end_frame [expr $nframes - 1]]
 
     set param_name_list [lsort -dictionary [array names params]]
     source $config_file_script
@@ -670,6 +668,15 @@ proc polarDensityBin { config_file_script } {
             error "No lipid of matching atomselection text $atseltext"
         }
 
+        set nframes [molinfo top get numframes]
+        if { $params(start_frame) >= $nframes } {
+            error "Error: specified start frame $params(start_frame) exceeds final frame [expr $nframes - 1]" 
+        }
+        if { $params(end_frame) >= $nframes } {
+            puts "Warning: specified end frame $params(end_frame) is greater than number of frames; setting end frame to [expr $nframes - 1]" 
+            set params(end_frame) [expr $nframes - 1]
+        }
+
         if {$params(center_and_align) == 1} {
             ;# wraps and centers system at origin
             center_and_wrap_system "occupancy $params(helixlist) and $params(backbone_selstr)"
@@ -678,17 +685,8 @@ proc polarDensityBin { config_file_script } {
         }
         ;# outputs protein positions
         output_inclusion_centers
-        ;# initialize some constants
+
         set area [get_avg_area]
-        set nframes [molinfo top get numframes]
-        if { $params(start_frame) > $nframes } {
-            puts "Warning: specified start frame $params(start_frame) is greater than number of frames $nframes" 
-            set params(start_frame) $nframes
-        }
-        if { $params(end_frame) > $nframes } {
-            puts "Warning: specified end frame $params(end_frame) is greater than number of frames; setting end frame to $nframes" 
-            set params(end_frame) $nframes
-        }
 
         puts "Atomselection:\t$atseltext"
         set low_f [open "${stem}.low.dat" w]
