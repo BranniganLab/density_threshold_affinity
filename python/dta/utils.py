@@ -316,3 +316,41 @@ def confirm_objs_are_equal(list_of_objs: list) -> None:
             raise TypeError(f"Expected {obj_type} but {obj} is a {type(obj)}")
         if obj != compare_to:
             raise ValueError(f"{inspect.getmembers(obj)} does not match {inspect.getmembers(compare_to)}")
+
+
+def evenly_divided_quotient(dividend: float, divisor: float) -> int:
+    """
+    Determine if divisor can divide dividend evenly; error if not.
+
+    Near-integer quotients are accepted and rounded to int if within 1e-12 of
+    an integer.
+
+    Parameters
+    ----------
+    dividend : float
+    divisor : float
+
+    Raises
+    ------
+    ValueError
+        If the dividend is greater than 1e-12 away from an integer value.
+
+    Returns
+    -------
+    int
+        The dividend divided evenly by the divisor.
+    """
+    if divisor == 0:
+        raise ValueError("divisor cannot be 0.")
+    quotient = dividend / divisor
+    nearest_integer = round(quotient)
+
+    if not math.isclose(
+        quotient,
+        nearest_integer,
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    ):
+        raise ValueError(f"{dividend} is not evenly divisible by {divisor}")
+
+    return nearest_integer
