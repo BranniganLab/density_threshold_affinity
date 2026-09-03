@@ -1,4 +1,4 @@
-# Configuration example for an ELIC-like Martini system.
+# Configuration example based on a Martini ELIC system.
 #
 # Edit the atom selections, paths, chain names, and helix assignments to match
 # the loaded molecule before running polarDensityBin.

@@ -1,4 +1,4 @@
-# Configuration example for a GPCR-like Martini system.
+# Configuration example based on a Martini GPCR system.
 #
 # Edit the atom selections, paths, chain names, and helix assignments to match
 # the loaded molecule before running polarDensityBin.

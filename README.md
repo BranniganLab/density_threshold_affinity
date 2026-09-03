@@ -27,16 +27,9 @@ Check it out here: https://doi.org/10.1016/bs.mie.2024.03.008
 
 6. Make a config file:
 
-    a) Select a sample config from `./TCL/sample_configs/` based on the
-    system being analyzed:
-
-    - Use `config_martini_elic.tcl` for an ELIC-like pentameric system.
-    - Use `config_martini_gpcr.tcl` for a GPCR-like system.
-
-    Edit the selected config to match the loaded system. In particular, check
-    the protein selections, chain and helix lists, helix-assignment script, and
-    lipid selections. The sample configs contain comments describing the
-    parameters and provide working examples for these two system types.
+    a) Copy one of the example configs from `./TCL/sample_configs/` and edit
+    its values to match the loaded system. The examples are based on Martini
+    ELIC and GPCR systems.
 
     b) Test the atom selection strings that you use in the config file with
     VMD's graphical representations window.
