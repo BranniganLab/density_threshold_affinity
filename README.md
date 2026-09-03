@@ -28,8 +28,8 @@ Check it out here: https://doi.org/10.1016/bs.mie.2024.03.008
 6. Make a config file:
 
     a) Copy one of the example configs from `./TCL/sample_configs/` and edit
-    its values to match the loaded system. The examples are based on Martini
-    ELIC and GPCR systems.
+    its values to match the loaded system and your desired parameters. The 
+    examples are based on Martini ELIC and GPCR systems, but can be adapted.
 
     b) Test the atom selection strings that you use in the config file with
     VMD's graphical representations window.
