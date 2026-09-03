@@ -1,34 +1,58 @@
-# Options for leaflet_sorting_algorithm:
-# 0 for sorting based on orientation of specified head & tail; 
-# 1 for legacy sorting based on orientation of default termini (aka classic local_mid_plane); 
-# 2 for sorting based on position relative to origin (tested only with cholesterol so far) 
-set leaflet_sorting_algorithm 1; 
+# Configuration example for an ELIC-like Martini system.
+#
+# Edit the atom selections, paths, chain names, and helix assignments to match
+# the loaded molecule before running polarDensityBin.
 
+# Leaflet assignment:
+#   0 = compare the specified head and tail selections. headnames and
+#       tailnames are atom-selection strings and may select multiple beads.
+#   1 = compare the default lipid termini (legacy method)
+#   2 = compare lipid position with leaflet_sorter_2_reference_sel
+#   3 = compare each lipid with a local membrane midplane
+#   4 = assign every lipid to the upper leaflet
+set leaflet_sorting_algorithm 1
+set leaflet_sorter_2_reference_sel "none"
+set leaflet_reassign_interval 1
+set restrict_leaflet_sorter_to_Rmax 0
+
+# Coordinate preparation.
+# Set center_and_align to 1 only when the protein should be recentered and
+# aligned before binning. qwrap requires an orthorhombic unit cell.
 set center_and_align 0
 set use_qwrap 0
-set utils "./helpers" 
 
+# These paths are relative to this config file in the repository. Update them
+# if this config is copied elsewhere.
+set config_dir [file dirname [file normalize [info script]]]
+set utils [file normalize [file join $config_dir "../utilities"]]
+set helix_assignment_script [file normalize [file join $config_dir "../sample_helix_assignment_scripts/assign_helices_ELIC_general.tcl"]]
+
+# Frames and trajectory sampling. end_frame defaults to the final loaded frame.
+set start_frame 0
+set end_frame [expr {[molinfo top get numframes] - 1}]
 set dt 1
-#set leaflet_reassign_interval 1; #optional
-#set start_frame 0 ; #optional
-#set end_frame 10  ; #optional 
 
-set backbone_selstr "name BB" ;#selection string used to define the protein backbone
-set protein_selstr "name BB SC1 to SC4" ;#selection string used to define the entire protein
+# Protein selections and helix assignment. The helix-assignment script assigns
+# occupancy values to the transmembrane helices; helixlist contains those
+# occupancy values, not atom indices. chainlist contains chain identifiers
+# used when writing protein coordinates. If all subunits share one chain, use
+# a one-item chainlist.
+set backbone_selstr "name BB"
+set protein_selstr "name BB SC1 to SC4"
+set chainlist [list A B C D E]
+set helixlist [list 1 2 3 4]
+set midplane_selstr "occupancy 1 to 4"
 
-set lipids [list "POPG"] ;# list of all species to bin
-set headnames [list "PO4"] ; #lists one headgroup atom/bead name per lipid species 
-set tailnames [list "C4"] ; #lists one terminal atom/bead name per lipid species 
-set lipidbeads_selstrs [list "all"]; #lists one selection string per lipid species; indicates which lipid atom/beads should be counted in the density plot 
-set acylchain_selstrs $lipidbeads_selstrs; #list of beads used to determine chain length; same format as lipidbeads_selstrs. Was originally intented to only hold selection strings containing the acyl chain beads.  
+# Lipid selections and output names. There must be one filename stem for
+# every atom selection. headnames and tailnames are used when algorithm 0 is
+# selected. Each is an atom-selection string, and can select multiple beads.
+set atomsels [list "resname POPG"]
+set filename_stems [list "POPG"]
+set headnames [list "name PO4"]
+set tailnames [list "name C4"]
 
-set chainlist [list A B C D E] ;#list of chain names for the protein
-set helixlist [list 1 2 3 4]; #indices for individual secondary structure elements 
-set helix_assignment_script assign_helices_ELIC_general.tcl ;# script that will assigns occupancies in helixlist to different secondary structure elements 
-set midplane_selstr "occupancy 1 to 4" ;# selection that includes all transmembrane helices
-
-set Rmax 20. ;##maximum radius of polar density map
-set Rmin 0. ;#minimum radius
-set dr 5 ;#radial bin width 
-set Ntheta 50; #number of angular bins 
-
+# Polar grid. (Rmax - Rmin) must be evenly divisible by dr.
+set Rmax 20.
+set Rmin 0.
+set dr 5.
+set Ntheta 50
