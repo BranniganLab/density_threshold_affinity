@@ -647,8 +647,8 @@ proc polarDensityBin { config_file_script } {
     source $params(utils)/BinTools.tcl
 
     ;# check to make sure Rmax is evenly divisible by dr.
-    if {[test_if_evenly_divisible $params(Rmax) $params(dr)] != 1} {
-        error "Rmax must be evenly divisible by dr."
+    if {[test_if_evenly_divisible [expr $params(Rmax) - $params(Rmin)] $params(dr)] != 1} {
+        error "(Rmax - Rmin) must be evenly divisible by dr."
     }
     if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
 
