@@ -5,6 +5,7 @@ Created on Thu Nov 14 16:53:18 2024.
 
 @author: js2746
 """
+from __future__ import annotations
 import numpy as np
 from dta.Site import Site
 from dta.bin_logic import BinAddress
@@ -13,9 +14,10 @@ from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG, ag
 
 class SymmetricSite:
     """
-    An aggregation of multiple binding sites on/in a protein/inclusion. User \
-    defines the base_site Site object first (including setting the bin_coords!)\
-    and then provides it to the SymmetricSite constructor.
+    An aggregation of multiple binding sites on/in a protein/inclusion.
+ 
+    User defines the base_site Site object first (including setting the 
+    bin_coords!) and then provides it to the SymmetricSite constructor.
 
     Attributes
     ----------
@@ -33,26 +35,26 @@ class SymmetricSite:
     bin_coords : set of BinAddress
         The bins that belong to this site as BinAddress objects. Bin indices
         are zero-indexed by convention.
-    get_site_list : list
-        The list of constituent Site objects that make up this SymmetricSite.
+    sites : tuple
+        Tuple of constituent Site objects that make up this SymmetricSite.
     site_counts_histogram : numpy ndarray
-        One-dimensional ndarray where the histogrammed ligand bead counts are \
-        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having \
-        zero beads in the Site, 5 frames having one bead in the Site, 0 frames \
-        having 2, 3, or 5 beads in the site, and 1 frame having 4 beads in the \
+        One-dimensional ndarray where the histogrammed ligand bead counts are
+        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having
+        zero beads in the Site, 5 frames having one bead in the Site, 0 frames
+        having 2, 3, or 5 beads in the site, and 1 frame having 4 beads in the
         Site.
     bulk_counts_histogram : numpy ndarray
-        One-dimensional ndarray where the histogrammed ligand bead counts are \
-        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having \
-        zero beads in the bulk patch, 5 frames having one bead in the patch, 0 \
-        frames having 2, 3, or 5 beads in the patch, and 1 frame having 4 beads\
+        One-dimensional ndarray where the histogrammed ligand bead counts are
+        stored. e.g. [12, 5, 0, 0, 1, 0] would correspond to 12 frames having
+        zero beads in the bulk patch, 5 frames having one bead in the patch, 0
+        frames having 2, 3, or 5 beads in the patch, and 1 frame having 4 beads
         in the patch.
     n_peak : int
         The mode of the bulk histogram. Indicates the cut-off for P_unocc.
     dG : float
         The binding affinity of the lipid for the Site, in kcal/mol.
     dG_std : float
-        The standard deviation of the mean binding affinity for the Sites that\
+        The standard deviation of the mean binding affinity for the Sites that
         comprise this SymmetricSite.
     """
 
@@ -69,10 +71,10 @@ class SymmetricSite:
             The original Site object that should be cloned and rotated.
 
         """
-        if not isinstance(symmetry, int):
+        if isinstance(symmetry, bool) or not isinstance(symmetry, (int, np.integer)):
             raise TypeError("symmetry must be an integer.")
-        if symmetry < 1:
-            raise ValueError("symmetry must be positive.")
+        if symmetry < 2:
+            raise ValueError("symmetry must be greater than one.")
         if not isinstance(base_site, Site):
             raise TypeError("base_site must be a Site object.")
         if base_site.grid.theta.n_bins % symmetry != 0:
@@ -81,14 +83,15 @@ class SymmetricSite:
             raise ValueError("The base_site needs to be fully defined before creating a SymmetricSite.")
         self.name = base_site.name
         self._symmetry = symmetry
-        self._site_list = self._make_symmetric_sites(base_site)
-        assert len(self.get_site_list) == symmetry, "Number of Sites does not match symmetry."
+        self._sites = tuple(self._make_symmetric_sites(base_site))
+        if len(self.sites) != symmetry:
+            raise RuntimeError("Number of Sites does not match symmetry.")
         self.temperature = base_site.temperature
         self.grid = base_site.grid
 
     def __iter__(self):
-        """Iterate through the site_list."""
-        yield from self.get_site_list
+        """Iterate through the Sites that comprise this SymmetricSite."""
+        yield from self.sites
 
     @property
     def symmetry(self) -> int:
@@ -104,37 +107,37 @@ class SymmetricSite:
         return self._symmetry
 
     @property
-    def bin_coords(self) -> set[BinAddress]:
+    def bin_coords(self) -> frozenset[BinAddress]:
         """
         Generate one list of BinAddress[es] corresponding to all the \
         bins inside this SymmetricSite. Necessary for outline_site.
 
         Returns
         -------
-        set of BinAddress
+        frozenset of BinAddress
             The bins that belong to this SymmetricSite as BinAddress objects.
             Bin indices are zero-indexed by convention.
 
         """
         bin_coords_list = []
-        for site in self.get_site_list:
+        for site in self.sites:
             site_coords = site.bin_coords
             for each_bin in site_coords:
                 bin_coords_list.append(each_bin)
-        return set(bin_coords_list)
+        return frozenset(bin_coords_list)
 
     @property
-    def get_site_list(self) -> list[Site]:
+    def sites(self) -> tuple[Site, ...]:
         """
-        Tell me the site_list, but don't let me change the site_list.
+        Return the constituent Sites in symmetry order.
 
         Returns
         -------
-        list
-            List of constituent Site objects that comprise this SymmetricSite.
+        tuple
+            Immutable tuple of constituent Site objects that comprise this SymmetricSite.
 
         """
-        return self._site_list
+        return self._sites
 
     @property
     def site_counts_histogram(self) -> np.ndarray:
@@ -151,7 +154,7 @@ class SymmetricSite:
             having 4 beads in the Site.
 
         """
-        return aggregate_site_counts_histograms(self.get_site_list)
+        return aggregate_site_counts_histograms(self.sites)
 
     @property
     def bulk_counts_histogram(self) -> np.ndarray:
@@ -169,7 +172,7 @@ class SymmetricSite:
             frame having 4 beads in the patch.
 
         """
-        return check_bulk_counts_histogram(self.get_site_list)
+        return check_bulk_counts_histogram(self.sites)
 
     @property
     def n_peak(self) -> int:
@@ -215,30 +218,55 @@ class SymmetricSite:
 
         """
         dGs = []
-        for site in self.get_site_list:
+        for site in self.sites:
             dGs.append(site.dG)
         return np.std(np.array(dGs))
 
-    def update_counts_histogram(self, bulk: bool, counts_data: np.ndarray) -> None:
+    def copy(self, new_name: str) -> SymmetricSite:
         """
-        Update the counts histograms for all constituent Sites.
+        Return a copy of this SymmetricSite with empty histograms.
+
+        The copy regenerates every constituent Site from the first constituent
+        Site. Changes made to individual constituent Sites after construction
+        are not preserved.
+        """
+        base_site_copy = self.sites[0].copy(new_name)
+        symm_site_copy = SymmetricSite(self.symmetry, base_site_copy)
+        return symm_site_copy
+
+    def update_site_counts_histogram(self, counts_data: np.ndarray) -> None:
+        """
+        Update the site counts histograms for all constituent Sites.
 
         Parameters
         ----------
-        bulk : boolean
-            If True, update the counts histogram for the bulk patch. If False,\
-            update the counts histogram for the site.
         counts_data : ndarray
-            If bulk=True, provide 1D nddarray containing bulk counts. \
-            If bulk=False, provide the 3D ndarray containing binned counts.
+            The 3D ndarray containing binned site counts.
 
         Returns
         -------
         None.
 
         """
-        for site in self.get_site_list:
-            site.update_counts_histogram(bulk, counts_data)
+        for site in self.sites:
+            site.update_site_counts_histogram(counts_data)
+
+    def update_bulk_counts_histogram(self, counts_data: np.ndarray) -> None:
+        """
+        Update the bulk counts histograms for all constituent Sites.
+
+        Parameters
+        ----------
+        counts_data : ndarray
+            The 1D ndarray containing bulk counts.
+
+        Returns
+        -------
+        None.
+
+        """
+        for site in self.sites:
+            site.update_bulk_counts_histogram(counts_data)
 
     def predict_accessible_area(self, bulk_area: float, mode: bool = True) -> float:
         """
@@ -287,14 +315,17 @@ class SymmetricSite:
             The list of all Sites that comprise this SymmetricSite.
 
         """
-        name = base_site.name
-        base_site.name = name + '_1'
-        site_list = [base_site]
-        for site_number in range(1, self.symmetry):
-            site_name = name + '_' + str(site_number + 1)
-            new_site = Site(site_name, base_site.grid, base_site.leaflet_id, base_site.temperature)
-            new_site.bin_coords = self._rotate_bin_coords(base_site.bin_coords, base_site.grid.theta.n_bins, site_number)
+        site_list = []
+        for site_number in range(self.symmetry):
+            site_name = f"{base_site.name}_{site_number + 1}"
+            new_site = base_site.copy(site_name)
+            new_site.bin_coords = self._rotate_bin_coords(
+                base_site.bin_coords,
+                base_site.grid.theta.n_bins,
+                site_number,
+            )
             site_list.append(new_site)
+        self._check_for_overlapping_sites(site_list)
         return site_list
 
     def _rotate_bin_coords(self, bin_coords: list[BinAddress], n_theta: int, site_number: int) -> list[BinAddress]:
@@ -331,3 +362,15 @@ class SymmetricSite:
                 rotated_theta_bin -= n_theta
             rotated_bin_coords.append(BinAddress(r_bin, rotated_theta_bin))
         return rotated_bin_coords
+
+    def _check_for_overlapping_sites(self, site_list: list[Site]) -> None:
+        """Raise an error when two constituent Sites share one or more bins."""
+        for first_index, first_site in enumerate(site_list):
+            for second_site in site_list[first_index + 1:]:
+                overlap = first_site.bin_coords & second_site.bin_coords
+
+                if overlap:
+                    raise ValueError(
+                        f"{first_site.name} and {second_site.name} overlap in "
+                        f"{len(overlap)} bin(s): {sorted(overlap)}"
+                    )

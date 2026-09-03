@@ -37,7 +37,7 @@ def analyze_sample_outputs():
 
     bulk_counts_path = bulk_system_root_path.joinpath(f"{system_name}_counts_96.out")
     bulk_counts_list, _, _ = parse_tcl_dat_file(bulk_counts_path, bulk=True)
-    symm_site_across_replicas_1.update_counts_histogram(bulk=True, counts_data=bulk_counts_list)
+    symm_site_across_replicas_1.update_bulk_counts_histogram(bulk_counts_list)
 
     return symm_site_across_replicas_1
 

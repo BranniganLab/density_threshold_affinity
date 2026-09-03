@@ -5,6 +5,7 @@ Created on Thu Nov 14 13:51:00 2024.
 
 @author: js2746
 """
+from __future__ import annotations
 from typing import Literal
 import numpy as np
 from dta.utils import calculate_hist_mode, calculate_hist_mean, calculate_dG
@@ -32,9 +33,9 @@ class Site:
 
     Settable Properties
     -------------------
-    bin_coords : list of BinAddress
+    bin_coords : frozenset of BinAddress
         The bins that belong to this site in (r, theta) format. e.g. \
-        [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
+        {(2, 10), (2, 11), (2, 12)} would correspond to the 11th, 12th, and \
         13th theta bins in the 3rd radial bin from the origin. Bin coordinates \
         are zero-indexed by convention.
 
@@ -80,6 +81,10 @@ class Site:
         self.grid = grid
         if leaflet_id not in [1, 2]:
             raise ValueError("leaflet_id must be 1 or 2 (1 for outer leaflet or 2 for inner leaflet)")
+        if not np.isfinite(temperature):
+            raise ValueError("temperature must be finite.")
+        if temperature <= 0:
+            raise ValueError("temperature must be positive.")
         self.leaflet_id = leaflet_id
         self.temperature = temperature
         self._bin_coords = None
@@ -87,13 +92,16 @@ class Site:
         self._bulk_counts_histogram = None
 
     @property
-    def bin_coords(self) -> set[BinAddress]:
+    def bin_coords(self) -> frozenset[BinAddress] | None:
         """
-        Tell me what the bin_coords are. This is a getter function.
+        Return the bins defining this Site.
+
+        The returned collection is immutable. Assign a new collection to
+        ``bin_coords`` to change the Site definition.
 
         Returns
         -------
-        list of tuples
+        frozenset of BinAddress
             The bins that belong to this site in (r, theta) format. e.g. \
             [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
             13th theta bins (starting at theta=0) in the 3rd radial bin from \
@@ -103,16 +111,24 @@ class Site:
         return self._bin_coords
 
     @bin_coords.setter
-    def bin_coords(self, bin_addresses: list[BinAddress] | tuple[BinAddress] | set[BinAddress]) -> None:
+    def bin_coords(
+        self,
+        bin_addresses: (
+            list[BinAddress]
+            | tuple[BinAddress, ...]
+            | set[BinAddress]
+            | frozenset[BinAddress]
+        )
+    ) -> None:
         """
-        Set bin_coords for this Site.
+        Validate and replace the bins defining this Site.
 
         Parameters
         ----------
-        bin_addresses : list, tuple, or set of BinAddress
-            The bins that belong to this site in (r, theta) format. e.g. \
-            [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and \
-            13th theta bins (starting at theta=0) in the 3rd radial bin from \
+        bin_addresses : list, tuple, set, or frozenset of BinAddress
+            The bins that belong to this site in (r, theta) format. e.g.
+            [(2, 10), (2, 11), (2, 12)] would correspond to the 11th, 12th, and
+            13th theta bins (starting at theta=0) in the 3rd radial bin from
             the origin. Bin coordinates are zero-indexed by convention.
 
         Returns
@@ -120,18 +136,29 @@ class Site:
         None.
 
         """
-        if not isinstance(bin_addresses, (list, tuple, set)):
-            raise TypeError("bin_addresses must be provided as a list, tuple, or set")
-        bin_coords = []
+        if not isinstance(bin_addresses, (list, tuple, set, frozenset)):
+            raise TypeError("bin_addresses must be provided as a list, tuple, set, or frozenset")
+        if not bin_addresses:
+            raise ValueError("bin_addresses cannot be empty.")
+        validated = set()
         for item in bin_addresses:
-            if not isinstance(item, BinAddress):
-                item = BinAddress(*item)
-            if (item.r_index >= self.grid.r.n_bins) or (item.r_index < 0):
-                raise IndexError(f"Radial bin {item.r_index} out of range.")
-            if (item.theta_index >= self.grid.theta.n_bins) or (item.theta_index < 0):
-                raise IndexError(f"Angular bin {item.theta_index} out of range.")
-            bin_coords.append(item)
-        self._bin_coords = set(bin_coords)
+            address = item if isinstance(item, BinAddress) else BinAddress(*item)
+            if not 0 <= address.r_index < self.grid.r.n_bins:
+                raise IndexError(
+                    f"Radial bin {address.r_index} out of range."
+                )
+            if not 0 <= address.theta_index < self.grid.theta.n_bins:
+                raise IndexError(
+                    f"Angular bin {address.theta_index} out of range."
+                )
+            validated.add(address)
+
+        new_bin_coords = frozenset(validated)
+
+        if new_bin_coords != self._bin_coords:
+            self._bin_coords = new_bin_coords
+            self._site_counts_histogram = None
+            self._bulk_counts_histogram = None
 
     @property
     def site_counts_histogram(self) -> np.ndarray:
@@ -195,53 +222,168 @@ class Site:
             The total binding affinity, in kcal/mol.
 
         """
-        assert self.site_counts_histogram is not None, "You need to update the\
-            site counts histogram first."
-        assert self.bulk_counts_histogram is not None, "You need to add bulk \
-            counts via update_counts_histogram(bulk=True, counts_data)."
+        if self.site_counts_histogram is None:
+            raise RuntimeError("You need to update the site counts histogram before calculating dG.")
+        if self.bulk_counts_histogram is None:
+            raise RuntimeError("You need to update the bulk counts histogram before calculating dG.")
         n_peak = self.n_peak
-        assert n_peak is not None, "n_peak is missing."
+        if n_peak is None:
+            raise RuntimeError("n_peak is missing.")
         dG_site = calculate_dG(self.site_counts_histogram, n_peak, self.temperature)
         dG_ref = calculate_dG(self.bulk_counts_histogram, n_peak, self.temperature)
         return dG_site - dG_ref
 
-    def update_counts_histogram(self, bulk: bool, counts_data: np.ndarray) -> None:
+    def copy(self, new_name: str) -> Site:
+        """Return a copy of this site with empty histograms."""
+        copy = Site(new_name, self.grid, self.leaflet_id, self.temperature)
+        if self.bin_coords is not None:
+            copy.bin_coords = self.bin_coords
+        return copy
+
+    def update_site_counts_histogram(self, counts_data: np.ndarray) -> None:
         """
-        Assign ligand bead counts to Site attribute "counts_histogram".
+        Assign ligand bead counts to Site attribute "site_counts_histogram".
 
         Parameters
         ----------
-        bulk : boolean
-            If True, update the counts histogram for the bulk patch. If False,\
-            update the counts histogram for the site.
-        counts_data : ndarray
-            If bulk=True, provide 1D nddarray containing bulk counts. \
-            If bulk=False, provide the 3D ndarray containing binned counts.
+        counts_data : np.ndarray
+            The 3D ndarray containing binned site counts.
 
         Returns
         -------
         None.
 
         """
+        if self.bin_coords is None:
+            raise RuntimeError(
+                "Cannot update the site counts histogram before bin_coords "
+                "have been defined."
+            )
+        counts_data = self._validate_counts_data(counts_data=counts_data, expected_ndim=3)
+        if counts_data.shape[-2:] != (self.grid.r.n_bins, self.grid.theta.n_bins):
+            raise ValueError(f"""
+            counts_data is the wrong shape for this lattice.
+            {counts_data.shape} != {(self.grid.r.n_bins, self.grid.theta.n_bins)}
+            """)
+        site_counts = self._fetch_site_counts(counts_data)
+        site_hist = np.bincount(site_counts)
+        self._site_counts_histogram = site_hist
+
+    def update_bulk_counts_histogram(self, counts_data: np.ndarray) -> None:
+        """
+        Assign ligand bead counts to Site attribute "bulk_counts_histogram".
+
+        Parameters
+        ----------
+        counts_data : ndarray
+            The 1D nddarray containing bulk counts.
+
+        Returns
+        -------
+        None.
+
+        """
+        if self.bin_coords is None:
+            raise RuntimeError(
+                "Cannot update the bulk counts histogram before bin_coords "
+                "have been defined."
+            )
+        counts_data = self._validate_counts_data(counts_data=counts_data, expected_ndim=1)
+        bulk_hist = np.bincount(counts_data)
+        self._bulk_counts_histogram = bulk_hist
+
+    @staticmethod
+    def _validate_counts_data(
+        counts_data: np.ndarray,
+        expected_ndim: int,
+    ) -> np.ndarray:
+        """
+        Validate and normalize frame-resolved molecular count data.
+
+        Confirm that ``counts_data`` is a NumPy array with the dimensionality
+        required by the calling histogram-update method. The array must have a
+        real numeric dtype and contain only finite, integer-valued,
+        non-negative values. Integer-valued floating-point arrays, such as
+        ``[0.0, 1.0, 2.0]``, are accepted because some input parsers represent
+        discrete counts as floats. Fractional values are rejected rather than
+        silently truncated.
+
+        After validation, return a new array containing the same values cast
+        to NumPy's default integer dtype. The returned array is suitable for
+        indexing operations and for use with ``numpy.bincount``; the input
+        array is not modified.
+
+        Parameters
+        ----------
+        counts_data : numpy.ndarray
+            Frame-resolved count data to validate. Bulk counts are expected to
+            be one-dimensional, while spatially binned site counts are
+            expected to be three-dimensional.
+        expected_ndim : int
+            Number of dimensions required by the calling method.
+
+        Returns
+        -------
+        numpy.ndarray
+            A newly allocated integer array with the same shape and count
+            values as ``counts_data``.
+
+        Raises
+        ------
+        TypeError
+            If ``counts_data`` is not a NumPy array or does not have a real
+            numeric dtype.
+        ValueError
+            If the array has the wrong number of dimensions or contains NaN,
+            infinity, fractional values, or negative counts.
+        """
         if not isinstance(counts_data, np.ndarray):
-            raise TypeError("ndarray not supplied")
-        if bulk:
-            if len(counts_data.shape) != 1:
-                raise ValueError(f"Bulk counts data is not in the right format: {counts_data}")
-            bulk_hist = np.bincount(counts_data)
-            self._bulk_counts_histogram = bulk_hist
-        else:
-            if len(counts_data.shape) != 3:
-                raise ValueError(f"Counts data is not in the right format: {counts_data}")
-            counts_data = counts_data.astype(int)
-            if counts_data.shape[-2:] != (self.grid.r.n_bins, self.grid.theta.n_bins):
-                raise ValueError(f"""
-                counts_data is the wrong shape for this lattice.
-                {counts_data.shape} != {(self.grid.r.n_bins, self.grid.theta.n_bins)}
-                """)
-            site_counts = self._fetch_site_counts(counts_data)
-            site_hist = np.bincount(site_counts)
-            self._site_counts_histogram = site_hist
+            raise TypeError(
+                "counts_data must be provided as a NumPy ndarray."
+            )
+
+        if counts_data.ndim != expected_ndim:
+            raise ValueError(
+                f"counts_data must be {expected_ndim}D; "
+                f"received shape {counts_data.shape}."
+            )
+
+        if counts_data.shape[0] == 0:
+            raise ValueError("counts_data must include at least one frame.")
+
+        if (
+            not np.issubdtype(counts_data.dtype, np.number)
+            or np.issubdtype(counts_data.dtype, np.complexfloating)
+        ):
+            raise TypeError(
+                "counts_data must contain real numeric values; "
+                f"received dtype {counts_data.dtype}."
+            )
+
+        if not np.all(np.isfinite(counts_data)):
+            raise ValueError(
+                "counts_data must contain only finite values."
+            )
+
+        if not np.all(counts_data == np.floor(counts_data)):
+            raise ValueError(
+                "counts_data must contain integer-valued counts."
+            )
+
+        if np.any(counts_data < 0):
+            raise ValueError(
+                "counts_data cannot contain negative counts."
+            )
+
+        max_supported_count = np.iinfo(np.intp).max
+
+        if np.any(counts_data > max_supported_count):
+            raise ValueError(
+                "counts_data contains values too large for this platform; "
+                f"the maximum supported count is {max_supported_count}."
+            )
+
+        return counts_data.astype(np.intp)
 
     def calculate_geometric_area(self) -> float:
         """
