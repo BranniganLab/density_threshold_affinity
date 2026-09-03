@@ -21,11 +21,9 @@ set restrict_leaflet_sorter_to_Rmax 0
 set center_and_align 0
 set use_qwrap 0
 
-# These paths are relative to this config file in the repository. Update them
-# if this config is copied elsewhere.
-set config_dir [file dirname [file normalize [info script]]]
-set utils [file normalize [file join $config_dir "../utilities"]]
-set helix_assignment_script [file normalize [file join $config_dir "../sample_helix_assignment_scripts/assign_helices_GPCR_general.tcl"]]
+# Set this to the path of the helix-assignment script you prepared for the
+# loaded system. The utilities path is configured in polarDensity_for_DTA.tcl.
+set helix_assignment_script "assign_helices_GPCR_general.tcl"
 
 # Frames and trajectory sampling. end_frame defaults to the final loaded frame.
 set start_frame 0
