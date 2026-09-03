@@ -17,7 +17,9 @@ set restrict_leaflet_sorter_to_Rmax 0
 
 # Coordinate preparation.
 # Set center_and_align to 1 only when the protein should be recentered and
-# aligned before binning. qwrap requires an orthorhombic unit cell.
+# aligned before binning. qwrap is an optional alternative wrapping method;
+# it requires an orthorhombic unit cell and is disabled by default.
+# A pre-compiled qwrap library is currently included with DTA.
 set center_and_align 0
 set use_qwrap 0
 

@@ -41,10 +41,6 @@ Check it out here: https://doi.org/10.1016/bs.mie.2024.03.008
     b) Test the atom selection strings that you use in the config file with
     VMD's graphical representations window.
 
-   The utilities used by the Tcl script are located automatically relative to
-   `polarDensity_for_DTA.tcl`. The helix-assignment script remains a config
-   setting because it is specific to the loaded system.
-
 7. From the tk console:
 
    ```> source ./TCL/polarDensity_for_DTA.tcl```
