@@ -29,7 +29,8 @@ set helix_assignment_script "assign_helices_ELIC_general.tcl"
 
 # Frames and trajectory sampling. end_frame defaults to the final loaded frame.
 set start_frame 0
-set end_frame [expr {[molinfo top get numframes] - 1}]
+# Optional: set end_frame to a specific final frame. If omitted, the final
+# loaded frame is used.
 set dt 1
 
 # Protein selections and helix assignment. The helix-assignment script assigns
