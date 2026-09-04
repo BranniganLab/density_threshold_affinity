@@ -24,7 +24,7 @@ set center_and_align 0
 set use_qwrap 0
 
 # Set this to the path of the helix-assignment script you prepared for the
-# loaded system. The utilities path is configured in polarDensity_for_DTA.tcl.
+# loaded system.
 set helix_assignment_script "assign_helices_ELIC_general.tcl"
 
 # Frames and trajectory sampling. end_frame defaults to the final loaded frame.

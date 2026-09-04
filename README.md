@@ -36,8 +36,10 @@ Check it out here: https://doi.org/10.1016/bs.mie.2024.03.008
 
 7. From the tk console:
 
-   ```> source ./TCL/polarDensity_for_DTA.tcl```
+   ```> set dta_root /absolute/path/to/density_threshold_affinity```
 
-   ```> polarDensityBin <config file path>```
+   ```> source $dta_root/TCL/polarDensity_for_DTA.tcl```
+
+   ```> polarDensityBin /absolute/path/to/your/config.tcl```
 8. Open the Jupyter notebook that corresponds to your use case in density_threshold_affinity/python/ using your method of choice (e.g. VSCode or a local host)
 9. Follow the prompts in the notebook
