@@ -11,6 +11,7 @@ import warnings
 from pathlib import Path
 import numpy as np
 from scipy import constants
+from dta.protein_landmarks import parse_protein_landmarks
 
 
 def calculate_dG(counts_histogram, n_peak, temperature):
@@ -127,8 +128,9 @@ def load_inclusion_coordinates(directory):
 
     Returns
     -------
-    backbone_coms  :  2-list of 1D numpy ndarrays
-        List of outer and inner leaflet backbone coordinates, alternating r and theta.
+    landmarks : list of lists of ProteinLandmark
+        Upper- and lower-leaflet landmarks. Each landmark retains its chain,
+        occupancy, radius, and theta values.
     """
     path = validate_path(directory)
     backbone_com_upr = None
@@ -147,7 +149,7 @@ def load_inclusion_coordinates(directory):
             fails += 1
             if fails == 2:
                 raise FileNotFoundError(f"Could not find protein coordinate files in {path}") from err
-        coords_list = remove_vals_that_match_substring(coords, "/")
+        coords_list = parse_protein_landmarks(coords or [])
         if leaflet == "upr":
             backbone_com_upr = coords_list
         else:
