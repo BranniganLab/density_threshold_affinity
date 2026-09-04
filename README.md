@@ -25,16 +25,21 @@ Check it out here: https://doi.org/10.1016/bs.mie.2024.03.008
 
    c) In graphical representations, color the protein by occupancy and confirm that different colors correspond to different helices
 
-6. Make a config file: 
+6. Make a config file:
 
-    a) Select the closest config file from ./TCL/sample_configs/ and edit accordingly. 
+    a) Copy one of the example configs from `./TCL/sample_configs/` and edit
+    its values to match the loaded system and your desired parameters. The 
+    examples are based on Martini ELIC and GPCR systems, but can be adapted.
 
-    b) Test the selection strings that you used in the config file using the graphical representations window in VMD
+    b) Test the atom selection strings that you use in the config file with
+    VMD's graphical representations window.
 
 7. From the tk console:
 
-   ```> source ./TCL/polarDensity_for_DTA.tcl```
+   ```> set dta_root /absolute/path/to/density_threshold_affinity```
 
-   ```> polarDensity <config file path>```  
+   ```> source $dta_root/TCL/polarDensity_for_DTA.tcl```
+
+   ```> polarDensityBin /absolute/path/to/your/config.tcl```
 8. Open the Jupyter notebook that corresponds to your use case in density_threshold_affinity/python/ using your method of choice (e.g. VSCode or a local host)
 9. Follow the prompts in the notebook

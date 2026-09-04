@@ -1,6 +1,12 @@
 
 package require pbctools
 
+# Utilities shipped with DTA. This is resolved from the location of this
+# script, so the command may be run from any working directory. Change this
+# line only if using a different installation of the utility files.
+set dta_script_dir [file dirname [file normalize [info script]]]
+set utils [file normalize [file join $dta_script_dir "utilities"]]
+
 
 # get_avg_area
 #
@@ -587,7 +593,6 @@ proc set_parameters { config_file_script } {
         leaflet_sorter_2_reference_sel "none"
         center_and_align 0
         use_qwrap 0
-        utils ./helpers 
         dt 1
         leaflet_reassign_interval 1
         start_frame 0  
@@ -643,14 +648,15 @@ proc set_parameters { config_file_script } {
 proc polarDensityBin { config_file_script } { 
     ;#read parameters
     global params
+    global utils
     set_parameters $config_file_script
-    source $params(utils)/BinTools.tcl
+    source $utils/BinTools.tcl
 
     ;# check to make sure Rmax is evenly divisible by dr.
     if {[test_if_evenly_divisible [expr $params(Rmax) - $params(Rmin)] $params(dr)] != 1} {
         error "(Rmax - Rmin) must be evenly divisible by dr."
     }
-    if {$params(use_qwrap) == 1} {load $params(utils)/qwrap.so}
+    if {$params(use_qwrap) == 1} {load $utils/qwrap.so}
 
     if {$params(leaflet_sorting_algorithm) == 0} {
         validate_equal_length_lists [list $params(atomsels) $params(filename_stems) $params(headnames) $params(tailnames)]
