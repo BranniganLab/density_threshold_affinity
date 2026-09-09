@@ -20,6 +20,7 @@ set restrict_leaflet_sorter_to_Rmax 0
 # aligned before binning. qwrap is an optional alternative wrapping method;
 # it requires an orthorhombic unit cell and is disabled by default.
 # A pre-compiled qwrap library is currently included with DTA.
+# It can be loaded with `load [path_to_DTA_repo]/TCL/utilities/qwrap.so`
 set center_and_align 0
 set use_qwrap 0
 
