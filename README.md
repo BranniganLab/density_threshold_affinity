@@ -50,12 +50,14 @@ The sample configuration files in `TCL/sample_configs/` provide runnable example
 
 ### Leaflet assignment
 
+Leaflet sorting generally determines whether a lipid belongs to the upper or lower leaflet by comparing the z components of two positions. These positions are typically average centers of mass: one describes the lipid being assigned and the other provides a reference position or orientation. Which two quantities are compared depends on `leaflet_sorting_algorithm`.
+
 - `leaflet_sorting_algorithm`: Selects the leaflet-assignment method.
-  - `0`: Compare the specified head and tail selections.
-  - `1`: Compare the default lipid termini.
-  - `2`: Compare each lipid position with `leaflet_sorter_2_reference_sel`.
-  - `3`: Compare each lipid with a local membrane midplane.
-  - `4`: Assign every lipid to the upper leaflet.
+  - `0`: Compare the average z positions of the specified head and tail selections. A lipid is assigned according to whether its head group lies above or below its tail group.
+  - `1`: Compare the average z positions of the default lipid termini, using the same orientation-based logic as algorithm 0 but with automatically selected termini.
+  - `2`: Compare the lipid center-of-mass z position with the reference z position defined by `leaflet_sorter_2_reference_sel`.
+  - `3`: Compare the lipid center-of-mass z position with the local membrane-midplane z position calculated from nearby membrane beads.
+  - `4`: Assign every lipid to the upper leaflet without performing a z-position comparison.
 - `leaflet_sorter_2_reference_sel`: VMD atom-selection string used as the reference for leaflet sorting algorithm 2. If set to `"none"`, the reference height is `z = 0`. Otherwise, the lipid center of mass is compared with the mass-weighted z center of this selection.
 - `leaflet_reassign_interval`: Number of trajectory frames between recalculations of lipid leaflet identities. Between reassignment frames, the previous identities are reused.
 - `restrict_leaflet_sorter_to_Rmax`: If enabled, restricts leaflet assignment to lipids within the configured radial analysis region.
