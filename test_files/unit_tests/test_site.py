@@ -264,6 +264,8 @@ def test_replacing_bin_coords_invalidates_histograms(site):
 
     assert site.site_counts_histogram is None
     assert site.bulk_counts_histogram is None
+    assert site.site_counts_over_time is None
+    assert site.bulk_counts_over_time is None
 
 
 def test_equivalent_bin_assignment_preserves_histograms(site):
