@@ -198,6 +198,17 @@ def test_bulk_counts_histogram_and_n_peak_use_shared_bulk_distribution(
     assert populated_site_across_replicas.n_peak == 1
 
 
+def test_time_resolved_counts_preserve_replica_boundaries(
+    populated_site_across_replicas,
+):
+    """Replica aggregation must retain each replica's time ordering separately."""
+    time_series = populated_site_across_replicas.site_counts_over_time
+
+    assert len(time_series) == len(populated_site_across_replicas.sites)
+    for replica, counts in zip(populated_site_across_replicas, time_series, strict=True):
+        np.testing.assert_array_equal(counts, replica.site_counts_over_time)
+
+
 def test_dg_uses_aggregated_replica_and_bulk_histograms(
     populated_site_across_replicas,
 ):
