@@ -166,6 +166,24 @@ def test_site_counts_histogram_aggregates_constituent_histograms(symmetric_site)
     np.testing.assert_array_equal(symmetric_site.site_counts_histogram, expected)
 
 
+def test_time_resolved_counts_preserve_symmetry_identity(symmetric_site):
+    """Symmetric aggregation must not pool away individual site trajectories."""
+    counts = _counts_for_symmetric_site()
+    bulk_counts = np.array([0, 1, 1, 2, 2])
+    symmetric_site.update_site_counts_histogram(counts)
+    symmetric_site.update_bulk_counts_histogram(bulk_counts)
+
+    assert len(symmetric_site.site_counts_over_time) == 4
+    for site, site_counts, bulk in zip(
+        symmetric_site,
+        symmetric_site.site_counts_over_time,
+        symmetric_site.bulk_counts_over_time,
+        strict=True,
+    ):
+        np.testing.assert_array_equal(site_counts, site.site_counts_over_time)
+        np.testing.assert_array_equal(bulk, bulk_counts)
+
+
 def test_site_counts_histogram_requires_populated_sites(symmetric_site):
     """Verify aggregation fails when constituent results are missing instead of returning partial data."""
     with pytest.raises(AssertionError, match="do not have counts associated"):
