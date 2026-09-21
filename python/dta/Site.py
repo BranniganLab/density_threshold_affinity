@@ -90,6 +90,8 @@ class Site:
         self._bin_coords = None
         self._site_counts_histogram = None
         self._bulk_counts_histogram = None
+        self._site_counts_over_time = None
+        self._bulk_counts_over_time = None
 
     @property
     def bin_coords(self) -> frozenset[BinAddress] | None:
@@ -159,6 +161,8 @@ class Site:
             self._bin_coords = new_bin_coords
             self._site_counts_histogram = None
             self._bulk_counts_histogram = None
+            self._site_counts_over_time = None
+            self._bulk_counts_over_time = None
 
     @property
     def site_counts_histogram(self) -> np.ndarray:
@@ -193,6 +197,16 @@ class Site:
 
         """
         return self._bulk_counts_histogram
+
+    @property
+    def site_counts_over_time(self) -> np.ndarray:
+        """Return the total site count for each trajectory frame."""
+        return self._site_counts_over_time
+
+    @property
+    def bulk_counts_over_time(self) -> np.ndarray:
+        """Return the bulk count for each trajectory frame."""
+        return self._bulk_counts_over_time
 
     @property
     def n_peak(self) -> float:
@@ -266,8 +280,8 @@ class Site:
             {counts_data.shape} != {(self.grid.r.n_bins, self.grid.theta.n_bins)}
             """)
         site_counts = self._fetch_site_counts(counts_data)
-        site_hist = np.bincount(site_counts)
-        self._site_counts_histogram = site_hist
+        self._site_counts_over_time = site_counts
+        self._site_counts_histogram = np.bincount(site_counts)
 
     def update_bulk_counts_histogram(self, counts_data: np.ndarray) -> None:
         """
@@ -289,8 +303,8 @@ class Site:
                 "have been defined."
             )
         counts_data = self._validate_counts_data(counts_data=counts_data, expected_ndim=1)
-        bulk_hist = np.bincount(counts_data)
-        self._bulk_counts_histogram = bulk_hist
+        self._bulk_counts_over_time = counts_data
+        self._bulk_counts_histogram = np.bincount(counts_data)
 
     @staticmethod
     def _validate_counts_data(
