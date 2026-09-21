@@ -139,6 +139,16 @@ class SiteAcrossReplicas:
         return check_bulk_counts_histogram(self.sites)
 
     @property
+    def site_counts_over_time(self) -> tuple[np.ndarray | tuple[np.ndarray, ...], ...]:
+        """Return time-resolved counts for each replica, preserving replica order."""
+        return tuple(site.site_counts_over_time for site in self.sites)
+
+    @property
+    def bulk_counts_over_time(self) -> tuple[np.ndarray | tuple[np.ndarray, ...], ...]:
+        """Return time-resolved bulk counts for each replica, preserving replica order."""
+        return tuple(site.bulk_counts_over_time for site in self.sites)
+
+    @property
     def n_peak(self) -> int:
         """
         Tell me what the n_peak is.
