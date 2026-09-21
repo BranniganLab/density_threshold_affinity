@@ -35,6 +35,8 @@ def test_init_sets_attributes_and_empty_analysis_state(grid):
     assert site.bin_coords is None
     assert site.site_counts_histogram is None
     assert site.bulk_counts_histogram is None
+    assert site.site_counts_over_time is None
+    assert site.bulk_counts_over_time is None
 
 
 def test_init_rejects_non_grid():
@@ -190,6 +192,17 @@ def test_update_site_counts_histogram_sums_selected_bins_over_time(site):
 
     # The input is converted to integers before the selected bins are summed.
     np.testing.assert_array_equal(site.site_counts_histogram, np.array([0, 2, 0, 2]))
+    np.testing.assert_array_equal(site.site_counts_over_time, np.array([1, 1, 3, 3]))
+
+
+def test_bulk_counts_over_time_is_retained(site):
+    """Bulk histograms remain derived from the retained frame-resolved counts."""
+    counts = np.array([0, 1, 1, 3])
+
+    site.update_bulk_counts_histogram(counts)
+
+    np.testing.assert_array_equal(site.bulk_counts_over_time, counts)
+    np.testing.assert_array_equal(site.bulk_counts_histogram, np.bincount(counts))
 
 
 @pytest.mark.parametrize(
