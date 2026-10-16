@@ -210,8 +210,8 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     """
     Generate the colorbar and a separate black swatch labeled zero.
 
-    Center the combined key above the heatmap panels. Must be done after
-    plot_heatmap.
+    Center the continuous colorbar above the heatmap panels and offset the
+    zero swatch to its left. Must be done after plot_heatmap.
 
     Parameters
     ----------
@@ -226,17 +226,14 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
 
     """
     fig.subplots_adjust(right=0.8)
-    key_width = 0.5
-    key_height = 0.02
+    colorbar_width = 0.5
+    colorbar_height = 0.02
     gap = 0.045
     # Convert the height to a width that makes the swatch physically square.
-    swatch_width = key_height * fig.get_figheight() / fig.get_figwidth()
+    swatch_width = colorbar_height * fig.get_figheight() / fig.get_figwidth()
     panels_center = (fig.subplotpars.left + fig.subplotpars.right) / 2
-    key_left = panels_center - key_width / 2
-
-    colorbar_left = key_left + swatch_width + gap
-    colorbar_width = key_width - swatch_width - gap
-    cbar_ax = fig.add_axes([colorbar_left, 1, colorbar_width, key_height])
+    colorbar_left = panels_center - colorbar_width / 2
+    cbar_ax = fig.add_axes([colorbar_left, 1, colorbar_width, colorbar_height])
     colorbar = fig.colorbar(heatmap, cax=cbar_ax, orientation="horizontal")
     colorbar.set_ticks([heatmap.norm.vmin, heatmap.norm.vcenter, heatmap.norm.vmax])
     # Use the colorbar's full height so the swatch always matches its thickness.
