@@ -228,7 +228,7 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     fig.subplots_adjust(right=0.8)
     key_width = 0.5
     key_height = 0.02
-    gap = 0.03
+    gap = 0.045
     # Convert the height to a width that makes the swatch physically square.
     swatch_width = key_height * fig.get_figheight() / fig.get_figwidth()
     panels_center = (fig.subplotpars.left + fig.subplotpars.right) / 2
