@@ -206,12 +206,13 @@ def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_col
     return fig
 
 
-def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
+def make_colorbar(fig: plt.Figure, heatmap: QuadMesh, r_min: float = 0) -> plt.Figure:
     """
     Generate the colorbar with zero-density and not-analyzed swatches.
 
     Center the continuous colorbar above the heatmap panels and offset the
-    zero swatch to its left and the hatched N/A swatch to its right.
+    zero swatch to its left. When r_min is positive, add the hatched N/A
+    swatch to its right.
     Must be done after plot_heatmap.
 
     Parameters
@@ -220,6 +221,8 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
         The figure object from matplotlib.
     heatmap : matplotlib.collections.QuadMesh
         A plotted heatmap supplying the colormap and normalization.
+    r_min : float, optional
+        Minimum analyzed radius. Show the N/A swatch only when positive.
 
     Returns
     -------
@@ -246,16 +249,18 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     zero_ax.set_xticks([0.5], labels=["0"])
     zero_ax.set_yticks([])
 
-    na_ax = cbar_ax.inset_axes(
-        [1 + gap / colorbar_width, 0, swatch_width / colorbar_width, 1],
-        label="not_analyzed_key", facecolor="white",
-    )
-    # Keep the hatch visible even when the swatch is only a few pixels high.
-    na_ax.patch.set_hatch("//////")
-    na_ax.patch.set_edgecolor("black")
-    na_ax.patch.set_linewidth(0)
-    na_ax.set_xticks([0.5], labels=["N/A"])
-    na_ax.set_yticks([])
+    if r_min > 0:
+        na_ax = cbar_ax.inset_axes(
+            [1 + gap / colorbar_width, 0, swatch_width / colorbar_width, 1],
+            label="not_analyzed_key", facecolor="white",
+        )
+        # Scale bold diagonal strokes to the tiny swatch, rather than using
+        # Matplotlib's hatch pattern, whose spacing is fixed in physical units.
+        for start in (-0.5, 0, 0.5):
+            na_ax.plot([start, start + 1], [0, 1], transform=na_ax.transAxes,
+                       color="black", linewidth=1.25, solid_capstyle="butt")
+        na_ax.set_xticks([0.5], labels=["N/A"])
+        na_ax.set_yticks([])
     return fig
 
 
@@ -515,6 +520,6 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings,
     fig = plot_helices_on_panels(fig, helices, helix_colors)
     for index, ax in enumerate(axes):
         heatmap = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
-    fig = make_colorbar(fig, heatmap)
+    fig = make_colorbar(fig, heatmap, heatmap_settings.grid.r.lower_bound)
 
     return fig, axes
