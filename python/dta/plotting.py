@@ -208,10 +208,11 @@ def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_col
 
 def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     """
-    Generate the colorbar and a separate black swatch labeled zero.
+    Generate the colorbar with zero-density and not-analyzed swatches.
 
     Center the continuous colorbar above the heatmap panels and offset the
-    zero swatch to its left. Must be done after plot_heatmap.
+    zero swatch to its left and the hatched N/A swatch to its right.
+    Must be done after plot_heatmap.
 
     Parameters
     ----------
@@ -244,6 +245,17 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     )
     zero_ax.set_xticks([0.5], labels=["0"])
     zero_ax.set_yticks([])
+
+    na_ax = cbar_ax.inset_axes(
+        [1 + gap / colorbar_width, 0, swatch_width / colorbar_width, 1],
+        label="not_analyzed_key", facecolor="white",
+    )
+    # Keep the hatch visible even when the swatch is only a few pixels high.
+    na_ax.patch.set_hatch("//////")
+    na_ax.patch.set_edgecolor("black")
+    na_ax.patch.set_linewidth(0)
+    na_ax.set_xticks([0.5], labels=["N/A"])
+    na_ax.set_yticks([])
     return fig
 
 
@@ -251,7 +263,8 @@ def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettin
     """
     Plot a heatmap, with exactly-zero values shown in black.
 
-    Missing or masked values are also shown in black.
+    Missing or masked values are also shown in black. The region inside the
+    grid's minimum radius is hatched to indicate that it was not analyzed.
 
     Parameters
     ----------
@@ -277,6 +290,11 @@ def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettin
     theta_vals = heatmap_settings.grid.theta_grid
     heatmap = ax.pcolormesh(theta_vals, r_vals, plot_data, cmap=colormap, norm=norm,
                            zorder=0, edgecolors='face', linewidth=0)
+    if heatmap_settings.grid.r.lower_bound > 0:
+        # A full polar bar covers the excluded disk without adding density bins.
+        ax.bar(0, heatmap_settings.grid.r.lower_bound, width=2 * np.pi,
+               bottom=0, align="edge", facecolor="white", edgecolor="black",
+               hatch="//", linewidth=0, zorder=0.5)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     return heatmap
