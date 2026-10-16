@@ -10,7 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib import gridspec
-from matplotlib.colors import ListedColormap, Normalize
+from matplotlib.collections import QuadMesh
+from matplotlib.colors import ListedColormap, TwoSlopeNorm
 from scipy import constants
 from dta.utils import calculate_hist_mode
 from dta.Site import Site
@@ -88,21 +89,21 @@ class HeatmapSettings:
 
 def make_custom_colormap() -> ListedColormap:
     """
-    Make a custom colormap for plotting. The colormap starts at 0.35 to ensure \
-    that there is a visual difference between 0 (no signal) and depleted (near-\
-    zero enrichment).
+    Make the gray-white-red colormap for density enrichment.
+
+    Depleted values use light gray through white; enriched values use white
+    through red. Zero-density bins are colored separately in plot_heatmap.
 
     Returns
     -------
-    my_cmap : matplotlib colormap
+    colormap : matplotlib colormap
         The colormap to use when plotting.
 
     """
-    depleted = plt.colormaps['RdGy_r']
-    enriched = plt.colormaps['bwr']
-    newcolors = np.concatenate([depleted(np.linspace(0.35, 0.5, 128)), enriched(np.linspace(0.5, 1, 128))])
-    my_cmap = ListedColormap(newcolors)
-    return my_cmap
+    depleted_colors = plt.colormaps['RdGy_r'](np.linspace(0.35, 0.5, 128))
+    enriched_colors = plt.colormaps['bwr'](np.linspace(0.5, 1, 128))
+    combined_colors = np.concatenate([depleted_colors, enriched_colors])
+    return ListedColormap(combined_colors)
 
 
 def outline_site(
@@ -205,7 +206,7 @@ def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_col
     return fig
 
 
-def make_colorbar(fig: plt.Figure, heatmap_settings: HeatmapSettings) -> plt.Figure:
+def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     """
     Generate the colorbar. Must be done after plot_heatmap.
 
@@ -213,27 +214,26 @@ def make_colorbar(fig: plt.Figure, heatmap_settings: HeatmapSettings) -> plt.Fig
     ----------
     fig : fig
         The figure object from matplotlib.
-    heatmap_settings : HeatmapSettings object
-        All the auxiliary information needed to plot a heatmap.
+    heatmap : matplotlib.collections.QuadMesh
+        A plotted heatmap supplying the colormap and normalization.
 
     Returns
     -------
     fig
 
     """
-    vmin, vmid, vmax = heatmap_settings.colorbar_range
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.21, 1, 0.5, 0.02])
-    sm = mpl.cm.ScalarMappable(cmap=heatmap_settings.colormap)
-    cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
-    cbar.set_ticks(np.linspace(0, 1, 3))
-    cbar.ax.set_xticklabels([round(vmin, 2), vmid, vmax])
+    colorbar = fig.colorbar(heatmap, cax=cbar_ax, orientation="horizontal")
+    colorbar.set_ticks([heatmap.norm.vmin, heatmap.norm.vcenter, heatmap.norm.vmax])
     return fig
 
 
-def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettings) -> plt.Axes:
+def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettings) -> QuadMesh:
     """
-    Plot a heatmap on a pre-existing axes object.
+    Plot a heatmap, with exactly-zero values shown in black.
+
+    Missing or masked values are also shown in black.
 
     Parameters
     ----------
@@ -246,19 +246,22 @@ def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettin
 
     Returns
     -------
-    ax : matplotlib.pyplot axes object
-        The axes object, which now contains your heatmap.
+    heatmap : matplotlib.collections.QuadMesh
+        The plotted heatmap, suitable for creating a matching colorbar.
 
     """
-    vmin, vmid, vmax = heatmap_settings.colorbar_range
-    norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
+    minimum, midpoint, maximum = heatmap_settings.colorbar_range
+    norm = TwoSlopeNorm(vmin=minimum, vcenter=midpoint, vmax=maximum)
+    plot_data = np.ma.masked_equal(data, 0)
+    colormap = heatmap_settings.colormap.with_extremes(bad="black")
     ax.grid(False)
     r_vals = heatmap_settings.grid.r_grid
     theta_vals = heatmap_settings.grid.theta_grid
-    ax.pcolormesh(theta_vals, r_vals, data, cmap=heatmap_settings.colormap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
+    heatmap = ax.pcolormesh(theta_vals, r_vals, plot_data, cmap=colormap, norm=norm,
+                           zorder=0, edgecolors='face', linewidth=0)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
-    return ax
+    return heatmap
 
 
 def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False, show_target=False):
@@ -402,26 +405,6 @@ def calc_x_50(deltaG, error, temperature):
     return x_50, err_on_x_50
 
 
-# This class comes from Liam Sharp and could potentially be rewritten to be
-# more clear.
-class MidpointNormalize(Normalize):
-    """
-    Normalise the colorbar so that diverging bars work their way either side from a prescribed midpoint value).
-
-    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
-    """
-
-    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
-        self.midpoint = midpoint
-        Normalize.__init__(self, vmin, vmax, clip)
-
-    def __call__(self, value, clip=None):
-        # I'm ignoring masked values and all kinds of edge cases to make a
-        # simple example...
-        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
-        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
-
-
 def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
     """
     Plot helices on a polar plot.
@@ -495,7 +478,7 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings,
 
     fig = plot_helices_on_panels(fig, helices, helix_colors)
     for index, ax in enumerate(axes):
-        ax = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
-    fig = make_colorbar(fig, heatmap_settings)
+        heatmap = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
+    fig = make_colorbar(fig, heatmap)
 
     return fig, axes
