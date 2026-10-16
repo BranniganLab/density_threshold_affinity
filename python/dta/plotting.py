@@ -254,11 +254,9 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh, r_min: float = 0) -> plt.F
             [1 + gap / colorbar_width, 0, swatch_width / colorbar_width, 1],
             label="not_analyzed_key", facecolor="white",
         )
-        # Scale bold diagonal strokes to the tiny swatch, rather than using
-        # Matplotlib's hatch pattern, whose spacing is fixed in physical units.
-        for start in (-0.5, 0, 0.5):
-            na_ax.plot([start, start + 1], [0, 1], transform=na_ax.transAxes,
-                       color="black", linewidth=1.25, solid_capstyle="butt")
+        # Scale one bold diagonal line to the swatch's dimensions.
+        na_ax.plot([0, 1], [0, 1], transform=na_ax.transAxes,
+                   color="black", linewidth=1.25, solid_capstyle="butt")
         na_ax.set_xticks([0.5], labels=["N/A"])
         na_ax.set_xlim(0, 1)
         na_ax.set_yticks([])
