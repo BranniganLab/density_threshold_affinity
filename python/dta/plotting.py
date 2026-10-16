@@ -260,6 +260,7 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh, r_min: float = 0) -> plt.F
             na_ax.plot([start, start + 1], [0, 1], transform=na_ax.transAxes,
                        color="black", linewidth=1.25, solid_capstyle="butt")
         na_ax.set_xticks([0.5], labels=["N/A"])
+        na_ax.set_xlim(0, 1)
         na_ax.set_yticks([])
     return fig
 
