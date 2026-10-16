@@ -234,16 +234,19 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     panels_center = (fig.subplotpars.left + fig.subplotpars.right) / 2
     key_left = panels_center - key_width / 2
 
-    zero_ax = fig.add_axes([key_left, 1, swatch_width, key_height],
-                           label="zero_density_key", facecolor="black")
-    zero_ax.set_xticks([0.5], labels=["0"])
-    zero_ax.set_yticks([])
-
     colorbar_left = key_left + swatch_width + gap
     colorbar_width = key_width - swatch_width - gap
     cbar_ax = fig.add_axes([colorbar_left, 1, colorbar_width, key_height])
     colorbar = fig.colorbar(heatmap, cax=cbar_ax, orientation="horizontal")
     colorbar.set_ticks([heatmap.norm.vmin, heatmap.norm.vcenter, heatmap.norm.vmax])
+    # Use the colorbar's full height so the swatch always matches its thickness.
+    zero_ax = cbar_ax.inset_axes(
+        [-(swatch_width + gap) / colorbar_width, 0,
+         swatch_width / colorbar_width, 1],
+        label="zero_density_key", facecolor="black",
+    )
+    zero_ax.set_xticks([0.5], labels=["0"])
+    zero_ax.set_yticks([])
     return fig
 
 
