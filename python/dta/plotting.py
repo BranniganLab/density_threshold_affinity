@@ -37,6 +37,10 @@ class HeatmapSettings:
         Figure height and width, in inches.
     grid : PolarBinGrid
         Contains lattice information.
+    first_radial_bin : int, optional
+        First radial bin to display, using zero-based indices in the original
+        grid. Lower bins appear as a white N/A disk with a black boundary. Defaults to 0. This affects
+        plotting only; input arrays, grid geometry and site indices are preserved.
     colormap : matplotlib cmap object
         The colormap to use. Provided after init.
     colorbar_range : 3-tuple
@@ -54,6 +58,7 @@ class HeatmapSettings:
     fig_dims: tuple
     max_enrichment: InitVar[float]
     grid: PolarBinGrid
+    first_radial_bin: int = 0
     colormap: mpl.colors.ListedColormap = field(init=False)
     colorbar_range: tuple = field(init=False)
 
@@ -85,6 +90,16 @@ class HeatmapSettings:
         if max_enrichment <= 1:
             raise ValueError("max_enrichment must be greater than 1.")
         self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
+
+    @property
+    def r_min(self) -> float:
+        """Physical inner display radius derived from the original bin edges."""
+        index = self.first_radial_bin
+        if isinstance(index, (bool, np.bool_)) or not isinstance(index, (int, np.integer)):
+            raise TypeError("first_radial_bin must be a zero-based integer index")
+        if not 0 <= index < self.grid.r.n_bins:
+            raise ValueError(f"first_radial_bin must be between 0 and {self.grid.r.n_bins - 1}")
+        return self.grid.r.bin_edges[index]
 
 
 def make_custom_colormap() -> ListedColormap:
@@ -178,7 +193,7 @@ def create_heatmap_figure_and_axes(heatmap_settings: HeatmapSettings) -> plt.Fig
     return fig
 
 
-def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_colors: list[str] | None = None):
+def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_colors: list[str] | None = None, r_min: float = 0):
     """
     Plot helix locations on each panel present in the figure.
 
@@ -190,6 +205,8 @@ def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_col
         List containing one set of helix coordinates per panel.
     helix_colors : list of str or None
         Optional list containing matplotlib-recognized colors. Default is None.
+    r_min : float, optional
+        Hide markers whose radial coordinate is below this radius. Defaults to 0.
 
     Returns
     -------
@@ -202,17 +219,16 @@ def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_col
     if len(helices) != np.ravel(fig.axes).shape[0]:
         raise RuntimeError("Need to provide as many sets of helices as there are axes.")
     for ax, helix_set in zip(np.ravel(fig.axes), helices, strict=True):
-        ax = plot_helices(helix_set, False, ax, 50, helix_colors)
+        ax = plot_helices(helix_set, False, ax, 50, helix_colors, r_min=r_min)
     return fig
 
 
 def make_colorbar(fig: plt.Figure, heatmap: QuadMesh, r_min: float = 0) -> plt.Figure:
     """
-    Generate the colorbar with zero-density and not-analyzed swatches.
+    Generate the colorbar with a zero-density swatch.
 
     Center the continuous colorbar above the heatmap panels and offset the
-    zero swatch to its left. When r_min is positive, add the hatched N/A
-    swatch to its right.
+    zero swatch to its left.
     Must be done after plot_heatmap.
 
     Parameters
@@ -222,7 +238,7 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh, r_min: float = 0) -> plt.F
     heatmap : matplotlib.collections.QuadMesh
         A plotted heatmap supplying the colormap and normalization.
     r_min : float, optional
-        Minimum analyzed radius. Show the N/A swatch only when positive.
+        Accepted for compatibility with existing calls; does not affect the colorbar.
 
     Returns
     -------
@@ -249,17 +265,6 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh, r_min: float = 0) -> plt.F
     zero_ax.set_xticks([0.5], labels=["0"])
     zero_ax.set_yticks([])
 
-    if r_min > 0:
-        na_ax = cbar_ax.inset_axes(
-            [1 + gap / colorbar_width, 0, swatch_width / colorbar_width, 1],
-            label="not_analyzed_key", facecolor="white",
-        )
-        # Scale one bold diagonal line to the swatch's dimensions.
-        na_ax.plot([0, 1], [0, 1], transform=na_ax.transAxes,
-                   color="black", linewidth=1.25, solid_capstyle="butt")
-        na_ax.set_xticks([0.5], labels=["N/A"])
-        na_ax.set_xlim(0, 1)
-        na_ax.set_yticks([])
     return fig
 
 
@@ -267,8 +272,10 @@ def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettin
     """
     Plot a heatmap, with exactly-zero values shown in muted dark gray.
 
-    Missing or masked values are also shown in muted dark gray. The region inside the
-    grid's minimum radius is hatched to indicate that it was not analyzed.
+    Missing or masked values are also shown in muted dark gray. Bins below
+    first_radial_bin are set to NaN in a plotting copy and covered by a white
+    N/A disk with an outline matching the outer polar spine. Original data and radial indices are preserved. The disk also
+    includes the region inside the grid's minimum radius.
 
     Parameters
     ----------
@@ -287,18 +294,27 @@ def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettin
     """
     minimum, midpoint, maximum = heatmap_settings.colorbar_range
     norm = TwoSlopeNorm(vmin=minimum, vcenter=midpoint, vmax=maximum)
-    plot_data = np.ma.masked_equal(data, 0)
+    r_min = heatmap_settings.r_min
+    plot_data = np.ma.array(data, dtype=float, copy=True)
+    plot_data[:heatmap_settings.first_radial_bin, :] = np.nan
+    plot_data = np.ma.masked_equal(plot_data, 0)
     colormap = heatmap_settings.colormap.with_extremes(bad="#666666")
     ax.grid(False)
     r_vals = heatmap_settings.grid.r_grid
     theta_vals = heatmap_settings.grid.theta_grid
     heatmap = ax.pcolormesh(theta_vals, r_vals, plot_data, cmap=colormap, norm=norm,
-                           zorder=0, edgecolors='face', linewidth=0)
-    if heatmap_settings.grid.r.lower_bound > 0:
+                           zorder=0, edgecolors="none", linewidth=0,
+                           antialiased=False)
+    if r_min > 0:
         # A full polar bar covers the excluded disk without adding density bins.
-        ax.bar(0, heatmap_settings.grid.r.lower_bound, width=2 * np.pi,
-               bottom=0, align="edge", facecolor="white", edgecolor="black",
-               hatch="//", linewidth=0, zorder=0.5)
+        ax.bar(0, r_min, width=2 * np.pi,
+               bottom=0, align="edge", facecolor="white", edgecolor="none",
+               linewidth=0, zorder=0.5)
+        outer_border = ax.spines["polar"]
+        theta = np.linspace(0, 2 * np.pi, 361)
+        ax.plot(theta, np.full_like(theta, r_min),
+                color=outer_border.get_edgecolor(), linewidth=outer_border.get_linewidth(),
+                zorder=outer_border.get_zorder())
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     return heatmap
@@ -445,7 +461,7 @@ def calc_x_50(deltaG, error, temperature):
     return x_50, err_on_x_50
 
 
-def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
+def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None, r_min=0):
     """
     Plot helices on a polar plot.
 
@@ -456,6 +472,8 @@ def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
     - ax (matplotlib.axes.Axes): The polar subplot axis on which to plot the helices.
     - markersize (int, optional): The size of the scatter markers. Defaults to 3.
     - colorlist (list, optional): The list of colors to use for coloring the helices. Defaults to a predefined list of colors.
+    - r_min (float, optional): Hide markers with radius below this value. Markers
+      at the boundary remain visible. Coordinates and helix colors are preserved.
 
     Returns
     -------
@@ -469,12 +487,14 @@ def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
     if len(np.shape(helices)) == 1:
         helices = np.reshape(helices, (1, len(helices)))
     for i, pro in enumerate(helices[:]):
+        radii = pro[::2]
+        visible = radii >= r_min
         if colorbychain:
             colors = colorlist[i]
         else:
-            colors = colorlist[:len(pro[::2])]
-        ax.scatter(np.deg2rad(pro[1::2]), pro[::2], color=colors, linewidth=None,
-                   zorder=1, s=markersize)
+            colors = np.asarray(colorlist[:len(radii)])[visible]
+        ax.scatter(np.deg2rad(pro[1::2][visible]), radii[visible], color=colors,
+                   linewidth=None, zorder=1, s=markersize)
     return ax
 
 
@@ -516,9 +536,9 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings,
     if len(enrichments_list) != axes.shape[0]:
         raise IndexError(f"Number of enrichments_list items ({len(enrichments_list)}) does not match number of figure panels ({axes.shape[0]}).")
 
-    fig = plot_helices_on_panels(fig, helices, helix_colors)
+    fig = plot_helices_on_panels(fig, helices, helix_colors, r_min=heatmap_settings.r_min)
     for index, ax in enumerate(axes):
         heatmap = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
-    fig = make_colorbar(fig, heatmap, heatmap_settings.grid.r.lower_bound)
+    fig = make_colorbar(fig, heatmap, heatmap_settings.r_min)
 
     return fig, axes

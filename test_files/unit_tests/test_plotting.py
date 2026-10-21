@@ -91,3 +91,112 @@ def test_multi_panel_colorbar_uses_heatmap_scale_with_helix_overlays():
         np.testing.assert_array_equal(zero_key.get_facecolor(), mesh.cmap.get_bad())
     finally:
         plt.close(fig)
+
+
+@pytest.mark.parametrize("first_bin", [0, 1, 3])
+@pytest.mark.parametrize("original_r_min", [0, 10])
+def test_first_radial_bin_preserves_grid_data_and_retained_colors(first_bin, original_r_min):
+    """Only the plotting copy is excluded; retained zero/positive colors agree."""
+    grid = PolarBinGrid(original_r_min, original_r_min + 40, 4, 4)
+    data = np.tile([0, 1, 2, 5], (4, 1))
+    original = data.copy()
+    original_edges = grid.r.bin_edges.copy()
+    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4), 5, grid)
+    settings.colormap = make_custom_colormap()
+    reference_fig, reference_ax = plt.subplots(subplot_kw={"projection": "polar"})
+    fig = None
+    try:
+        reference_mesh = plot_heatmap(reference_ax, data, settings)
+        reference_fig.canvas.draw()
+        settings.first_radial_bin = first_bin
+        fig, axes = make_density_enrichment_heatmap([data], [np.array([5, 30])], settings)
+        fig.canvas.draw()
+        mesh = axes[0].collections[-1]
+        cutoff = grid.r.bin_edges[first_bin]
+        assert settings.r_min == cutoff
+        np.testing.assert_array_equal(data, original)
+        np.testing.assert_array_equal(grid.r.bin_edges, original_edges)
+        np.testing.assert_array_equal(mesh.get_coordinates(), reference_mesh.get_coordinates())
+        np.testing.assert_array_equal(mesh.get_facecolors()[first_bin * 4:],
+                                      reference_mesh.get_facecolors()[first_bin * 4:])
+        plotted = mesh.get_array().reshape(data.shape)
+        assert np.all(np.ma.getmaskarray(plotted)[:first_bin])
+        assert np.all(np.isnan(plotted.data[:first_bin]))
+        np.testing.assert_array_equal(plotted.data[first_bin:], data[first_bin:])
+        keys = [ax.get_label() for ax in mesh.colorbar.ax.child_axes]
+        assert keys == ["zero_density_key"]
+        if cutoff > 0:
+            disk = axes[0].patches[0]
+            assert disk.get_height() == cutoff
+            assert disk.get_hatch() is None
+            np.testing.assert_array_equal(disk.get_facecolor(), [1, 1, 1, 1])
+            boundary = axes[0].lines[-1]
+            np.testing.assert_array_equal(boundary.get_ydata(), cutoff)
+            np.testing.assert_allclose(boundary.get_xdata()[[0, -1]], [0, 2 * np.pi])
+            outer_border = axes[0].spines["polar"]
+            assert boundary.get_color() == outer_border.get_edgecolor()
+            assert boundary.get_linewidth() == outer_border.get_linewidth()
+        else:
+            assert not axes[0].patches
+    finally:
+        plt.close(reference_fig)
+        if fig is not None:
+            plt.close(fig)
+
+
+@pytest.mark.parametrize("index, error", [
+    (-1, ValueError), (4, ValueError), (1.5, TypeError),
+    (True, TypeError), ("1", TypeError),
+])
+def test_first_radial_bin_rejects_invalid_indices(index, error):
+    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4), 5,
+                               PolarBinGrid(0, 40, 4, 4), first_radial_bin=index)
+    settings.colormap = make_custom_colormap()
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    try:
+        with pytest.raises(error, match="first_radial_bin"):
+            plot_heatmap(ax, np.ones((4, 4)), settings)
+    finally:
+        plt.close(fig)
+
+
+@pytest.mark.parametrize("colorbychain", [False, True])
+@pytest.mark.parametrize("r_min", [0, 20, 40])
+def test_helix_cutoff_preserves_colors_coordinates_and_boundary(colorbychain, r_min):
+    from matplotlib.colors import to_rgba
+    from dta.plotting import plot_helices
+
+    helices = np.array([[5., 0., 20., 90., 30., 180.],
+                        [30., 45., 5., 135., 20., 225.]])
+    original = helices.copy()
+    palette = ["purple", "blue", "green"]
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    try:
+        plot_helices(helices, colorbychain, ax, colorlist=palette, r_min=r_min)
+        for chain, (coordinates, markers) in enumerate(zip(helices, ax.collections)):
+            visible = coordinates[::2] >= r_min
+            expected = np.column_stack((np.deg2rad(coordinates[1::2][visible]),
+                                        coordinates[::2][visible]))
+            np.testing.assert_array_equal(markers.get_offsets(), expected)
+            if np.any(visible):
+                expected_colors = ([to_rgba(palette[chain])] if colorbychain else
+                                   [to_rgba(color) for color, keep in zip(palette, visible) if keep])
+                np.testing.assert_array_equal(markers.get_facecolors(), expected_colors)
+        np.testing.assert_array_equal(helices, original)
+    finally:
+        plt.close(fig)
+
+
+def test_heatmap_uses_first_radial_bin_to_hide_helix_markers():
+    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4), 5,
+                               PolarBinGrid(0, 40, 4, 4), first_radial_bin=2)
+    settings.colormap = make_custom_colormap()
+    helices = np.array([5., 0., 20., 90., 30., 180.])
+    original = helices.copy()
+    fig, axes = make_density_enrichment_heatmap([np.ones((4, 4))], [helices], settings)
+    try:
+        markers = axes[0].collections[0]
+        np.testing.assert_array_equal(markers.get_offsets()[:, 1], [20, 30])
+        np.testing.assert_array_equal(helices, original)
+    finally:
+        plt.close(fig)
