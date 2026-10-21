@@ -16,7 +16,7 @@ from dta.plotting import (
 
 @pytest.mark.parametrize("maximum", [2, 5, 10])
 @pytest.mark.parametrize("custom_colormap", [False, True])
-def test_zero_is_black_and_positive_colors_are_unchanged(maximum, custom_colormap):
+def test_zero_is_dark_gray_and_positive_colors_are_unchanged(maximum, custom_colormap):
     """Even tiny positive values retain the previous palette and scaling."""
     data = np.array([[0, 1e-12, 0.5 / maximum, 1 / maximum,
                       0.75, 1, 2, maximum, 2 * maximum]])
@@ -42,7 +42,7 @@ def test_zero_is_black_and_positive_colors_are_unchanged(maximum, custom_colorma
         mesh = plot_heatmap(ax, data, settings)
         fig.canvas.draw()
         colors = mesh.get_facecolors()
-        np.testing.assert_array_equal(colors[0], [0, 0, 0, 1])
+        np.testing.assert_array_equal(colors[0], [0.4, 0.4, 0.4, 1])
         np.testing.assert_array_equal(colors[1:], previous_colors[1:])
         np.testing.assert_array_equal(data, original)
         np.testing.assert_array_equal(settings.colormap.get_bad(), original_bad_color)
@@ -54,7 +54,7 @@ def test_zero_is_black_and_positive_colors_are_unchanged(maximum, custom_colorma
     np.zeros((1, 4)),
     np.ma.array([[0, 0.1, np.nan, 1]], mask=[[False, True, False, True]]),
 ])
-def test_zero_and_missing_bins_are_opaque_black(data):
+def test_zero_and_missing_bins_are_opaque_dark_gray(data):
     """Empty panels and pre-existing masks render without losing their masks."""
     settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4), 5,
                                PolarBinGrid(0, 1, 1, 4))
@@ -63,7 +63,7 @@ def test_zero_and_missing_bins_are_opaque_black(data):
     try:
         mesh = plot_heatmap(ax, data, settings)
         fig.canvas.draw()
-        np.testing.assert_array_equal(mesh.get_facecolors(), np.tile([0, 0, 0, 1], (4, 1)))
+        np.testing.assert_array_equal(mesh.get_facecolors(), np.tile([0.4, 0.4, 0.4, 1], (4, 1)))
     finally:
         plt.close(fig)
 
@@ -87,5 +87,7 @@ def test_multi_panel_colorbar_uses_heatmap_scale_with_helix_overlays():
         assert colorbar.cmap is mesh.cmap
         np.testing.assert_allclose(colorbar.get_ticks(), [1 / maximum, 1, maximum])
         np.testing.assert_allclose(colorbar.norm(colorbar.get_ticks()), [0, 0.5, 1])
+        zero_key = next(ax for ax in colorbar.ax.child_axes if ax.get_label() == "zero_density_key")
+        np.testing.assert_array_equal(zero_key.get_facecolor(), mesh.cmap.get_bad())
     finally:
         plt.close(fig)

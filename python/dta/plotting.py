@@ -244,7 +244,7 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh, r_min: float = 0) -> plt.F
     zero_ax = cbar_ax.inset_axes(
         [-(swatch_width + gap) / colorbar_width, 0,
          swatch_width / colorbar_width, 1],
-        label="zero_density_key", facecolor="black",
+        label="zero_density_key", facecolor=heatmap.cmap.get_bad(),
     )
     zero_ax.set_xticks([0.5], labels=["0"])
     zero_ax.set_yticks([])
@@ -265,9 +265,9 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh, r_min: float = 0) -> plt.F
 
 def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettings) -> QuadMesh:
     """
-    Plot a heatmap, with exactly-zero values shown in black.
+    Plot a heatmap, with exactly-zero values shown in muted dark gray.
 
-    Missing or masked values are also shown in black. The region inside the
+    Missing or masked values are also shown in muted dark gray. The region inside the
     grid's minimum radius is hatched to indicate that it was not analyzed.
 
     Parameters
@@ -288,7 +288,7 @@ def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettin
     minimum, midpoint, maximum = heatmap_settings.colorbar_range
     norm = TwoSlopeNorm(vmin=minimum, vcenter=midpoint, vmax=maximum)
     plot_data = np.ma.masked_equal(data, 0)
-    colormap = heatmap_settings.colormap.with_extremes(bad="black")
+    colormap = heatmap_settings.colormap.with_extremes(bad="#666666")
     ax.grid(False)
     r_vals = heatmap_settings.grid.r_grid
     theta_vals = heatmap_settings.grid.theta_grid
