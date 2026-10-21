@@ -223,7 +223,7 @@ def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_col
     return fig
 
 
-def make_colorbar(fig: plt.Figure, heatmap: QuadMesh, r_min: float = 0) -> plt.Figure:
+def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     """
     Generate the colorbar with a zero-density swatch.
 
@@ -237,8 +237,6 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh, r_min: float = 0) -> plt.F
         The figure object from matplotlib.
     heatmap : matplotlib.collections.QuadMesh
         A plotted heatmap supplying the colormap and normalization.
-    r_min : float, optional
-        Accepted for compatibility with existing calls; does not affect the colorbar.
 
     Returns
     -------
@@ -539,6 +537,6 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings,
     fig = plot_helices_on_panels(fig, helices, helix_colors, r_min=heatmap_settings.r_min)
     for index, ax in enumerate(axes):
         heatmap = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
-    fig = make_colorbar(fig, heatmap, heatmap_settings.r_min)
+    fig = make_colorbar(fig, heatmap)
 
     return fig, axes
