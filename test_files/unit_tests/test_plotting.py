@@ -68,15 +68,15 @@ def test_zero_and_missing_bins_are_opaque_dark_gray(data):
         plt.close(fig)
 
 
-def test_multi_panel_colorbar_uses_heatmap_scale_with_helix_overlays():
-    """The colorbar describes the density mesh rather than the helix scatter."""
+def test_multi_panel_colorbar_uses_heatmap_scale_with_landmark_overlays():
+    """The colorbar describes the density mesh rather than the landmark scatter."""
     maximum = 3
     settings = HeatmapSettings(["lipid"], ["outer", "inner"], (4, 8), maximum,
                                PolarBinGrid(0, 1, 1, 4))
     settings.colormap = make_custom_colormap()
     data = np.array([[0, 0.1, 1, maximum]])
-    helices = [np.array([0.5, 30]), np.array([0.5, 30])]
-    fig, axes = make_density_enrichment_heatmap([data, data], helices, settings)
+    landmarks = [np.array([0.5, 30]), np.array([0.5, 30])]
+    fig, axes = make_density_enrichment_heatmap([data, data], landmarks, settings)
     try:
         fig.canvas.draw()
         mesh = axes[-1].collections[-1]
@@ -160,46 +160,77 @@ def test_first_radial_bin_rejects_invalid_indices(index, error):
         plt.close(fig)
 
 
-@pytest.mark.parametrize("colorbychain", [False, True])
+@pytest.mark.parametrize("color_by_row", [False, True])
 @pytest.mark.parametrize("r_min", [0, 20, 40])
-def test_helix_cutoff_preserves_colors_coordinates_and_boundary(colorbychain, r_min):
+def test_landmark_cutoff_preserves_colors_coordinates_and_boundary(color_by_row, r_min):
     from matplotlib.colors import to_rgba
-    from dta.plotting import plot_helices
+    from dta.plotting import plot_landmarks
 
-    helices = np.array([[5., 0., 20., 90., 30., 180.],
+    landmarks = np.array([[5., 0., 20., 90., 30., 180.],
                         [30., 45., 5., 135., 20., 225.]])
-    original = helices.copy()
+    original = landmarks.copy()
     palette = ["purple", "blue", "green"]
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
     try:
-        plot_helices(helices, colorbychain, ax, colorlist=palette, r_min=r_min)
-        for chain, (coordinates, markers) in enumerate(zip(helices, ax.collections)):
+        plot_landmarks(landmarks, color_by_row=color_by_row, ax=ax, colorlist=palette, r_min=r_min)
+        for row_index, (coordinates, markers) in enumerate(zip(landmarks, ax.collections)):
             visible = coordinates[::2] >= r_min
             expected = np.column_stack((np.deg2rad(coordinates[1::2][visible]),
                                         coordinates[::2][visible]))
             np.testing.assert_array_equal(markers.get_offsets(), expected)
             if np.any(visible):
-                expected_colors = ([to_rgba(palette[chain])] if colorbychain else
+                expected_colors = ([to_rgba(palette[row_index])] if color_by_row else
                                    [to_rgba(color) for color, keep in zip(palette, visible) if keep])
                 np.testing.assert_array_equal(markers.get_facecolors(), expected_colors)
                 expected_edges = np.array(expected_colors)
                 expected_edges[:, :3] *= 0.5
                 np.testing.assert_array_equal(markers.get_edgecolors(), expected_edges)
-        np.testing.assert_array_equal(helices, original)
+        np.testing.assert_array_equal(landmarks, original)
     finally:
         plt.close(fig)
 
 
-def test_heatmap_uses_first_radial_bin_to_hide_helix_markers():
+def test_heatmap_uses_first_radial_bin_to_hide_landmark_markers():
     settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4), 5,
                                PolarBinGrid(0, 40, 4, 4), first_radial_bin=2)
     settings.colormap = make_custom_colormap()
-    helices = np.array([5., 0., 20., 90., 30., 180.])
-    original = helices.copy()
-    fig, axes = make_density_enrichment_heatmap([np.ones((4, 4))], [helices], settings)
+    landmarks = np.array([5., 0., 20., 90., 30., 180.])
+    original = landmarks.copy()
+    fig, axes = make_density_enrichment_heatmap([np.ones((4, 4))], [landmarks], settings)
     try:
         markers = axes[0].collections[0]
         np.testing.assert_array_equal(markers.get_offsets()[:, 1], [20, 30])
-        np.testing.assert_array_equal(helices, original)
+        np.testing.assert_array_equal(landmarks, original)
+    finally:
+        plt.close(fig)
+
+
+@pytest.mark.parametrize("input_type", [list, np.array])
+def test_flat_landmark_input_preserves_seven_rgba_colors(input_type):
+    from dta.plotting import plot_landmarks
+
+    radii = np.arange(7) * 10.
+    angles_degrees = np.arange(7) * 30.
+    coordinates = input_type(np.column_stack((radii, angles_degrees)).ravel())
+    palette = np.array([
+        [0.2, 0.4, 0.6, 0.3], [0.3, 0.5, 0.7, 0.4],
+        [0.4, 0.6, 0.8, 0.5], [0.5, 0.7, 0.9, 0.6],
+        [0.6, 0.8, 1.0, 0.7], [0.7, 0.9, 0.2, 0.8],
+        [0.8, 1.0, 0.3, 0.9],
+    ])
+    original_palette = palette.copy()
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    try:
+        result = plot_landmarks(coordinates, False, ax, markersize=50,
+                              colorlist=palette, r_min=20)
+        assert result is ax
+        markers = ax.collections[0]
+        expected_positions = np.column_stack((np.deg2rad(angles_degrees[2:]), radii[2:]))
+        np.testing.assert_array_equal(markers.get_offsets(), expected_positions)
+        np.testing.assert_array_equal(markers.get_facecolors(), palette[2:])
+        np.testing.assert_array_equal(markers.get_edgecolors()[:, :3], palette[2:, :3] / 2)
+        np.testing.assert_array_equal(markers.get_edgecolors()[:, 3], palette[2:, 3])
+        np.testing.assert_array_equal(markers.get_linewidths(), [1.0])
+        np.testing.assert_array_equal(palette, original_palette)
     finally:
         plt.close(fig)

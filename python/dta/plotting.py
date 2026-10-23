@@ -193,17 +193,17 @@ def create_heatmap_figure_and_axes(heatmap_settings: HeatmapSettings) -> plt.Fig
     return fig
 
 
-def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_colors: list[str] | None = None, r_min: float = 0):
+def plot_landmarks_on_panels(fig: plt.Figure, landmarks: list[np.ndarray], landmark_colors: list[str] | None = None, r_min: float = 0):
     """
-    Plot helix locations on each panel present in the figure.
+    Plot landmark locations on each panel present in the figure.
 
     Parameters
     ----------
     fig : matplotlib Figure object
         The Figure containing your heatmap panels.
-    helices : list of numpy ndarrays
-        List containing one set of helix coordinates per panel.
-    helix_colors : list of str or None
+    landmarks : list of numpy ndarrays
+        List containing one set of landmark coordinates per panel.
+    landmark_colors : list of str or None
         Optional list containing matplotlib-recognized colors. Default is None.
     r_min : float, optional
         Hide markers whose radial coordinate is below this radius. Defaults to 0.
@@ -211,15 +211,18 @@ def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_col
     Returns
     -------
     fig : matplotlib Figure
-        The Figure containing your heatmap panels, now with helix locations.
+        The Figure containing your heatmap panels, now with landmark locations.
 
     """
-    if not isinstance(helices, list):
-        raise TypeError(f"{helices} must be a list instead of a {type(helices)}.")
-    if len(helices) != np.ravel(fig.axes).shape[0]:
-        raise RuntimeError("Need to provide as many sets of helices as there are axes.")
-    for ax, helix_set in zip(np.ravel(fig.axes), helices, strict=True):
-        ax = plot_helices(helix_set, False, ax, 50, helix_colors, r_min=r_min)
+    if not isinstance(landmarks, list):
+        raise TypeError(f"{landmarks} must be a list instead of a {type(landmarks)}.")
+    if len(landmarks) != np.ravel(fig.axes).shape[0]:
+        raise RuntimeError("Need to provide as many sets of landmarks as there are axes.")
+    for ax, landmark_set in zip(np.ravel(fig.axes), landmarks, strict=True):
+        ax = plot_landmarks(
+            landmarks=landmark_set, color_by_row=False, ax=ax,
+            markersize=50, colorlist=landmark_colors, r_min=r_min,
+        )
     return fig
 
 
@@ -459,46 +462,81 @@ def calc_x_50(deltaG, error, temperature):
     return x_50, err_on_x_50
 
 
-def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None, r_min=0):
-    """
-    Plot helices on a polar plot.
+def plot_landmarks(landmarks, color_by_row, ax, markersize=3, colorlist=None, r_min=0):
+    """Draw colored landmark markers on a polar axes, hiding those below r_min.
 
     Parameters
     ----------
-    - helices (list or array): The helix data to be plotted. Each element in the list represents a set of helices, where each set is a list of angles and radii.
-    - colorbychain (bool): A flag to determine if the helices should be colored by chain.
-    - ax (matplotlib.axes.Axes): The polar subplot axis on which to plot the helices.
-    - markersize (int, optional): The size of the scatter markers. Defaults to 3.
-    - colorlist (list, optional): The list of colors to use for coloring the helices. Defaults to a predefined list of colors.
-    - r_min (float, optional): Hide markers with radius below this value. Markers
-      at the boundary remain visible. Coordinates and helix colors are preserved.
+    landmarks : array-like
+        Each input row is a group of landmark coordinates, alternating radius
+        and angle:
+        [radius_1, angle_1, radius_2, angle_2, ...]. Angles are in degrees;
+        radii use the same units as the density grid. A single flat row is
+        also accepted.
+    color_by_row : bool
+        True: every marker in input row i uses colorlist[i].
+        False: marker j in every row uses colorlist[j].
+    ax : matplotlib.axes.Axes
+        Polar axes on which to draw the markers.
+    markersize : float, optional
+        Marker area in points squared, passed to scatter as s. Default is 3.
+    colorlist : list of colors, optional
+        One color per input row if color_by_row is True; otherwise one color per
+        landmark position. Defaults to blue, cyan, green, purple, brown, olive,
+        and orange. Hiding a landmark (with r_min) does not reassign the remaining
+        colors.
+    r_min : float, optional
+        Minimum visible radius. Markers exactly at this radius are included.
+        Defaults to 0.
 
     Returns
     -------
-    - ax (matplotlib.axes.Axes): The modified polar subplot axis with the helices plotted.
-
+    matplotlib.axes.Axes
+        The supplied axes with landmark markers added. Each marker has a
+        1.0-point outline whose RGB values are half its fill color's RGB
+        values; opacity is preserved.
     """
-    if isinstance(helices, list):
-        helices = np.array(helices, dtype=np.float64)
+    # Treat a flat coordinate list as one row; preserve existing rows.
+    coordinate_rows = np.atleast_2d(np.asarray(landmarks, dtype=float))
     if colorlist is None:
-        colorlist = ["tab:blue", "tab:cyan", "tab:green", "tab:purple", "tab:brown", "tab:olive", "tab:orange"]
-    if len(np.shape(helices)) == 1:
-        helices = np.reshape(helices, (1, len(helices)))
-    for i, pro in enumerate(helices[:]):
-        radii = pro[::2]
-        visible = radii >= r_min
-        if colorbychain:
-            colors = colorlist[i]
+        colorlist = [
+            "tab:blue", "tab:cyan", "tab:green", "tab:purple",
+            "tab:brown", "tab:olive", "tab:orange",
+        ]
+
+    for row_index, row_coordinates in enumerate(coordinate_rows):
+        # Turn [radius, angle, radius, angle, ...] into one pair per landmark.
+        landmark_positions = row_coordinates.reshape(-1, 2)
+        radii = landmark_positions[:, 0]
+        angles_degrees = landmark_positions[:, 1]
+        visible_landmarks = radii >= r_min
+
+        # Assign colors before filtering so hidden landmarks keep their slots.
+        if color_by_row:
+            fill_colors = mpl.colors.to_rgba_array(colorlist[row_index])
         else:
-            colors = np.asarray(colorlist[:len(radii)])[visible]
-        edgecolors = mpl.colors.to_rgba_array(colors)
-        edgecolors[:, :3] *= 0.5
-        ax.scatter(np.deg2rad(pro[1::2][visible]), radii[visible], color=colors,
-                   edgecolors=edgecolors, linewidths=0.8, zorder=1, s=markersize)
+            colors_by_landmark = mpl.colors.to_rgba_array(colorlist[:len(radii)])
+            fill_colors = colors_by_landmark[visible_landmarks]
+
+        # Darken red, green and blue by 50%, leaving opacity unchanged.
+        outline_colors = [
+            (red * 0.5, green * 0.5, blue * 0.5, opacity)
+            for red, green, blue, opacity in fill_colors
+        ]
+
+        ax.scatter(
+            x=np.deg2rad(angles_degrees[visible_landmarks]),
+            y=radii[visible_landmarks],
+            s=markersize,
+            color=fill_colors,
+            edgecolors=outline_colors,
+            linewidths=1.0,
+            zorder=1,
+        )
     return ax
 
 
-def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings, helix_colors=None):
+def make_density_enrichment_heatmap(enrichments_list, landmarks, heatmap_settings, landmark_colors=None):
     """
     Make a figure and axes objects. Plot heatmaps of density enrichment for each\
     system on each axes object. Return the figure and axes.
@@ -508,12 +546,12 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings,
     enrichments_list : list
         A list of 2d ndarrays containing enrichment values for each bin in the
         lattice. One list item per heatmap.
-    helices : list of ndarrays
-        Each ndarray in the list contains helix coordinates. There should be one
+    landmarks : list of ndarrays
+        Each ndarray in the list contains landmark coordinates. There should be one
         ndarray per heatmap.
     heatmap_settings : HeatmapSettings object
         Contains all of the auxiliary information needed to plot heatmaps.
-    helix_colors : list or None
+    landmark_colors : list or None
         Optional list of matplotlib-recognized colors. Default is None.
 
     Returns
@@ -536,7 +574,7 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings,
     if len(enrichments_list) != axes.shape[0]:
         raise IndexError(f"Number of enrichments_list items ({len(enrichments_list)}) does not match number of figure panels ({axes.shape[0]}).")
 
-    fig = plot_helices_on_panels(fig, helices, helix_colors, r_min=heatmap_settings.r_min)
+    fig = plot_landmarks_on_panels(fig, landmarks, landmark_colors, r_min=heatmap_settings.r_min)
     for index, ax in enumerate(axes):
         heatmap = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
     fig = make_colorbar(fig, heatmap)
