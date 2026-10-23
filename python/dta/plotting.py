@@ -491,8 +491,10 @@ def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None, r_min=
             colors = colorlist[i]
         else:
             colors = np.asarray(colorlist[:len(radii)])[visible]
+        edgecolors = mpl.colors.to_rgba_array(colors)
+        edgecolors[:, :3] *= 0.5
         ax.scatter(np.deg2rad(pro[1::2][visible]), radii[visible], color=colors,
-                   linewidth=None, zorder=1, s=markersize)
+                   edgecolors=edgecolors, linewidths=0.8, zorder=1, s=markersize)
     return ax
 
 

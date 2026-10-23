@@ -182,6 +182,9 @@ def test_helix_cutoff_preserves_colors_coordinates_and_boundary(colorbychain, r_
                 expected_colors = ([to_rgba(palette[chain])] if colorbychain else
                                    [to_rgba(color) for color, keep in zip(palette, visible) if keep])
                 np.testing.assert_array_equal(markers.get_facecolors(), expected_colors)
+                expected_edges = np.array(expected_colors)
+                expected_edges[:, :3] *= 0.5
+                np.testing.assert_array_equal(markers.get_edgecolors(), expected_edges)
         np.testing.assert_array_equal(helices, original)
     finally:
         plt.close(fig)
