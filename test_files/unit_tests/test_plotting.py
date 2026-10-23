@@ -200,6 +200,7 @@ def test_heatmap_uses_first_radial_bin_to_hide_landmark_markers():
     try:
         markers = axes[0].collections[0]
         np.testing.assert_array_equal(markers.get_offsets()[:, 1], [20, 30])
+        assert axes[0].patches[0].get_zorder() > markers.get_zorder()
         np.testing.assert_array_equal(landmarks, original)
     finally:
         plt.close(fig)

@@ -317,10 +317,10 @@ def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettin
                            zorder=0, edgecolors="none", linewidth=0,
                            antialiased=False)
     if r_min > 0:
-        # A full polar bar covers the excluded disk without adding density bins.
+        # Cover the excluded disk and marker portions below r_min without adding bins.
         ax.bar(0, r_min, width=2 * np.pi,
                bottom=0, align="edge", facecolor="white", edgecolor="none",
-               linewidth=0, zorder=0.5)
+               linewidth=0, zorder=2)
         outer_border = ax.spines["polar"]
         theta = np.linspace(0, 2 * np.pi, 361)
         ax.plot(theta, np.full_like(theta, r_min),
