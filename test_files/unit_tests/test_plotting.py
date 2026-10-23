@@ -234,3 +234,32 @@ def test_flat_landmark_input_preserves_seven_rgba_colors(input_type):
         np.testing.assert_array_equal(palette, original_palette)
     finally:
         plt.close(fig)
+
+
+@pytest.mark.parametrize("color_by_row", [False, True])
+def test_heatmap_landmark_color_settings(color_by_row):
+    from matplotlib.colors import to_rgba
+
+    palette = ["gold", "navy", "teal"]
+    settings = HeatmapSettings(
+        ["lipid"], ["leaflet"], (4, 4), 5, PolarBinGrid(0, 40, 4, 4),
+        first_radial_bin=2, landmark_colors=palette,
+    )
+    settings.colormap = make_custom_colormap()
+    settings.color_landmarks_by_row = color_by_row
+    landmarks = np.array([[5., 0., 20., 90., 30., 180.],
+                          [30., 45., 5., 135., 20., 225.]])
+    original = landmarks.copy()
+    fig, axes = make_density_enrichment_heatmap([np.ones((4, 4))], [landmarks], settings)
+    try:
+        for row_index, markers in enumerate(axes[0].collections[:2]):
+            positions = landmarks[row_index].reshape(-1, 2)
+            visible = positions[:, 0] >= 20
+            np.testing.assert_array_equal(markers.get_offsets()[:, 1], positions[visible, 0])
+            expected_colors = ([to_rgba(palette[row_index])] if color_by_row else
+                               [to_rgba(color) for color, keep in zip(palette, visible) if keep])
+            np.testing.assert_array_equal(markers.get_facecolors(), expected_colors)
+        np.testing.assert_array_equal(landmarks, original)
+        assert settings.landmark_colors == palette
+    finally:
+        plt.close(fig)

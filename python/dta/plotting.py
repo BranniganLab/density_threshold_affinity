@@ -41,6 +41,11 @@ class HeatmapSettings:
         First radial bin to display, using zero-based indices in the original
         grid. Lower bins appear as a white N/A disk with a black boundary. Defaults to 0. This affects
         plotting only; input arrays, grid geometry and site indices are preserved.
+    landmark_colors : list of colors or None, optional
+        Colors for landmark markers. None uses plot_landmarks' default palette.
+    color_landmarks_by_row : bool, optional
+        True assigns one color per coordinate row; False assigns colors by
+        marker position within each row. Defaults to False.
     colormap : matplotlib cmap object
         The colormap to use. Provided after init.
     colorbar_range : 3-tuple
@@ -59,6 +64,8 @@ class HeatmapSettings:
     max_enrichment: InitVar[float]
     grid: PolarBinGrid
     first_radial_bin: int = 0
+    landmark_colors: list[str] | None = None
+    color_landmarks_by_row: bool = False
     colormap: mpl.colors.ListedColormap = field(init=False)
     colorbar_range: tuple = field(init=False)
 
@@ -193,7 +200,9 @@ def create_heatmap_figure_and_axes(heatmap_settings: HeatmapSettings) -> plt.Fig
     return fig
 
 
-def plot_landmarks_on_panels(fig: plt.Figure, landmarks: list[np.ndarray], landmark_colors: list[str] | None = None, r_min: float = 0):
+def plot_landmarks_on_panels(
+    fig: plt.Figure, landmarks: list[np.ndarray], heatmap_settings: HeatmapSettings
+):
     """
     Plot landmark locations on each panel present in the figure.
 
@@ -203,10 +212,8 @@ def plot_landmarks_on_panels(fig: plt.Figure, landmarks: list[np.ndarray], landm
         The Figure containing your heatmap panels.
     landmarks : list of numpy ndarrays
         List containing one set of landmark coordinates per panel.
-    landmark_colors : list of str or None
-        Optional list containing matplotlib-recognized colors. Default is None.
-    r_min : float, optional
-        Hide markers whose radial coordinate is below this radius. Defaults to 0.
+    heatmap_settings : HeatmapSettings
+        Supplies landmark colors, row-coloring mode and minimum visible radius.
 
     Returns
     -------
@@ -220,8 +227,11 @@ def plot_landmarks_on_panels(fig: plt.Figure, landmarks: list[np.ndarray], landm
         raise RuntimeError("Need to provide as many sets of landmarks as there are axes.")
     for ax, landmark_set in zip(np.ravel(fig.axes), landmarks, strict=True):
         ax = plot_landmarks(
-            landmarks=landmark_set, color_by_row=False, ax=ax,
-            markersize=50, colorlist=landmark_colors, r_min=r_min,
+            landmarks=landmark_set,
+            color_by_row=heatmap_settings.color_landmarks_by_row,
+            ax=ax, markersize=50,
+            colorlist=heatmap_settings.landmark_colors,
+            r_min=heatmap_settings.r_min,
         )
     return fig
 
@@ -536,7 +546,7 @@ def plot_landmarks(landmarks, color_by_row, ax, markersize=3, colorlist=None, r_
     return ax
 
 
-def make_density_enrichment_heatmap(enrichments_list, landmarks, heatmap_settings, landmark_colors=None):
+def make_density_enrichment_heatmap(enrichments_list, landmarks, heatmap_settings):
     """
     Make a figure and axes objects. Plot heatmaps of density enrichment for each\
     system on each axes object. Return the figure and axes.
@@ -551,8 +561,6 @@ def make_density_enrichment_heatmap(enrichments_list, landmarks, heatmap_setting
         ndarray per heatmap.
     heatmap_settings : HeatmapSettings object
         Contains all of the auxiliary information needed to plot heatmaps.
-    landmark_colors : list or None
-        Optional list of matplotlib-recognized colors. Default is None.
 
     Returns
     -------
@@ -574,7 +582,7 @@ def make_density_enrichment_heatmap(enrichments_list, landmarks, heatmap_setting
     if len(enrichments_list) != axes.shape[0]:
         raise IndexError(f"Number of enrichments_list items ({len(enrichments_list)}) does not match number of figure panels ({axes.shape[0]}).")
 
-    fig = plot_landmarks_on_panels(fig, landmarks, landmark_colors, r_min=heatmap_settings.r_min)
+    fig = plot_landmarks_on_panels(fig, landmarks, heatmap_settings)
     for index, ax in enumerate(axes):
         heatmap = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
     fig = make_colorbar(fig, heatmap)
