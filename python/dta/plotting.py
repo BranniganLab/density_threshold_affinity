@@ -10,7 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib import gridspec
-from matplotlib.colors import ListedColormap, Normalize
+from matplotlib.collections import QuadMesh
+from matplotlib.colors import ListedColormap, TwoSlopeNorm
 from scipy import constants
 from dta.utils import calculate_hist_mode
 from dta.Site import Site
@@ -36,6 +37,15 @@ class HeatmapSettings:
         Figure height and width, in inches.
     grid : PolarBinGrid
         Contains lattice information.
+    first_radial_bin : int, optional
+        First radial bin to display, using zero-based indices in the original
+        grid. Lower bins appear as a white N/A disk with a black boundary. Defaults to 0. This affects
+        plotting only; input arrays, grid geometry and site indices are preserved.
+    landmark_colors : list of colors or None, optional
+        Colors for landmark markers. None uses plot_landmarks' default palette.
+    color_landmarks_by_row : bool, optional
+        True assigns one color per coordinate row; False assigns colors by
+        marker position within each row. Defaults to False.
     colormap : matplotlib cmap object
         The colormap to use. Provided after init.
     colorbar_range : 3-tuple
@@ -53,6 +63,9 @@ class HeatmapSettings:
     fig_dims: tuple
     max_enrichment: InitVar[float]
     grid: PolarBinGrid
+    first_radial_bin: int = 0
+    landmark_colors: list[str] | None = None
+    color_landmarks_by_row: bool = False
     colormap: mpl.colors.ListedColormap = field(init=False)
     colorbar_range: tuple = field(init=False)
 
@@ -85,24 +98,34 @@ class HeatmapSettings:
             raise ValueError("max_enrichment must be greater than 1.")
         self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
 
+    @property
+    def r_min(self) -> float:
+        """Physical inner display radius derived from the original bin edges."""
+        index = self.first_radial_bin
+        if isinstance(index, (bool, np.bool_)) or not isinstance(index, (int, np.integer)):
+            raise TypeError("first_radial_bin must be a zero-based integer index")
+        if not 0 <= index < self.grid.r.n_bins:
+            raise ValueError(f"first_radial_bin must be between 0 and {self.grid.r.n_bins - 1}")
+        return self.grid.r.bin_edges[index]
+
 
 def make_custom_colormap() -> ListedColormap:
     """
-    Make a custom colormap for plotting. The colormap starts at 0.35 to ensure \
-    that there is a visual difference between 0 (no signal) and depleted (near-\
-    zero enrichment).
+    Make the gray-white-red colormap for density enrichment.
+
+    Depleted values use light gray through white; enriched values use white
+    through red. Zero-density bins are colored separately in plot_heatmap.
 
     Returns
     -------
-    my_cmap : matplotlib colormap
+    colormap : matplotlib colormap
         The colormap to use when plotting.
 
     """
-    depleted = plt.colormaps['RdGy_r']
-    enriched = plt.colormaps['bwr']
-    newcolors = np.concatenate([depleted(np.linspace(0.35, 0.5, 128)), enriched(np.linspace(0.5, 1, 128))])
-    my_cmap = ListedColormap(newcolors)
-    return my_cmap
+    depleted_colors = plt.colormaps['RdGy_r'](np.linspace(0.35, 0.5, 128))
+    enriched_colors = plt.colormaps['bwr'](np.linspace(0.5, 1, 128))
+    combined_colors = np.concatenate([depleted_colors, enriched_colors])
+    return ListedColormap(combined_colors)
 
 
 def outline_site(
@@ -177,63 +200,93 @@ def create_heatmap_figure_and_axes(heatmap_settings: HeatmapSettings) -> plt.Fig
     return fig
 
 
-def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_colors: list[str] | None = None):
+def plot_landmarks_on_panels(
+    fig: plt.Figure, landmarks: list[np.ndarray], heatmap_settings: HeatmapSettings
+):
     """
-    Plot helix locations on each panel present in the figure.
+    Plot landmark locations on each panel present in the figure.
 
     Parameters
     ----------
     fig : matplotlib Figure object
         The Figure containing your heatmap panels.
-    helices : list of numpy ndarrays
-        List containing one set of helix coordinates per panel.
-    helix_colors : list of str or None
-        Optional list containing matplotlib-recognized colors. Default is None.
+    landmarks : list of numpy ndarrays
+        List containing one set of landmark coordinates per panel.
+    heatmap_settings : HeatmapSettings
+        Supplies landmark colors, row-coloring mode and minimum visible radius.
 
     Returns
     -------
     fig : matplotlib Figure
-        The Figure containing your heatmap panels, now with helix locations.
+        The Figure containing your heatmap panels, now with landmark locations.
 
     """
-    if not isinstance(helices, list):
-        raise TypeError(f"{helices} must be a list instead of a {type(helices)}.")
-    if len(helices) != np.ravel(fig.axes).shape[0]:
-        raise RuntimeError("Need to provide as many sets of helices as there are axes.")
-    for ax, helix_set in zip(np.ravel(fig.axes), helices, strict=True):
-        ax = plot_helices(helix_set, False, ax, 50, helix_colors)
+    if not isinstance(landmarks, list):
+        raise TypeError(f"{landmarks} must be a list instead of a {type(landmarks)}.")
+    if len(landmarks) != np.ravel(fig.axes).shape[0]:
+        raise RuntimeError("Need to provide as many sets of landmarks as there are axes.")
+    for ax, landmark_set in zip(np.ravel(fig.axes), landmarks, strict=True):
+        ax = plot_landmarks(
+            landmarks=landmark_set,
+            color_by_row=heatmap_settings.color_landmarks_by_row,
+            ax=ax, markersize=50,
+            colorlist=heatmap_settings.landmark_colors,
+            r_min=heatmap_settings.r_min,
+        )
     return fig
 
 
-def make_colorbar(fig: plt.Figure, heatmap_settings: HeatmapSettings) -> plt.Figure:
+def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     """
-    Generate the colorbar. Must be done after plot_heatmap.
+    Generate the colorbar with a zero-density swatch.
+
+    Center the continuous colorbar above the heatmap panels and offset the
+    zero swatch to its left.
+    Must be done after plot_heatmap.
 
     Parameters
     ----------
     fig : fig
         The figure object from matplotlib.
-    heatmap_settings : HeatmapSettings object
-        All the auxiliary information needed to plot a heatmap.
+    heatmap : matplotlib.collections.QuadMesh
+        A plotted heatmap supplying the colormap and normalization.
 
     Returns
     -------
     fig
 
     """
-    vmin, vmid, vmax = heatmap_settings.colorbar_range
     fig.subplots_adjust(right=0.8)
-    cbar_ax = fig.add_axes([0.21, 1, 0.5, 0.02])
-    sm = mpl.cm.ScalarMappable(cmap=heatmap_settings.colormap)
-    cbar = fig.colorbar(sm, cax=cbar_ax, orientation="horizontal")
-    cbar.set_ticks(np.linspace(0, 1, 3))
-    cbar.ax.set_xticklabels([round(vmin, 2), vmid, vmax])
+    colorbar_width = 0.5
+    colorbar_height = 0.02
+    gap = 0.045
+    # Convert the height to a width that makes the swatch physically square.
+    swatch_width = colorbar_height * fig.get_figheight() / fig.get_figwidth()
+    panels_center = (fig.subplotpars.left + fig.subplotpars.right) / 2
+    colorbar_left = panels_center - colorbar_width / 2
+    cbar_ax = fig.add_axes([colorbar_left, 1, colorbar_width, colorbar_height])
+    colorbar = fig.colorbar(heatmap, cax=cbar_ax, orientation="horizontal")
+    colorbar.set_ticks([heatmap.norm.vmin, heatmap.norm.vcenter, heatmap.norm.vmax])
+    # Use the colorbar's full height so the swatch always matches its thickness.
+    zero_ax = cbar_ax.inset_axes(
+        [-(swatch_width + gap) / colorbar_width, 0,
+         swatch_width / colorbar_width, 1],
+        label="zero_density_key", facecolor=heatmap.cmap.get_bad(),
+    )
+    zero_ax.set_xticks([0.5], labels=["0"])
+    zero_ax.set_yticks([])
+
     return fig
 
 
-def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettings) -> plt.Axes:
+def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettings) -> QuadMesh:
     """
-    Plot a heatmap on a pre-existing axes object.
+    Plot a heatmap, with exactly-zero values shown in muted dark gray.
+
+    Missing or masked values are also shown in muted dark gray. Bins below
+    first_radial_bin are set to NaN in a plotting copy and covered by a white
+    N/A disk with an outline matching the outer polar spine. Original data and radial indices are preserved. The disk also
+    includes the region inside the grid's minimum radius.
 
     Parameters
     ----------
@@ -246,19 +299,36 @@ def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettin
 
     Returns
     -------
-    ax : matplotlib.pyplot axes object
-        The axes object, which now contains your heatmap.
+    heatmap : matplotlib.collections.QuadMesh
+        The plotted heatmap, suitable for creating a matching colorbar.
 
     """
-    vmin, vmid, vmax = heatmap_settings.colorbar_range
-    norm = MidpointNormalize(midpoint=vmid, vmin=vmin, vmax=vmax)
+    minimum, midpoint, maximum = heatmap_settings.colorbar_range
+    norm = TwoSlopeNorm(vmin=minimum, vcenter=midpoint, vmax=maximum)
+    r_min = heatmap_settings.r_min
+    plot_data = np.ma.array(data, dtype=float, copy=True)
+    plot_data[:heatmap_settings.first_radial_bin, :] = np.nan
+    plot_data = np.ma.masked_equal(plot_data, 0)
+    colormap = heatmap_settings.colormap.with_extremes(bad="#666666")
     ax.grid(False)
     r_vals = heatmap_settings.grid.r_grid
     theta_vals = heatmap_settings.grid.theta_grid
-    ax.pcolormesh(theta_vals, r_vals, data, cmap=heatmap_settings.colormap, norm=norm, zorder=0, edgecolors='face', linewidth=0)
+    heatmap = ax.pcolormesh(theta_vals, r_vals, plot_data, cmap=colormap, norm=norm,
+                           zorder=0, edgecolors="none", linewidth=0,
+                           antialiased=False)
+    if r_min > 0:
+        # Cover the excluded disk and marker portions below r_min without adding bins.
+        ax.bar(0, r_min, width=2 * np.pi,
+               bottom=0, align="edge", facecolor="white", edgecolor="none",
+               linewidth=0, zorder=2)
+        outer_border = ax.spines["polar"]
+        theta = np.linspace(0, 2 * np.pi, 361)
+        ax.plot(theta, np.full_like(theta, r_min),
+                color=outer_border.get_edgecolor(), linewidth=outer_border.get_linewidth(),
+                zorder=outer_border.get_zorder())
     ax.set_xticklabels([])
     ax.set_yticklabels([])
-    return ax
+    return heatmap
 
 
 def plot_histogram(ax, data, area, bulk_mode="NULL", plot_probability=False, show_target=False):
@@ -402,60 +472,81 @@ def calc_x_50(deltaG, error, temperature):
     return x_50, err_on_x_50
 
 
-# This class comes from Liam Sharp and could potentially be rewritten to be
-# more clear.
-class MidpointNormalize(Normalize):
-    """
-    Normalise the colorbar so that diverging bars work their way either side from a prescribed midpoint value).
-
-    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
-    """
-
-    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
-        self.midpoint = midpoint
-        Normalize.__init__(self, vmin, vmax, clip)
-
-    def __call__(self, value, clip=None):
-        # I'm ignoring masked values and all kinds of edge cases to make a
-        # simple example...
-        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
-        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
-
-
-def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
-    """
-    Plot helices on a polar plot.
+def plot_landmarks(landmarks, color_by_row, ax, markersize=3, colorlist=None, r_min=0):
+    """Draw colored landmark markers on a polar axes, hiding those below r_min.
 
     Parameters
     ----------
-    - helices (list or array): The helix data to be plotted. Each element in the list represents a set of helices, where each set is a list of angles and radii.
-    - colorbychain (bool): A flag to determine if the helices should be colored by chain.
-    - ax (matplotlib.axes.Axes): The polar subplot axis on which to plot the helices.
-    - markersize (int, optional): The size of the scatter markers. Defaults to 3.
-    - colorlist (list, optional): The list of colors to use for coloring the helices. Defaults to a predefined list of colors.
+    landmarks : array-like
+        Each input row is a group of landmark coordinates, alternating radius
+        and angle:
+        [radius_1, angle_1, radius_2, angle_2, ...]. Angles are in degrees;
+        radii use the same units as the density grid. A single flat row is
+        also accepted.
+    color_by_row : bool
+        True: every marker in input row i uses colorlist[i].
+        False: marker j in every row uses colorlist[j].
+    ax : matplotlib.axes.Axes
+        Polar axes on which to draw the markers.
+    markersize : float, optional
+        Marker area in points squared, passed to scatter as s. Default is 3.
+    colorlist : list of colors, optional
+        One color per input row if color_by_row is True; otherwise one color per
+        landmark position. Defaults to blue, cyan, green, purple, brown, olive,
+        and orange. Hiding a landmark (with r_min) does not reassign the remaining
+        colors.
+    r_min : float, optional
+        Minimum visible radius. Markers exactly at this radius are included.
+        Defaults to 0.
 
     Returns
     -------
-    - ax (matplotlib.axes.Axes): The modified polar subplot axis with the helices plotted.
-
+    matplotlib.axes.Axes
+        The supplied axes with landmark markers added. Each marker has a
+        1.0-point outline whose RGB values are half its fill color's RGB
+        values; opacity is preserved.
     """
-    if isinstance(helices, list):
-        helices = np.array(helices, dtype=np.float64)
+    # Treat a flat coordinate list as one row; preserve existing rows.
+    coordinate_rows = np.atleast_2d(np.asarray(landmarks, dtype=float))
     if colorlist is None:
-        colorlist = ["tab:blue", "tab:cyan", "tab:green", "tab:purple", "tab:brown", "tab:olive", "tab:orange"]
-    if len(np.shape(helices)) == 1:
-        helices = np.reshape(helices, (1, len(helices)))
-    for i, pro in enumerate(helices[:]):
-        if colorbychain:
-            colors = colorlist[i]
+        colorlist = [
+            "tab:blue", "tab:cyan", "tab:green", "tab:purple",
+            "tab:brown", "tab:olive", "tab:orange",
+        ]
+
+    for row_index, row_coordinates in enumerate(coordinate_rows):
+        # Turn [radius, angle, radius, angle, ...] into one pair per landmark.
+        landmark_positions = row_coordinates.reshape(-1, 2)
+        radii = landmark_positions[:, 0]
+        angles_degrees = landmark_positions[:, 1]
+        visible_landmarks = radii >= r_min
+
+        # Assign colors before filtering so hidden landmarks keep their slots.
+        if color_by_row:
+            fill_colors = mpl.colors.to_rgba_array(colorlist[row_index])
         else:
-            colors = colorlist[:len(pro[::2])]
-        ax.scatter(np.deg2rad(pro[1::2]), pro[::2], color=colors, linewidth=None,
-                   zorder=1, s=markersize)
+            colors_by_landmark = mpl.colors.to_rgba_array(colorlist[:len(radii)])
+            fill_colors = colors_by_landmark[visible_landmarks]
+
+        # Darken red, green and blue by 50%, leaving opacity unchanged.
+        outline_colors = [
+            (red * 0.5, green * 0.5, blue * 0.5, opacity)
+            for red, green, blue, opacity in fill_colors
+        ]
+
+        ax.scatter(
+            x=np.deg2rad(angles_degrees[visible_landmarks]),
+            y=radii[visible_landmarks],
+            s=markersize,
+            color=fill_colors,
+            edgecolors=outline_colors,
+            linewidths=1.0,
+            zorder=1,
+        )
     return ax
 
 
-def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings, helix_colors=None):
+def make_density_enrichment_heatmap(enrichments_list, landmarks, heatmap_settings):
     """
     Make a figure and axes objects. Plot heatmaps of density enrichment for each\
     system on each axes object. Return the figure and axes.
@@ -465,13 +556,11 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings,
     enrichments_list : list
         A list of 2d ndarrays containing enrichment values for each bin in the
         lattice. One list item per heatmap.
-    helices : list of ndarrays
-        Each ndarray in the list contains helix coordinates. There should be one
+    landmarks : list of ndarrays
+        Each ndarray in the list contains landmark coordinates. There should be one
         ndarray per heatmap.
     heatmap_settings : HeatmapSettings object
         Contains all of the auxiliary information needed to plot heatmaps.
-    helix_colors : list or None
-        Optional list of matplotlib-recognized colors. Default is None.
 
     Returns
     -------
@@ -493,9 +582,9 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings,
     if len(enrichments_list) != axes.shape[0]:
         raise IndexError(f"Number of enrichments_list items ({len(enrichments_list)}) does not match number of figure panels ({axes.shape[0]}).")
 
-    fig = plot_helices_on_panels(fig, helices, helix_colors)
+    fig = plot_landmarks_on_panels(fig, landmarks, heatmap_settings)
     for index, ax in enumerate(axes):
-        ax = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
-    fig = make_colorbar(fig, heatmap_settings)
+        heatmap = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
+    fig = make_colorbar(fig, heatmap)
 
     return fig, axes
