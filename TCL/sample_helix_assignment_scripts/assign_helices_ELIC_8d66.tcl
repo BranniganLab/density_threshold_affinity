@@ -29,6 +29,6 @@ $M4 delete
 
 # Center the system
 set tocenter [atomselect top "occupancy > 0"]
-$selall moveby [vecexpr -1 [measure center $tocenter] mult]
+$selall moveby [vecscale -1.0 [measure center $tocenter]]
 $selall delete
 
