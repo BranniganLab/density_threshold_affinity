@@ -268,7 +268,7 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     colorbar = fig.colorbar(heatmap, cax=cbar_ax, orientation="horizontal")
     if isinstance(heatmap.norm, TwoSlopeNorm):
         colorbar.set_ticks([heatmap.norm.vmin, heatmap.norm.vcenter, heatmap.norm.vmax])
-        colorbar.set_label("Density enrichment (× expected)")
+        colorbar.set_label("Density enrichment")
     else:
         colorbar.set_label(r"Bead density (beads / $\mathrm{\AA}^2$)")
     # Use the colorbar's full height so the swatch always matches its thickness.
