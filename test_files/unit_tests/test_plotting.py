@@ -9,7 +9,7 @@ from dta.bin_logic import PolarBinGrid
 from dta.plotting import (
     HeatmapSettings,
     make_custom_colormap,
-    make_density_enrichment_heatmap,
+    make_heatmap,
     plot_heatmap,
 )
 
@@ -76,7 +76,7 @@ def test_multi_panel_colorbar_uses_heatmap_scale_with_landmark_overlays():
     settings.colormap = make_custom_colormap()
     data = np.array([[0, 0.1, 1, maximum]])
     landmarks = [np.array([0.5, 30]), np.array([0.5, 30])]
-    fig, axes = make_density_enrichment_heatmap([data, data], landmarks, settings)
+    fig, axes = make_heatmap([data, data], landmarks, settings)
     try:
         fig.canvas.draw()
         mesh = axes[-1].collections[-1]
@@ -109,7 +109,7 @@ def test_first_radial_bin_preserves_grid_data_and_retained_colors(first_bin, ori
         reference_mesh = plot_heatmap(reference_ax, data, settings)
         reference_fig.canvas.draw()
         settings.first_radial_bin = first_bin
-        fig, axes = make_density_enrichment_heatmap([data], [np.array([5, 30])], settings)
+        fig, axes = make_heatmap([data], [np.array([5, 30])], settings)
         fig.canvas.draw()
         mesh = axes[0].collections[-1]
         cutoff = grid.r.bin_edges[first_bin]
@@ -196,7 +196,7 @@ def test_heatmap_uses_first_radial_bin_to_hide_landmark_markers():
     settings.colormap = make_custom_colormap()
     landmarks = np.array([5., 0., 20., 90., 30., 180.])
     original = landmarks.copy()
-    fig, axes = make_density_enrichment_heatmap([np.ones((4, 4))], [landmarks], settings)
+    fig, axes = make_heatmap([np.ones((4, 4))], [landmarks], settings)
     try:
         markers = axes[0].collections[0]
         np.testing.assert_array_equal(markers.get_offsets()[:, 1], [20, 30])
@@ -251,7 +251,7 @@ def test_heatmap_landmark_color_settings(color_by_row):
     landmarks = np.array([[5., 0., 20., 90., 30., 180.],
                           [30., 45., 5., 135., 20., 225.]])
     original = landmarks.copy()
-    fig, axes = make_density_enrichment_heatmap([np.ones((4, 4))], [landmarks], settings)
+    fig, axes = make_heatmap([np.ones((4, 4))], [landmarks], settings)
     try:
         for row_index, markers in enumerate(axes[0].collections[:2]):
             positions = landmarks[row_index].reshape(-1, 2)
@@ -262,5 +262,29 @@ def test_heatmap_landmark_color_settings(color_by_row):
             np.testing.assert_array_equal(markers.get_facecolors(), expected_colors)
         np.testing.assert_array_equal(landmarks, original)
         assert settings.landmark_colors == palette
+    finally:
+        plt.close(fig)
+
+
+def test_density_panels_share_a_scale_based_on_visible_bins():
+    """Hidden inner bins do not wash out the density in either panel."""
+    settings = HeatmapSettings(
+        ["lipid"], ["outer", "inner"], (4, 8), 5,
+        PolarBinGrid(0, 20, 2, 4), first_radial_bin=1, quantity="density",
+    )
+    outer = np.array([[10, 10, 10, 10], [0, 0.01, 0.02, 0.04]])
+    inner = np.array([[20, 20, 20, 20], [0.01, 0.02, 0.03, 0.08]])
+    fig, axes = make_heatmap([outer, inner], [np.array([15, 30])] * 2, settings)
+    try:
+        fig.canvas.draw()
+        outer_mesh, inner_mesh = [ax.collections[-1] for ax in axes]
+        assert outer_mesh.norm is inner_mesh.norm
+        assert outer_mesh.norm.vmin == 0
+        assert outer_mesh.norm.vmax == 0.08
+        assert "Bead density" in inner_mesh.colorbar.ax.get_xlabel()
+        np.testing.assert_array_equal(outer_mesh.get_facecolors()[5],
+                                      inner_mesh.get_facecolors()[4])
+        np.testing.assert_array_equal(outer_mesh.get_facecolors()[4],
+                                      [0.4, 0.4, 0.4, 1])
     finally:
         plt.close(fig)

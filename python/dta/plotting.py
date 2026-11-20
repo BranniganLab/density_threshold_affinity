@@ -5,13 +5,14 @@ Created on Mon Nov 11 14:41:24 2024.
 
 @author: js2746
 """
-from dataclasses import dataclass, InitVar, field
+from dataclasses import dataclass
+from typing import Literal
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib import gridspec
 from matplotlib.collections import QuadMesh
-from matplotlib.colors import ListedColormap, TwoSlopeNorm
+from matplotlib.colors import ListedColormap, Normalize, TwoSlopeNorm
 from scipy import constants
 from dta.utils import calculate_hist_mode
 from dta.Site import Site
@@ -46,57 +47,47 @@ class HeatmapSettings:
     color_landmarks_by_row : bool, optional
         True assigns one color per coordinate row; False assigns colors by
         marker position within each row. Defaults to False.
-    colormap : matplotlib cmap object
-        The colormap to use. Provided after init.
-    colorbar_range : 3-tuple
-        The min, mid, and max values of your colorbar. Automatically calculated\
-        from max_enrichment InitVar.
-
-    InitVars
-    --------
     max_enrichment : float
-        Gets passed to post_init and turned into colorbar_range.
+        Upper limit of the enrichment scale. The lower limit is its reciprocal.
+    colormap : matplotlib colormap or None, optional
+        Override the default palette for the selected quantity.
+    quantity : {"enrichment", "density"}, optional
+        Quantity displayed by the heatmap. Defaults to enrichment.
+    max_density : float or None, optional
+        Upper color limit in beads per square angstrom. None uses the maximum
+        finite positive density in the visible bins across panels.
     """
 
     row_names: list
     col_names: list
     fig_dims: tuple
-    max_enrichment: InitVar[float]
+    max_enrichment: float
     grid: PolarBinGrid
     first_radial_bin: int = 0
     landmark_colors: list[str] | None = None
     color_landmarks_by_row: bool = False
-    colormap: mpl.colors.ListedColormap = field(init=False)
-    colorbar_range: tuple = field(init=False)
+    colormap: mpl.colors.Colormap | None = None
+    quantity: Literal["enrichment", "density"] = "enrichment"
+    max_density: float | None = None
 
-    def __post_init__(self, max_enrichment: float):
-        """
-        Calculate colorbar_range and make sure row_names and col_names are lists.
-
-        Parameters
-        ----------
-        max_enrichment : float
-            How high you want your colorbar to go. The minimum will scale proportionally.
-
-        Raises
-        ------
-        TypeError
-            Makes sure that row_names and col_names are lists.
-
-        Returns
-        -------
-        None.
-
-        """
+    def __post_init__(self):
+        """Validate the layout and the limits for the selected color scale."""
         if not isinstance(self.col_names, list):
             raise TypeError(f"{self.col_names} must be a list instead of a {type(self.col_names)}.")
         if not isinstance(self.row_names, list):
             raise TypeError(f"{self.row_names} must be a list instead of a {type(self.row_names)}.")
         if not isinstance(self.grid, PolarBinGrid):
             raise TypeError(f"grid must be a PolarBinGrid instead dof a {type(self.grid)}.")
-        if max_enrichment <= 1:
-            raise ValueError("max_enrichment must be greater than 1.")
-        self.colorbar_range = (1 / max_enrichment, 1, max_enrichment)
+        if self.quantity not in ("enrichment", "density"):
+            raise ValueError("quantity must be 'enrichment' or 'density'.")
+        if self.quantity == "enrichment" and (
+            not np.isfinite(self.max_enrichment) or self.max_enrichment <= 1
+        ):
+            raise ValueError("max_enrichment must be finite and greater than 1.")
+        if self.quantity == "density" and self.max_density is not None and (
+            not np.isfinite(self.max_density) or self.max_density <= 0
+        ):
+            raise ValueError("max_density must be finite and positive.")
 
     @property
     def r_min(self) -> float:
@@ -126,6 +117,24 @@ def make_custom_colormap() -> ListedColormap:
     enriched_colors = plt.colormaps['bwr'](np.linspace(0.5, 1, 128))
     combined_colors = np.concatenate([depleted_colors, enriched_colors])
     return ListedColormap(combined_colors)
+
+
+def _heatmap_norm(maps, settings: HeatmapSettings) -> Normalize:
+    """Choose one scale for all plotted panels."""
+    if settings.quantity == "enrichment":
+        maximum = settings.max_enrichment
+        return TwoSlopeNorm(vmin=1 / maximum, vcenter=1, vmax=maximum)
+
+    if settings.max_density is not None:
+        return Normalize(vmin=0, vmax=settings.max_density)
+
+    maximum = 0.0
+    for data in maps:
+        visible = np.ma.masked_invalid(data[settings.first_radial_bin:, :])
+        if visible.count():
+            maximum = max(maximum, float(visible.max()))
+    # An all-zero or missing figure still needs a nondegenerate color scale.
+    return Normalize(vmin=0, vmax=maximum or 1.0)
 
 
 def outline_site(
@@ -266,7 +275,11 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     colorbar_left = panels_center - colorbar_width / 2
     cbar_ax = fig.add_axes([colorbar_left, 1, colorbar_width, colorbar_height])
     colorbar = fig.colorbar(heatmap, cax=cbar_ax, orientation="horizontal")
-    colorbar.set_ticks([heatmap.norm.vmin, heatmap.norm.vcenter, heatmap.norm.vmax])
+    if isinstance(heatmap.norm, TwoSlopeNorm):
+        colorbar.set_ticks([heatmap.norm.vmin, heatmap.norm.vcenter, heatmap.norm.vmax])
+        colorbar.set_label("Density enrichment (× expected)")
+    else:
+        colorbar.set_label(r"Bead density (beads / $\mathrm{\AA}^2$)")
     # Use the colorbar's full height so the swatch always matches its thickness.
     zero_ax = cbar_ax.inset_axes(
         [-(swatch_width + gap) / colorbar_width, 0,
@@ -279,7 +292,10 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     return fig
 
 
-def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettings) -> QuadMesh:
+def plot_heatmap(
+    ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettings,
+    *, norm: Normalize | None = None,
+) -> QuadMesh:
     """
     Plot a heatmap, with exactly-zero values shown in muted dark gray.
 
@@ -293,9 +309,11 @@ def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettin
     ax : matplotlib.pyplot axes object
         The pre-existing axes object you wish to plot a heatmap on.
     data : ndarray
-        The heatmap heat values (probably density enrichment).
+        The density or density enrichment values.
     heatmap_settings : HeatmapSettings object
         All the auxiliary information needed to plot a heatmap.
+    norm : Normalize or None, optional
+        Shared color scale. If omitted, calculate the scale for this panel.
 
     Returns
     -------
@@ -303,13 +321,17 @@ def plot_heatmap(ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettin
         The plotted heatmap, suitable for creating a matching colorbar.
 
     """
-    minimum, midpoint, maximum = heatmap_settings.colorbar_range
-    norm = TwoSlopeNorm(vmin=minimum, vcenter=midpoint, vmax=maximum)
     r_min = heatmap_settings.r_min
+    if norm is None:
+        norm = _heatmap_norm([data], heatmap_settings)
     plot_data = np.ma.array(data, dtype=float, copy=True)
     plot_data[:heatmap_settings.first_radial_bin, :] = np.nan
     plot_data = np.ma.masked_equal(plot_data, 0)
-    colormap = heatmap_settings.colormap.with_extremes(bad="#666666")
+    colormap = heatmap_settings.colormap
+    if colormap is None:
+        colormap = (make_custom_colormap() if heatmap_settings.quantity == "enrichment"
+                    else plt.colormaps["Blues"])
+    colormap = colormap.with_extremes(bad="#666666")
     ax.grid(False)
     r_vals = heatmap_settings.grid.r_grid
     theta_vals = heatmap_settings.grid.theta_grid
@@ -546,14 +568,13 @@ def plot_landmarks(landmarks, color_by_row, ax, markersize=3, colorlist=None, r_
     return ax
 
 
-def make_density_enrichment_heatmap(enrichments_list, landmarks, heatmap_settings):
+def make_heatmap(maps, landmarks, heatmap_settings):
     """
-    Make a figure and axes objects. Plot heatmaps of density enrichment for each\
-    system on each axes object. Return the figure and axes.
+    Plot density or enrichment maps with one shared color scale.
 
     Parameters
     ----------
-    enrichments_list : list
+    maps : list
         A list of 2d ndarrays containing enrichment values for each bin in the
         lattice. One list item per heatmap.
     landmarks : list of ndarrays
@@ -570,21 +591,22 @@ def make_density_enrichment_heatmap(enrichments_list, landmarks, heatmap_setting
         The matplotlib Axes object(s) containing your plot(s).
 
     """
-    if not isinstance(enrichments_list, list):
-        raise TypeError(f"{enrichments_list} must be a list instead of a {type(enrichments_list)}.")
-    if not all(isinstance(item, np.ndarray) for item in enrichments_list):
-        raise TypeError("enrichments_list must be a list of ndarrays")
-    if not all(len(arr.shape) == 2 for arr in enrichments_list):
-        raise TypeError("enrichments_list must contain 2d ndarrays")
+    if not isinstance(maps, list):
+        raise TypeError(f"{maps} must be a list instead of a {type(maps)}.")
+    if not all(isinstance(item, np.ndarray) for item in maps):
+        raise TypeError("maps must be a list of ndarrays")
+    if not all(len(arr.shape) == 2 for arr in maps):
+        raise TypeError("maps must contain 2d ndarrays")
 
     fig = create_heatmap_figure_and_axes(heatmap_settings)
     axes = np.ravel(fig.axes)
-    if len(enrichments_list) != axes.shape[0]:
-        raise IndexError(f"Number of enrichments_list items ({len(enrichments_list)}) does not match number of figure panels ({axes.shape[0]}).")
+    if len(maps) != axes.shape[0]:
+        raise IndexError(f"Number of maps items ({len(maps)}) does not match number of figure panels ({axes.shape[0]}).")
 
     fig = plot_landmarks_on_panels(fig, landmarks, heatmap_settings)
-    for index, ax in enumerate(axes):
-        heatmap = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
+    norm = _heatmap_norm(maps, heatmap_settings)
+    for ax, data in zip(axes, maps, strict=True):
+        heatmap = plot_heatmap(ax, data, heatmap_settings, norm=norm)
     fig = make_colorbar(fig, heatmap)
 
     return fig, axes

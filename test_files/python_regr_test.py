@@ -5,10 +5,11 @@ Author:js2746
 This is a pytest file for regression testing DTA.
 """
 
+import numpy as np
 import pytest
 from pathlib import Path
 
-from dta.density import parse_tcl_dat_file, aggregate_density_enrichment_scores, load_replica_counts
+from dta.density import parse_tcl_dat_file, aggregate_density_maps, load_replica_counts
 from dta.Site import Site
 from dta.SymmetricSite import SymmetricSite
 from dta.SiteAcrossReplicas import SiteAcrossReplicas
@@ -26,7 +27,7 @@ def analyze_sample_outputs():
         for rep in replicas:
             rep_path = root_path.joinpath(rep, f"{system_name}.{leaf}.avg.dat")
             rep_list.append(rep_path)
-        avg_enrichment_over_reps, grid_dims = aggregate_density_enrichment_scores(rep_list)
+        avg_enrichment_over_reps, grid_dims = aggregate_density_maps(rep_list)
         avg_enrichments.append(avg_enrichment_over_reps)
 
     site1 = Site(name="inner M1-M4", grid=grid_dims, leaflet_id=2, temperature=320)  # step 1
@@ -52,3 +53,19 @@ def test_if_delta_G_matches():
 def test_if_fail_appropriately():
     site = analyze_sample_outputs()
     assert site.dG == 0
+
+
+def test_aggregate_density_maps_normalizes_before_averaging(tmp_path):
+    paths = [tmp_path / "rep1.avg.dat", tmp_path / "rep2.avg.dat"]
+    for path, count, expected_density in zip(paths, [4, 8], [0.1, 0.4], strict=True):
+        path.write_text(
+            "# Lipids: 10, Beads: 10, Area: 100, "
+            f"Expected density: {expected_density}/A^2, dr*dtheta: 12.56637\n"
+            f"0 2 360 {count}\n"
+            f"2 4 360 {count}\n"
+        )
+
+    density, grid = aggregate_density_maps(paths, quantity="density")
+    enrichment, _ = aggregate_density_maps(paths)
+    np.testing.assert_allclose(density, 6 / grid.bin_areas)
+    np.testing.assert_allclose(enrichment, 30 / grid.bin_areas)
