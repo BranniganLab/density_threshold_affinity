@@ -51,8 +51,6 @@ class HeatmapSettings:
         Upper limit of the enrichment scale. The lower limit is its reciprocal.
     colormap : matplotlib colormap or None, optional
         Override the default palette for the selected quantity.
-    quantity : {"enrichment", "density"}, optional
-        Quantity displayed by the heatmap. Defaults to enrichment.
     max_density : float or None, optional
         Upper color limit in beads per square angstrom. None uses the maximum
         finite positive density in the visible bins across panels.
@@ -67,27 +65,16 @@ class HeatmapSettings:
     landmark_colors: list[str] | None = None
     color_landmarks_by_row: bool = False
     colormap: mpl.colors.Colormap | None = None
-    quantity: Literal["enrichment", "density"] = "enrichment"
     max_density: float | None = None
 
     def __post_init__(self):
-        """Validate the layout and the limits for the selected color scale."""
+        """Validate the layout."""
         if not isinstance(self.col_names, list):
             raise TypeError(f"{self.col_names} must be a list instead of a {type(self.col_names)}.")
         if not isinstance(self.row_names, list):
             raise TypeError(f"{self.row_names} must be a list instead of a {type(self.row_names)}.")
         if not isinstance(self.grid, PolarBinGrid):
             raise TypeError(f"grid must be a PolarBinGrid instead dof a {type(self.grid)}.")
-        if self.quantity not in ("enrichment", "density"):
-            raise ValueError("quantity must be 'enrichment' or 'density'.")
-        if self.quantity == "enrichment" and (
-            not np.isfinite(self.max_enrichment) or self.max_enrichment <= 1
-        ):
-            raise ValueError("max_enrichment must be finite and greater than 1.")
-        if self.quantity == "density" and self.max_density is not None and (
-            not np.isfinite(self.max_density) or self.max_density <= 0
-        ):
-            raise ValueError("max_density must be finite and positive.")
 
     @property
     def r_min(self) -> float:
@@ -119,13 +106,18 @@ def make_custom_colormap() -> ListedColormap:
     return ListedColormap(combined_colors)
 
 
-def _heatmap_norm(maps, settings: HeatmapSettings) -> Normalize:
+def _heatmap_norm(maps, settings: HeatmapSettings, quantity: str) -> Normalize:
     """Choose one scale for all plotted panels."""
-    if settings.quantity == "enrichment":
+    if quantity == "enrichment":
         maximum = settings.max_enrichment
+        if not np.isfinite(maximum) or maximum <= 1:
+            raise ValueError("max_enrichment must be finite and greater than 1.")
         return TwoSlopeNorm(vmin=1 / maximum, vcenter=1, vmax=maximum)
-
+    if quantity != "density":
+        raise ValueError("quantity must be 'enrichment' or 'density'.")
     if settings.max_density is not None:
+        if not np.isfinite(settings.max_density) or settings.max_density <= 0:
+            raise ValueError("max_density must be finite and positive.")
         return Normalize(vmin=0, vmax=settings.max_density)
 
     maximum = 0.0
@@ -294,7 +286,8 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
 
 def plot_heatmap(
     ax: plt.Axes, data: np.ndarray, heatmap_settings: HeatmapSettings,
-    *, norm: Normalize | None = None,
+    *, quantity: Literal["enrichment", "density"] = "enrichment",
+    norm: Normalize | None = None,
 ) -> QuadMesh:
     """
     Plot a heatmap, with exactly-zero values shown in muted dark gray.
@@ -312,6 +305,8 @@ def plot_heatmap(
         The density or density enrichment values.
     heatmap_settings : HeatmapSettings object
         All the auxiliary information needed to plot a heatmap.
+    quantity : {"enrichment", "density"}, optional
+        The quantity represented by data. Defaults to enrichment.
     norm : Normalize or None, optional
         Shared color scale. If omitted, calculate the scale for this panel.
 
@@ -323,13 +318,13 @@ def plot_heatmap(
     """
     r_min = heatmap_settings.r_min
     if norm is None:
-        norm = _heatmap_norm([data], heatmap_settings)
+        norm = _heatmap_norm([data], heatmap_settings, quantity)
     plot_data = np.ma.array(data, dtype=float, copy=True)
     plot_data[:heatmap_settings.first_radial_bin, :] = np.nan
     plot_data = np.ma.masked_equal(plot_data, 0)
     colormap = heatmap_settings.colormap
     if colormap is None:
-        colormap = (make_custom_colormap() if heatmap_settings.quantity == "enrichment"
+        colormap = (make_custom_colormap() if quantity == "enrichment"
                     else plt.colormaps["Blues"])
     colormap = colormap.with_extremes(bad="#666666")
     ax.grid(False)
@@ -568,7 +563,10 @@ def plot_landmarks(landmarks, color_by_row, ax, markersize=3, colorlist=None, r_
     return ax
 
 
-def make_heatmap(maps, landmarks, heatmap_settings):
+def make_heatmap(
+    maps, landmarks, heatmap_settings,
+    *, quantity: Literal["enrichment", "density"] = "enrichment",
+):
     """
     Plot density or enrichment maps with one shared color scale.
 
@@ -582,6 +580,8 @@ def make_heatmap(maps, landmarks, heatmap_settings):
         ndarray per heatmap.
     heatmap_settings : HeatmapSettings object
         Contains all of the auxiliary information needed to plot heatmaps.
+    quantity : {"enrichment", "density"}, optional
+        The quantity represented by maps. Defaults to enrichment.
 
     Returns
     -------
@@ -604,9 +604,9 @@ def make_heatmap(maps, landmarks, heatmap_settings):
         raise IndexError(f"Number of maps items ({len(maps)}) does not match number of figure panels ({axes.shape[0]}).")
 
     fig = plot_landmarks_on_panels(fig, landmarks, heatmap_settings)
-    norm = _heatmap_norm(maps, heatmap_settings)
+    norm = _heatmap_norm(maps, heatmap_settings, quantity)
     for ax, data in zip(axes, maps, strict=True):
-        heatmap = plot_heatmap(ax, data, heatmap_settings, norm=norm)
+        heatmap = plot_heatmap(ax, data, heatmap_settings, quantity=quantity, norm=norm)
     fig = make_colorbar(fig, heatmap)
 
     return fig, axes

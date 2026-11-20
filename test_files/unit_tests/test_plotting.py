@@ -270,11 +270,11 @@ def test_density_panels_share_a_scale_based_on_visible_bins():
     """Hidden inner bins do not wash out the density in either panel."""
     settings = HeatmapSettings(
         ["lipid"], ["outer", "inner"], (4, 8), 5,
-        PolarBinGrid(0, 20, 2, 4), first_radial_bin=1, quantity="density",
+        PolarBinGrid(0, 20, 2, 4), first_radial_bin=1,
     )
     outer = np.array([[10, 10, 10, 10], [0, 0.01, 0.02, 0.04]])
     inner = np.array([[20, 20, 20, 20], [0.01, 0.02, 0.03, 0.08]])
-    fig, axes = make_heatmap([outer, inner], [np.array([15, 30])] * 2, settings)
+    fig, axes = make_heatmap([outer, inner], [np.array([15, 30])] * 2, settings, quantity="density")
     try:
         fig.canvas.draw()
         outer_mesh, inner_mesh = [ax.collections[-1] for ax in axes]
