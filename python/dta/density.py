@@ -155,46 +155,49 @@ def calculate_density_enrichment(density: np.ndarray, expected_density: float) -
     return density / expected_density
 
 
-def aggregate_density_enrichment_scores(file_paths: list[str | Path]) -> tuple[np.ndarray, PolarBinGrid]:
-    """
-    Collect the average counts, bin sizing, and expected density from each \
-        system, calulate average density enrichment for each system, and calculate\
-        average density enrichment accross systems. Also, return the PolarBinGrid \
-        object that needs to be used for plotting the heatmaps.
+def aggregate_density_maps(
+    file_paths: list[str | Path],
+    *,
+    quantity: Literal["enrichment", "density"] = "enrichment",
+) -> tuple[np.ndarray, PolarBinGrid]:
+    """Average density or density enrichment maps across Tcl output files.
 
     Parameters
     ----------
-    file_paths : list
-        The list of paths to all the average counts files you want to calculate\
-        density enrichment for.
+    file_paths : list of str or Path
+        Paths to the per-replica averaged counts files.
+    quantity : {"enrichment", "density"}, optional
+        Average bead densities directly for "density". For "enrichment",
+        divide each replica's density by its own expected bead density before
+        averaging. Defaults to "enrichment".
 
     Returns
     -------
-    all_reps_avg : numpy ndarray
-        The density enrichment scores, averaged together in a 2D array.
-    grid_final : PolarBinGrid
-        The PolarBinGrid that contains information about lattice sizes.
-
+    average_map : ndarray
+        The mean map in [radius, angle] order.
+    grid : PolarBinGrid
+        The common grid shared by the input files.
     """
-    replica_enrichments_list = []
-    replica_dims_list = []
+    if quantity not in ("enrichment", "density"):
+        raise ValueError("quantity must be 'enrichment' or 'density'.")
     if not isinstance(file_paths, list):
         raise TypeError("file_paths must be a list.")
-    if len(file_paths) == 0:
+    if not file_paths:
         raise ValueError("file_paths cannot be empty.")
-    for rep_path in file_paths:
-        rep_path = validate_path(rep_path, file=True)
-        counts, grid, system_info = parse_tcl_dat_file(rep_path, bulk=False)
-        counts = counts.squeeze(axis=0)
-        density_enrichment = calculate_density_enrichment(calculate_density(counts, grid), system_info.ExpBeadDensity)
-        replica_enrichments_list.append(density_enrichment)
-        replica_dims_list.append(grid)
 
-    confirm_objs_are_equal(replica_dims_list)
-    all_reps_avg = np.nanmean(np.stack(tuple(replica_enrichments_list), axis=0), axis=0)
-    grid_final = replica_dims_list[0]
+    maps = []
+    grids = []
+    for path in file_paths:
+        counts, grid, system_info = parse_tcl_dat_file(path, bulk=False)
+        density = calculate_density(counts.squeeze(axis=0), grid)
+        maps.append(
+            calculate_density_enrichment(density, system_info.ExpBeadDensity)
+            if quantity == "enrichment" else density
+        )
+        grids.append(grid)
 
-    return all_reps_avg, grid_final
+    confirm_objs_are_equal(grids)
+    return np.nanmean(np.stack(maps), axis=0), grids[0]
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%  UTIL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
