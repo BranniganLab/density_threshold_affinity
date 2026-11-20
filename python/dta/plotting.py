@@ -17,6 +17,21 @@ from dta.Site import Site
 from dta.SymmetricSite import SymmetricSite
 from dta.SiteAcrossReplicas import SiteAcrossReplicas
 from dta.bin_logic import PolarBinGrid
+from dta.protein_landmarks import ProteinLandmark
+
+
+DEFAULT_CHAIN_COLORS = (
+    "tab:blue",
+    "tab:orange",
+    "tab:green",
+    "tab:red",
+    "tab:purple",
+    "tab:brown",
+    "tab:pink",
+    "tab:gray",
+    "tab:olive",
+    "tab:cyan",
+)
 
 
 @dataclass
@@ -177,31 +192,51 @@ def create_heatmap_figure_and_axes(heatmap_settings: HeatmapSettings) -> plt.Fig
     return fig
 
 
-def plot_helices_on_panels(fig: plt.Figure, helices: list[np.ndarray], helix_colors: list[str] | None = None):
+def plot_landmarks_on_panels(
+    fig: plt.Figure,
+    landmarks: list[list[ProteinLandmark]],
+) -> plt.Figure:
     """
-    Plot helix locations on each panel present in the figure.
+    Plot protein landmarks on each panel present in the figure.
 
     Parameters
     ----------
     fig : matplotlib Figure object
         The Figure containing your heatmap panels.
-    helices : list of numpy ndarrays
-        List containing one set of helix coordinates per panel.
-    helix_colors : list of str or None
-        Optional list containing matplotlib-recognized colors. Default is None.
+    landmarks : list of lists of ProteinLandmark
+        One collection of named protein landmarks per panel.
 
     Returns
     -------
     fig : matplotlib Figure
-        The Figure containing your heatmap panels, now with helix locations.
+        The Figure containing the heatmap panels and protein landmarks.
 
     """
-    if not isinstance(helices, list):
-        raise TypeError(f"{helices} must be a list instead of a {type(helices)}.")
-    if len(helices) != np.ravel(fig.axes).shape[0]:
-        raise RuntimeError("Need to provide as many sets of helices as there are axes.")
-    for ax, helix_set in zip(np.ravel(fig.axes), helices, strict=True):
-        ax = plot_helices(helix_set, False, ax, 50, helix_colors)
+    if not isinstance(landmarks, list):
+        raise TypeError(
+            f"{landmarks} must be a list instead of a {type(landmarks)}."
+        )
+    if len(landmarks) != np.ravel(fig.axes).shape[0]:
+        raise RuntimeError(
+            "Need to provide as many landmark collections as there are axes."
+        )
+
+    chain_ids = list(dict.fromkeys(
+        landmark.chain_id
+        for panel_landmarks in landmarks
+        for landmark in panel_landmarks
+    ))
+    if len(chain_ids) > len(DEFAULT_CHAIN_COLORS):
+        raise ValueError(
+            f"Cannot assign unique default colors to {len(chain_ids)} chains; "
+            f"at most {len(DEFAULT_CHAIN_COLORS)} are supported."
+        )
+    chain_colors = dict(zip(chain_ids, DEFAULT_CHAIN_COLORS, strict=False))
+
+    for ax, panel_landmarks in zip(
+        np.ravel(fig.axes), landmarks, strict=True
+    ):
+        plot_protein_landmarks(ax, panel_landmarks, chain_colors)
     return fig
 
 
@@ -422,40 +457,60 @@ class MidpointNormalize(Normalize):
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
 
-def plot_helices(helices, colorbychain, ax, markersize=3, colorlist=None):
-    """
-    Plot helices on a polar plot.
+def plot_protein_landmarks(
+    ax: plt.Axes,
+    landmarks: list[ProteinLandmark],
+    chain_colors: dict[str, str],
+    marker_size: float = 50,
+) -> plt.Axes:
+    """Plot named protein landmarks and label each chain once."""
+    if not all(isinstance(item, ProteinLandmark) for item in landmarks):
+        raise TypeError("landmarks must contain only ProteinLandmark objects.")
 
-    Parameters
-    ----------
-    - helices (list or array): The helix data to be plotted. Each element in the list represents a set of helices, where each set is a list of angles and radii.
-    - colorbychain (bool): A flag to determine if the helices should be colored by chain.
-    - ax (matplotlib.axes.Axes): The polar subplot axis on which to plot the helices.
-    - markersize (int, optional): The size of the scatter markers. Defaults to 3.
-    - colorlist (list, optional): The list of colors to use for coloring the helices. Defaults to a predefined list of colors.
+    for chain_id in dict.fromkeys(item.chain_id for item in landmarks):
+        chain_landmarks = [
+            item for item in landmarks if item.chain_id == chain_id
+        ]
+        try:
+            color = chain_colors[chain_id]
+        except KeyError as err:
+            raise ValueError(f"No color was provided for chain {chain_id!r}.") from err
 
-    Returns
-    -------
-    - ax (matplotlib.axes.Axes): The modified polar subplot axis with the helices plotted.
+        theta = np.deg2rad([item.theta for item in chain_landmarks])
+        radius = np.array([item.radius for item in chain_landmarks])
+        ax.scatter(
+            theta,
+            radius,
+            color=color,
+            edgecolor="white",
+            linewidth=0.5,
+            zorder=2,
+            s=marker_size,
+        )
 
-    """
-    if isinstance(helices, list):
-        helices = np.array(helices, dtype=np.float64)
-    if colorlist is None:
-        colorlist = ["tab:blue", "tab:cyan", "tab:green", "tab:purple", "tab:brown", "tab:olive", "tab:orange"]
-    if len(np.shape(helices)) == 1:
-        helices = np.reshape(helices, (1, len(helices)))
-    for i, pro in enumerate(helices[:]):
-        if colorbychain:
-            colors = colorlist[i]
-        else:
-            colors = colorlist[:len(pro[::2])]
-        ax.scatter(np.deg2rad(pro[1::2]), pro[::2], color=colors, linewidth=None,
-                   zorder=1, s=markersize)
+        center_x = np.mean(radius * np.cos(theta))
+        center_y = np.mean(radius * np.sin(theta))
+        label_theta = np.arctan2(center_y, center_x)
+        label_radius = np.hypot(center_x, center_y)
+        ax.text(
+            label_theta,
+            label_radius,
+            chain_id,
+            color=color,
+            fontweight="bold",
+            ha="center",
+            va="center",
+            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.8},
+            zorder=3,
+        )
     return ax
 
 
-def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings, helix_colors=None):
+def make_density_enrichment_heatmap(
+    enrichments_list,
+    landmarks,
+    heatmap_settings,
+):
     """
     Make a figure and axes objects. Plot heatmaps of density enrichment for each\
     system on each axes object. Return the figure and axes.
@@ -465,13 +520,11 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings,
     enrichments_list : list
         A list of 2d ndarrays containing enrichment values for each bin in the
         lattice. One list item per heatmap.
-    helices : list of ndarrays
-        Each ndarray in the list contains helix coordinates. There should be one
-        ndarray per heatmap.
+    landmarks : list of lists of ProteinLandmark
+        Named protein landmarks for each heatmap. The usual value is returned
+        by ``load_inclusion_coordinates``.
     heatmap_settings : HeatmapSettings object
         Contains all of the auxiliary information needed to plot heatmaps.
-    helix_colors : list or None
-        Optional list of matplotlib-recognized colors. Default is None.
 
     Returns
     -------
@@ -493,7 +546,7 @@ def make_density_enrichment_heatmap(enrichments_list, helices, heatmap_settings,
     if len(enrichments_list) != axes.shape[0]:
         raise IndexError(f"Number of enrichments_list items ({len(enrichments_list)}) does not match number of figure panels ({axes.shape[0]}).")
 
-    fig = plot_helices_on_panels(fig, helices, helix_colors)
+    fig = plot_landmarks_on_panels(fig, landmarks)
     for index, ax in enumerate(axes):
         ax = plot_heatmap(ax, enrichments_list[index], heatmap_settings)
     fig = make_colorbar(fig, heatmap_settings)
