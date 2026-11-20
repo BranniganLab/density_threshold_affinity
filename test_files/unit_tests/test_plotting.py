@@ -289,3 +289,40 @@ def test_density_panels_share_one_colorbar_limit(maximum, expected):
                                       [0.4, 0.4, 0.4, 1])
     finally:
         plt.close(fig)
+
+
+@pytest.mark.parametrize("color_by_row", [False, True])
+def test_heatmap_default_landmark_colors_extend_past_seven(color_by_row):
+    from matplotlib.colors import to_rgba_array
+
+    original_colors = to_rgba_array([
+        "tab:blue", "tab:cyan", "tab:green", "tab:purple",
+        "tab:brown", "tab:olive", "tab:orange",
+    ])
+    radii = np.arange(1., 12.)
+    coordinates = np.column_stack((radii, radii * 20))
+    landmarks = coordinates if color_by_row else coordinates.ravel()
+    settings = HeatmapSettings(
+        ["lipid"], ["leaflet"], (4, 4), PolarBinGrid(0, 12, 12, 4),
+        color_landmarks_by_row=color_by_row,
+    )
+    data = np.ones((12, 4))
+    fig, axes = make_heatmap([data], [landmarks], settings)
+    try:
+        scatter = axes[0].collections[:-1]
+        colors = np.concatenate([markers.get_facecolors() for markers in scatter])
+        assert len(colors) == len(radii)
+        np.testing.assert_array_equal(colors[:7], original_colors)
+    finally:
+        plt.close(fig)
+
+    settings.first_radial_bin = 3
+    fig, axes = make_heatmap([data], [landmarks], settings)
+    try:
+        scatter = axes[0].collections[:-1]
+        visible_colors = np.concatenate([
+            markers.get_facecolors() for markers in scatter if len(markers.get_offsets())
+        ])
+        np.testing.assert_array_equal(visible_colors, colors[radii >= 3])
+    finally:
+        plt.close(fig)

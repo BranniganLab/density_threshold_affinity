@@ -508,9 +508,9 @@ def plot_landmarks(landmarks, color_by_row, ax, markersize=3, colorlist=None, r_
         Marker area in points squared, passed to scatter as s. Default is 3.
     colorlist : list of colors, optional
         One color per input row if color_by_row is True; otherwise one color per
-        landmark position. Defaults to blue, cyan, green, purple, brown, olive,
-        and orange. Hiding a landmark (with r_min) does not reassign the remaining
-        colors.
+        landmark position. The default palette starts with blue, cyan, green,
+        purple, brown, olive, and orange, then adds red, pink, and gray. It
+        repeats as needed. Hiding a landmark does not reassign colors.
     r_min : float, optional
         Minimum visible radius. Markers exactly at this radius are included.
         Defaults to 0.
@@ -525,10 +525,13 @@ def plot_landmarks(landmarks, color_by_row, ax, markersize=3, colorlist=None, r_
     # Treat a flat coordinate list as one row; preserve existing rows.
     coordinate_rows = np.atleast_2d(np.asarray(landmarks, dtype=float))
     if colorlist is None:
-        colorlist = [
+        palette = (
             "tab:blue", "tab:cyan", "tab:green", "tab:purple",
-            "tab:brown", "tab:olive", "tab:orange",
-        ]
+            "tab:brown", "tab:olive", "tab:orange", "tab:red", "tab:pink", "tab:gray",
+        )
+        n_rows, n_coordinates = coordinate_rows.shape
+        n_colors = n_rows if color_by_row else n_coordinates // 2
+        colorlist = [palette[i % len(palette)] for i in range(n_colors)]
 
     for row_index, row_coordinates in enumerate(coordinate_rows):
         # Turn [radius, angle, radius, angle, ...] into one pair per landmark.
