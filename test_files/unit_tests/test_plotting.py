@@ -21,8 +21,8 @@ def test_zero_is_dark_gray_and_positive_colors_are_unchanged(maximum, custom_col
     data = np.array([[0, 1e-12, 0.5 / maximum, 1 / maximum,
                       0.75, 1, 2, maximum, 2 * maximum]])
     original = data.copy()
-    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4), maximum,
-                               PolarBinGrid(0, 1, 1, data.size))
+    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4),
+                               PolarBinGrid(0, 1, 1, data.size), colorbar_max=maximum)
     settings.colormap = plt.colormaps['viridis'] if custom_colormap else make_custom_colormap()
     original_bad_color = settings.colormap.get_bad().copy()
 
@@ -56,7 +56,7 @@ def test_zero_is_dark_gray_and_positive_colors_are_unchanged(maximum, custom_col
 ])
 def test_zero_and_missing_bins_are_opaque_dark_gray(data):
     """Empty panels and pre-existing masks render without losing their masks."""
-    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4), 5,
+    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4),
                                PolarBinGrid(0, 1, 1, 4))
     settings.colormap = make_custom_colormap()
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
@@ -71,8 +71,8 @@ def test_zero_and_missing_bins_are_opaque_dark_gray(data):
 def test_multi_panel_colorbar_uses_heatmap_scale_with_landmark_overlays():
     """The colorbar describes the density mesh rather than the landmark scatter."""
     maximum = 3
-    settings = HeatmapSettings(["lipid"], ["outer", "inner"], (4, 8), maximum,
-                               PolarBinGrid(0, 1, 1, 4))
+    settings = HeatmapSettings(["lipid"], ["outer", "inner"], (4, 8),
+                               PolarBinGrid(0, 1, 1, 4), colorbar_max=maximum)
     settings.colormap = make_custom_colormap()
     data = np.array([[0, 0.1, 1, maximum]])
     landmarks = [np.array([0.5, 30]), np.array([0.5, 30])]
@@ -101,7 +101,7 @@ def test_first_radial_bin_preserves_grid_data_and_retained_colors(first_bin, ori
     data = np.tile([0, 1, 2, 5], (4, 1))
     original = data.copy()
     original_edges = grid.r.bin_edges.copy()
-    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4), 5, grid)
+    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4), grid)
     settings.colormap = make_custom_colormap()
     reference_fig, reference_ax = plt.subplots(subplot_kw={"projection": "polar"})
     fig = None
@@ -149,7 +149,7 @@ def test_first_radial_bin_preserves_grid_data_and_retained_colors(first_bin, ori
     (True, TypeError), ("1", TypeError),
 ])
 def test_first_radial_bin_rejects_invalid_indices(index, error):
-    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4), 5,
+    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4),
                                PolarBinGrid(0, 40, 4, 4), first_radial_bin=index)
     settings.colormap = make_custom_colormap()
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
@@ -191,7 +191,7 @@ def test_landmark_cutoff_preserves_colors_coordinates_and_boundary(color_by_row,
 
 
 def test_heatmap_uses_first_radial_bin_to_hide_landmark_markers():
-    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4), 5,
+    settings = HeatmapSettings(["lipid"], ["leaflet"], (4, 4),
                                PolarBinGrid(0, 40, 4, 4), first_radial_bin=2)
     settings.colormap = make_custom_colormap()
     landmarks = np.array([5., 0., 20., 90., 30., 180.])
@@ -243,7 +243,7 @@ def test_heatmap_landmark_color_settings(color_by_row):
 
     palette = ["gold", "navy", "teal"]
     settings = HeatmapSettings(
-        ["lipid"], ["leaflet"], (4, 4), 5, PolarBinGrid(0, 40, 4, 4),
+        ["lipid"], ["leaflet"], (4, 4), PolarBinGrid(0, 40, 4, 4),
         first_radial_bin=2, landmark_colors=palette,
     )
     settings.colormap = make_custom_colormap()
@@ -266,11 +266,12 @@ def test_heatmap_landmark_color_settings(color_by_row):
         plt.close(fig)
 
 
-def test_density_panels_share_a_scale_based_on_visible_bins():
-    """Hidden inner bins do not wash out the density in either panel."""
+@pytest.mark.parametrize("maximum, expected", [(None, 0.08), (0.05, 0.05)])
+def test_density_panels_share_one_colorbar_limit(maximum, expected):
+    """Use the explicit limit or the maximum over visible bins across panels."""
     settings = HeatmapSettings(
-        ["lipid"], ["outer", "inner"], (4, 8), 5,
-        PolarBinGrid(0, 20, 2, 4), first_radial_bin=1,
+        ["lipid"], ["outer", "inner"], (4, 8),
+        PolarBinGrid(0, 20, 2, 4), first_radial_bin=1, colorbar_max=maximum,
     )
     outer = np.array([[10, 10, 10, 10], [0, 0.01, 0.02, 0.04]])
     inner = np.array([[20, 20, 20, 20], [0.01, 0.02, 0.03, 0.08]])
@@ -280,7 +281,7 @@ def test_density_panels_share_a_scale_based_on_visible_bins():
         outer_mesh, inner_mesh = [ax.collections[-1] for ax in axes]
         assert outer_mesh.norm is inner_mesh.norm
         assert outer_mesh.norm.vmin == 0
-        assert outer_mesh.norm.vmax == 0.08
+        assert outer_mesh.norm.vmax == expected
         assert "Bead density" in inner_mesh.colorbar.ax.get_xlabel()
         np.testing.assert_array_equal(outer_mesh.get_facecolors()[5],
                                       inner_mesh.get_facecolors()[4])

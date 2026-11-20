@@ -47,25 +47,23 @@ class HeatmapSettings:
     color_landmarks_by_row : bool, optional
         True assigns one color per coordinate row; False assigns colors by
         marker position within each row. Defaults to False.
-    max_enrichment : float
-        Upper limit of the enrichment scale. The lower limit is its reciprocal.
     colormap : matplotlib colormap or None, optional
         Override the default palette for the selected quantity.
-    max_density : float or None, optional
-        Upper color limit in beads per square angstrom. None uses the maximum
-        finite positive density in the visible bins across panels.
+    colorbar_max : float or None, optional
+        Upper color limit in enrichment units or beads per square angstrom,
+        depending on the quantity plotted. None uses 5 for enrichment and
+        the largest finite positive visible value across panels for density.
     """
 
     row_names: list
     col_names: list
     fig_dims: tuple
-    max_enrichment: float
     grid: PolarBinGrid
     first_radial_bin: int = 0
     landmark_colors: list[str] | None = None
     color_landmarks_by_row: bool = False
     colormap: mpl.colors.Colormap | None = None
-    max_density: float | None = None
+    colorbar_max: float | None = None
 
     def __post_init__(self):
         """Validate the layout."""
@@ -108,17 +106,18 @@ def make_custom_colormap() -> ListedColormap:
 
 def _heatmap_norm(maps, settings: HeatmapSettings, quantity: str) -> Normalize:
     """Choose one scale for all plotted panels."""
+    maximum = settings.colorbar_max
     if quantity == "enrichment":
-        maximum = settings.max_enrichment
+        maximum = 5.0 if maximum is None else maximum
         if not np.isfinite(maximum) or maximum <= 1:
-            raise ValueError("max_enrichment must be finite and greater than 1.")
+            raise ValueError("colorbar_max must be finite and greater than 1 for enrichment.")
         return TwoSlopeNorm(vmin=1 / maximum, vcenter=1, vmax=maximum)
     if quantity != "density":
         raise ValueError("quantity must be 'enrichment' or 'density'.")
-    if settings.max_density is not None:
-        if not np.isfinite(settings.max_density) or settings.max_density <= 0:
-            raise ValueError("max_density must be finite and positive.")
-        return Normalize(vmin=0, vmax=settings.max_density)
+    if maximum is not None:
+        if not np.isfinite(maximum) or maximum <= 0:
+            raise ValueError("colorbar_max must be finite and positive for density.")
+        return Normalize(vmin=0, vmax=maximum)
 
     maximum = 0.0
     for data in maps:
