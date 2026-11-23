@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Nov 11 09:44:53 2024.
+Load Tcl count outputs and calculate bead densities and density enrichment.
 
-@author: js2746
+File readers return counts and polar grid geometry. Calculation functions
+convert counts to density and combine enrichment across systems; plotting is
+handled separately.
 """
 from typing import Literal
 from pathlib import Path
@@ -24,22 +26,36 @@ def parse_tcl_dat_file(filepath: str | Path, bulk: bool) -> tuple[np.ndarray, Po
     filepath : Path or str
         The path to the TCL .dat or .out output file.
     bulk : boolean
-        If True, assume output is from do_get_counts. If False, assume
-        output is from polarDensityBin.
+        If True, read headerless bulk counts from ``do_get_counts``. If False,
+        read per-frame or averaged counts from ``polarDensityBin``.
 
     Returns
     -------
     counts : ndarray
-        If bulk is True, return a 1D ndarray. If bulk is False, return a 3D
-        ndarray of integer counts. Dimension 0 is time, dimension 1 is r and
-        dimension 2 is theta. IE the count for the 4th radial bin and 12th
-        theta bin on the 33rd frame of the trajectory would be counts[32, 3, 11].
+        If ``bulk`` is True, a flattened one-dimensional integer array.
+        Otherwise, a floating-point array of shape
+        ``(n_frames, grid.r.n_bins, grid.theta.n_bins)``, indexed by frame,
+        radial bin, and angular bin. Averaged files have one frame and may
+        contain fractional counts. These are counts, not densities.
     grid : PolarBinGrid or None
-        If bulk is True, return None. If bulk is False, return the PolarBinGrid
+        If ``bulk`` is True, return None. Otherwise, return the PolarBinGrid
         object pertaining to this system.
-    system_info : namedtuple or None
-        The information taken from the header row of the .dat file specified in
-        filepath. If bulk is True, returns None.
+    system_info : SysInfo or None
+        Header values ``NL``, ``NB``, ``BoxArea``, ``ExpBeadDensity``, and
+        ``DrDtheta``. Returns None for bulk input.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``filepath`` does not identify an existing file.
+    AssertionError
+        If the file extension is neither ``.dat`` nor ``.out``.
+    ValueError
+        If numeric data cannot be read, the header has an unsupported field count,
+        or the count data cannot be arranged on the inferred grid.
+    IndexError
+        If a header field lacks its colon or value, or non-bulk numeric data
+        lacks the two-dimensional metadata layout expected by the parser.
 
     """
     filepath = validate_path(filepath, file=True)
@@ -68,18 +84,33 @@ def load_replica_counts(
     root_path : str or Path
         The path to directory containing your replica subdirectories.
     replicas_list : list
-        The list of replica subdirectory names.
+        At least two replica subdirectory names, in the desired return order.
     system_name : str
         The file stem for your PolarDensityBin outputs.
     leaflet_id : int
         Which leaflet your Site is in. 1=outer and 2=inner.
-    avg : bool
-        If True, load the average density file. If False (default), load the \
-        individual frame counts.
+    avg : bool, optional
+        If True, load average counts from ``{system_name}.{leaflet}.avg.dat``.
+        If False (default), load per-frame counts from
+        ``{system_name}.{leaflet}.dat``. Files are inside each replica directory;
+        ``leaflet`` is ``upp`` for 1 and ``low`` for 2.
 
     Returns
     -------
-    list of ndarrays.
+    list of numpy.ndarray
+        Floating-point count arrays in ``replicas_list`` order, each with shape
+        ``(n_frames, n_radial_bins, n_angular_bins)``. Averaged files have one
+        frame. Counts are not converted to density, and grids are not compared
+        across replicas.
+
+    Raises
+    ------
+    AssertionError
+        If ``leaflet_id`` is not 1 or 2, ``root_path`` is not a string or Path
+        or does not exist, ``replicas_list`` is not a list with at least two
+        entries, or an expected count file is missing.
+    ValueError
+        If a count file cannot be parsed; see ``parse_tcl_dat_file``.
 
     """
     assert leaflet_id in [1, 2], "leaflet_id must be 1 (outer) or 2 (inner)."
@@ -109,14 +140,25 @@ def calculate_density(avg_counts: np.ndarray, grid: PolarBinGrid) -> np.ndarray:
     Parameters
     ----------
     avg_counts : ndarray
-        2D array of average bead counts per bin in simulation. [r,theta] format.
+        Two-dimensional average bead counts, indexed by radial and then angular
+        bin. Shape must be ``(grid.r.n_bins, grid.theta.n_bins)``.
     grid : PolarBinGrid
         The PolarBinGrid object corresponding to this system.
 
     Returns
     -------
     density : ndarray
-        The average bead density in each bin.
+        Average counts divided by bin areas, with the same shape as
+        ``avg_counts``. Units are beads per squared grid length unit
+        (beads per square angstrom for the Tcl output).
+
+    Raises
+    ------
+    TypeError
+        If ``avg_counts`` is not a NumPy array or ``grid`` is not a ``PolarBinGrid``.
+    ValueError
+        If ``avg_counts`` is not two-dimensional or its shape does not match
+        the grid's bin counts.
 
     """
     if not isinstance(avg_counts, np.ndarray):
@@ -133,20 +175,34 @@ def calculate_density(avg_counts: np.ndarray, grid: PolarBinGrid) -> np.ndarray:
 
 def calculate_density_enrichment(density: np.ndarray, expected_density: float) -> np.ndarray:
     """
-    Divide the average bead densities in each bin by the expected bead density \
-    to calculate an enrichment score.
+    Calculate dimensionless enrichment relative to the expected bead density.
 
     Parameters
     ----------
     density : ndarray
-        2D array of average bead density values.
-    expected_density : float
-        The expected bead density; output from polarDensityBin.
+        Two-dimensional average bead densities, in the same units as
+        ``expected_density``.
+    expected_density : float or int
+        Reference bead density, such as ``SysInfo.ExpBeadDensity`` from
+        ``polarDensityBin`` (beads per square angstrom).
 
     Returns
     -------
     ndarray
-        Array of same shape as density containing density enrichment scores.
+        Dimensionless ratios with the same shape as ``density``. A value of 1
+        means the bin density equals the expected density.
+
+    Raises
+    ------
+    AssertionError
+        If ``density`` is not a two-dimensional NumPy array or
+        ``expected_density`` is not a float or int.
+
+    Notes
+    -----
+    No positivity or finiteness check is performed on ``expected_density``.
+    Zero denominators follow NumPy division behavior, which can produce
+    infinities or NaNs and warnings under default NumPy error settings.
 
     """
     assert isinstance(density, np.ndarray), "density must be a numpy array."
@@ -157,23 +213,41 @@ def calculate_density_enrichment(density: np.ndarray, expected_density: float) -
 
 def aggregate_density_enrichment_scores(file_paths: list[str | Path]) -> tuple[np.ndarray, PolarBinGrid]:
     """
-    Collect the average counts, bin sizing, and expected density from each \
-        system, calulate average density enrichment for each system, and calculate\
-        average density enrichment accross systems. Also, return the PolarBinGrid \
-        object that needs to be used for plotting the heatmaps.
+    Average density enrichment across systems with matching polar grids.
 
     Parameters
     ----------
-    file_paths : list
-        The list of paths to all the average counts files you want to calculate\
-        density enrichment for.
+    file_paths : list of str or Path
+        Nonempty list of average-count files from ``polarDensityBin``. Each
+        file must contain exactly one frame of counts, and all inferred grids
+        must be equal.
 
     Returns
     -------
     all_reps_avg : numpy ndarray
-        The density enrichment scores, averaged together in a 2D array.
+        Dimensionless enrichment of shape
+        ``(grid_final.r.n_bins, grid_final.theta.n_bins)``.
+        Each system's counts are divided by its bin areas and its own expected
+        bead density before taking an equally weighted mean across systems.
+        NaNs are ignored per bin; a bin with no non-NaN values remains NaN.
     grid_final : PolarBinGrid
-        The PolarBinGrid that contains information about lattice sizes.
+        Shared grid geometry, returned from the first input file for use in
+        downstream analysis or plotting.
+
+    Raises
+    ------
+    TypeError
+        If ``file_paths`` is not a list.
+    FileNotFoundError
+        If an input path does not identify an existing file.
+    ValueError
+        If ``file_paths`` is empty, an input file cannot be parsed, an input
+        contains more than one frame, or the inferred grids differ.
+
+    Notes
+    -----
+    Systems are weighted equally regardless of their trajectory lengths.
+    NumPy emits a warning when a bin contains only NaNs.
 
     """
     replica_enrichments_list = []
@@ -202,19 +276,29 @@ def aggregate_density_enrichment_scores(file_paths: list[str | Path]) -> tuple[n
 
 def _parse_system_info(dat_file_header: list[str]) -> SysInfo:
     """
-    Turn the list of strings from the .dat file header into a namedtuple with \
-    useable float values.
+    Parse system metadata from a current or legacy Tcl output header.
 
     Parameters
     ----------
-    dat_file_header : list
-        The header line of the .dat file output by polarDensityBin, saved as a \
-        list of strings.
+    dat_file_header : sequence of str
+        Five comma-separated header fields from ``polarDensityBin``, or six
+        fields from the legacy format. In the legacy format the fifth field
+        is ignored. Each retained field must contain a colon followed by a
+        numeric value.
 
     Returns
     -------
-    sysInfo : namedtuple
-        Namedtuple containing system information output by polarDensityBin.
+    sysInfo : SysInfo
+        Float-valued ``NL`` (lipid count), ``NB`` (bead count), ``BoxArea``
+        (square angstroms), ``ExpBeadDensity`` (beads per square angstrom), and
+        ``DrDtheta`` (radial width times angular width in radians).
+
+    Raises
+    ------
+    ValueError
+        If the header does not have five or six fields or a value is not numeric.
+    IndexError
+        If a field lacks the required colon or value.
 
     """
     # this is done for backwards-compatibility with a discontinued feature
@@ -235,8 +319,7 @@ def _parse_system_info(dat_file_header: list[str]) -> SysInfo:
 
 def _isolate_number_from_header_string(string: str) -> float:
     """
-    Return the number following the colon in the input string. \
-    Example: 'sample header info : 185.72 sample units' should return 185.72.
+    Extract the numeric value after the first colon in a header field.
 
     Parameters
     ----------
@@ -248,6 +331,18 @@ def _isolate_number_from_header_string(string: str) -> float:
     float
         The number following the colon in the input string.
 
+    Raises
+    ------
+    IndexError
+        If the string has no colon or no value after it.
+    ValueError
+        If the value cannot be converted to a float.
+
+    Notes
+    -----
+    Trailing whitespace-separated units are ignored. For density fields such
+    as ``Expected Bead Density : 0.02/A^2``, the text after the slash is ignored.
+
     """
     right_side = string.split(':')[1].strip()
     if "/" in right_side:
@@ -258,17 +353,27 @@ def _isolate_number_from_header_string(string: str) -> float:
 
 def _create_grid_from_dat_file(dat_file_contents: np.ndarray) -> PolarBinGrid:
     """
-    Calculate correct lattice dimensions and create PolarBinGrid object from file.
+    Infer a regular polar grid from Tcl count-file metadata columns.
 
     Parameters
     ----------
     dat_file_contents : ndarray
-        The data from the .dat file output by polarDensityBin, minus its header row.
+        Two-dimensional numeric data without the header. The first three
+        columns give radial lower edge, radial upper edge, and angular bin
+        width in degrees. Radial widths are assumed uniform, with angular bins
+        spanning a full circle.
 
     Returns
     -------
     grid : PolarBinGrid
-        Contains r_min, r_max, n_r, and n_theta.
+        Grid with radial bounds ``grid.r.lower_bound`` and ``grid.r.upper_bound``
+        and bin counts ``grid.r.n_bins`` and ``grid.theta.n_bins``.
+
+    Raises
+    ------
+    ValueError
+        If the radial span or full circle cannot be evenly divided by the
+        inferred bin widths, or the inferred geometry fails grid validation.
 
     """
     r_min = dat_file_contents[0, 0]
@@ -288,14 +393,29 @@ def _package_counts(unrolled_data: np.ndarray, grid: PolarBinGrid) -> np.ndarray
     Parameters
     ----------
     unrolled_data : ndarray
-        2d array output from polarDensityBin, minus header row.
+        Two-dimensional numeric data without the header. The first three
+        columns contain metadata, followed by one count column per angular bin.
+        Rows are grouped by radial bin, with frames in order within each group.
     grid : PolarBinGrid
-        Contains bin dimensions and number of frames.
+        Grid supplying radial and angular bin counts. The frame count is
+        inferred from the number of rows divided by ``grid.r.n_bins``.
 
     Returns
     -------
     counts : ndarray
-        3d array of counts in [time, r, theta] format.
+        Floating-point counts of shape
+        ``(n_frames, grid.r.n_bins, grid.theta.n_bins)``.
+
+    Raises
+    ------
+    ValueError
+        If the row count is not divisible by the radial bin count, or the
+        angular column count does not match the grid.
+
+    Notes
+    -----
+    A single extra trailing angular column is accepted and removed only when
+    every value in it is zero, supporting files from older grid generation.
 
     """
     n_rows = unrolled_data.shape[0]
