@@ -35,9 +35,14 @@ Word documents, PDFs, presentations, or spreadsheets.
    structure, and do not invent APIs, defaults, citations, supported cases, or
    scientific claims. If a necessary fact cannot be verified, flag the gap
    instead of guessing.
-6. Select validation based on the change using the guidance below, then inspect
+6. After editing, reread the documentation style guide and review the changed
+   documentation against its applicable guidelines at least once. Check both
+   what should be included and what should be omitted, along with terminology,
+   formatting, and docstring conventions. Correct any mismatches and recheck
+   the corrections before proceeding.
+7. Select validation based on the change using the guidance below, then inspect
    the final diff for unrelated edits.
-7. Report the documentation changes, validation performed, and unresolved
+8. Report the documentation changes, validation performed, and unresolved
    issues or uncertainty.
 
 ## Validation
@@ -62,5 +67,6 @@ that were only inspected, and identify unresolved discrepancies.
 
 A documentation change is complete when a reader can follow it without relying
 on undocumented assumptions, its claims are supported by current repository
-evidence or authoritative references, and the final report states what was
-checked and what remains unresolved.
+evidence or authoritative references, the review against the style guide is
+complete, and the final report states what was checked and what remains
+unresolved.
