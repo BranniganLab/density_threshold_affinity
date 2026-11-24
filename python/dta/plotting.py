@@ -265,7 +265,12 @@ def make_colorbar(fig: plt.Figure, heatmap: QuadMesh) -> plt.Figure:
     panels_center = (fig.subplotpars.left + fig.subplotpars.right) / 2
     colorbar_left = panels_center - colorbar_width / 2
     cbar_ax = fig.add_axes([colorbar_left, 1, colorbar_width, colorbar_height])
-    colorbar = fig.colorbar(heatmap, cax=cbar_ax, orientation="horizontal")
+    colorbar = fig.colorbar(
+        heatmap, cax=cbar_ax, orientation="horizontal",
+        format=mpl.ticker.FuncFormatter(
+            lambda value, _: f"{round(value, 2) or 0:.2f}".rstrip("0").rstrip(".")
+        ),
+    )
     if isinstance(heatmap.norm, TwoSlopeNorm):
         colorbar.set_ticks([heatmap.norm.vmin, heatmap.norm.vcenter, heatmap.norm.vmax])
         colorbar.set_label("Density enrichment")
